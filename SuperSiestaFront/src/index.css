@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 210 20% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 20% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 20% 15%;
+
+    /* Green primary */
+    --primary: 145 55% 30%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Blue secondary */
+    --secondary: 210 70% 45%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 20% 96%;
+    --muted-foreground: 210 10% 50%;
+
+    --accent: 145 40% 92%;
+    --accent-foreground: 145 55% 25%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 20% 88%;
+    --input: 210 20% 88%;
+    --ring: 145 55% 30%;
+
+    --radius: 0.75rem;
+
+    /* Brand specific */
+    --brand-green: 145 55% 30%;
+    --brand-green-light: 145 40% 92%;
+    --brand-blue: 210 70% 45%;
+    --brand-blue-light: 210 50% 92%;
+    --brand-gold: 42 80% 55%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 210 20% 8%;
+    --foreground: 0 0% 95%;
+    --card: 210 20% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 210 20% 10%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 145 50% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 60% 55%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 210 15% 18%;
+    --muted-foreground: 210 10% 60%;
+    --accent: 145 30% 18%;
+    --accent-foreground: 145 50% 70%;
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 15% 20%;
+    --input: 210 15% 20%;
+    --ring: 145 50% 42%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-brand-green { color: hsl(var(--brand-green)); }
+  .bg-brand-green { background-color: hsl(var(--brand-green)); }
+  .bg-brand-green-light { background-color: hsl(var(--brand-green-light)); }
+  .text-brand-blue { color: hsl(var(--brand-blue)); }
+  .bg-brand-blue { background-color: hsl(var(--brand-blue)); }
+  .bg-brand-blue-light { background-color: hsl(var(--brand-blue-light)); }
+  .text-brand-gold { color: hsl(var(--brand-gold)); }
+  .border-brand-green { border-color: hsl(var(--brand-green)); }
+  .border-brand-blue { border-color: hsl(var(--brand-blue)); }
+  .animate-spin-slow {
+    animation: spin 8s linear infinite;
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
+}

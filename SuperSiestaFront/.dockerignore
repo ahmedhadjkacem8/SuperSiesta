@@ -1,0 +1,26 @@
+# ---- Dependencies ----
+node_modules/
+
+# ---- Build output ----
+dist/
+
+# ---- Git ----
+.git/
+.gitignore
+
+# ---- IDE / OS ----
+.idea/
+.vscode/
+*.DS_Store
+Thumbs.db
+
+# ---- Tests ----
+coverage/
+
+# ---- Docker itself ----
+Dockerfile
+docker-compose*.yml
+# NOTE: docker/ inclus dans le context (nginx/frontend.conf)
+
+# ---- Docs ----
+*.md

@@ -1,0 +1,20 @@
+# Documentation
+documentation/
+
+# Environment files
+.env
+.env.docker
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Large / Temporary files
+*.rar
+*.zip
+*.pdf
+*.log
+
+# Dependencies (if any at root)
+node_modules/
+vendor/

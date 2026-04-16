@@ -1,0 +1,38 @@
+# ---- Composer ----
+vendor/
+
+# ---- Laravel runtime ----
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+storage/logs/
+bootstrap/cache/
+
+# ---- Tests & Dev tools ----
+tests/
+.phpunit.result.cache
+.pint.cache
+
+# ---- Git ----
+.git/
+.gitignore
+.gitattributes
+
+# ---- Node (for blade/vite) ----
+node_modules/
+
+# ---- IDE / OS ----
+.idea/
+.vscode/
+*.DS_Store
+Thumbs.db
+
+# ---- Docker itself ----
+Dockerfile
+docker-compose*.yml
+# NOTE: docker/ dossier est intentionnellement inclus dans le build context
+# (entrypoint.sh, php.ini, www.conf sont copiés depuis docker/)
+
+# ---- Docs ----
+*.md
+docs/
