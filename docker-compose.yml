@@ -20,7 +20,7 @@ services:
     volumes:
       - api_storage:/var/www/html/storage
       - api_logs:/var/www/html/storage/logs
-      - ./SuperSiestaApi:/var/www/html
+      #- ./SuperSiestaApi:/var/www/html
       # Mappage direct pour les images (uploads)
       - ./SuperSiestaApi/storage/app/public:/var/www/html/storage/app/public
 

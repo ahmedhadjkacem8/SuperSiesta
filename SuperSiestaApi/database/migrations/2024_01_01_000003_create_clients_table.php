@@ -18,8 +18,6 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->json('tags')->nullable();
             $table->timestamps();
-
-            $table->index('tags', 'idx_clients_tags');
         });
     }
 
