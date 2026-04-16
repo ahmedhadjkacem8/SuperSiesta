@@ -46,7 +46,7 @@ services:
       dockerfile: Dockerfile
       target:     production
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api}
+        VITE_API_URL: ${VITE_API_URL:-http://135.125.202.39:8000/api}
     container_name: supersiesta_front
     restart: unless-stopped
     ports:

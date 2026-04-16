@@ -15,10 +15,10 @@ mkdir -p storage/framework/cache/data \
 chmod -R 775 storage bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
 
-# ---- Test de connexion vers SQL Local ----
-echo "⏳ [entrypoint] Test de connexion vers host.docker.internal..."
-until php -r "try { new PDO('mysql:host=host.docker.internal;port=3306;dbname=SuperSiestaDB', 'root', ''); exit(0); } catch (Exception \$e) { exit(1); }" 2>/dev/null; do
-    echo "   DB non prête (vérifiez bind-address et pare-feu sur Windows)..."
+# ---- Test de connexion vers la Database ----
+echo "⏳ [entrypoint] Test de connexion vers ${DB_HOST}..."
+until php -r "try { new PDO('mysql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT') . ';dbname=' . getenv('DB_DATABASE'), getenv('DB_USERNAME'), getenv('DB_PASSWORD')); exit(0); } catch (Exception \$e) { exit(1); }" 2>/dev/null; do
+    echo "   DB (${DB_HOST}) non prête ou inaccessible... (vérifiez vos variables .env)"
     sleep 3
 done
 echo "✅ [entrypoint] Connexion MySQL OK !"

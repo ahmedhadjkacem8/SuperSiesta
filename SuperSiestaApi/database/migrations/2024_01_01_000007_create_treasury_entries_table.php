@@ -15,7 +15,7 @@ return new class extends Migration
             $table->decimal('amount', 10, 3);
             $table->text('description')->nullable();
             $table->string('reference')->nullable();
-            $table->date('entry_date')->default(\DB::raw('CURDATE()'));
+            $table->date('entry_date');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
         });
     }
