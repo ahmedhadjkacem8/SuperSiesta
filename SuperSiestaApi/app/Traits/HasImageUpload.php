@@ -18,11 +18,11 @@ trait HasImageUpload
     }
 
     /**
-     * Chemin absolu vers public/uploads/{folder}
+     * Chemin absolu vers storage/app/public/{folder}
      */
     protected function getUploadPath(): string
     {
-        return public_path('uploads' . DIRECTORY_SEPARATOR . $this->getUploadFolder());
+        return storage_path('app/public' . DIRECTORY_SEPARATOR . $this->getUploadFolder());
     }
 
     /**
@@ -61,9 +61,9 @@ trait HasImageUpload
         // Déplacer le fichier
         $file->move($uploadPath, $filename);
 
-        // Retourner uniquement le chemin relatif pour enregistrer dans la base de données,
-        // par ex. /uploads/{folder}/{filename}
-        return '/uploads/' . $this->getUploadFolder() . '/' . $filename;
+        // Retourner le chemin relatif via `public/storage` pour être servi par Nginx,
+        // par ex. /storage/{folder}/{filename}
+        return '/storage/' . $this->getUploadFolder() . '/' . $filename;
     }
 
     /**
@@ -113,27 +113,35 @@ trait HasImageUpload
         }
 
         try {
-            // Supporte :
-            // - URL complète retournée précédemment (http://host/uploads/...)
-            // - chemin relatif stocké (/uploads/...)
-            $baseUrl = $this->getUploadBaseUrl();
-            $uploadPrefix = '/uploads/' . $this->getUploadFolder();
+            // Supporte plusieurs formats stockés précédemment ou externes :
+            // - URL complète (http://host/...) contenant /storage/{folder}/...
+            // - chemin relatif via /storage/{folder}/...
+            // - ancien format /uploads/{folder}/... (au cas où)
 
-            if (is_string($url) && str_starts_with($url, $baseUrl)) {
-                $relative = substr($url, strlen($baseUrl) + 1);
-            } elseif (is_string($url) && str_starts_with($url, $uploadPrefix)) {
-                $relative = substr($url, strlen($uploadPrefix) + 1);
-            } else {
-                // Essayer d'extraire le path si c'est une URL ou une autre forme
-                $parsedPath = is_string($url) ? parse_url($url, PHP_URL_PATH) : null;
-                if ($parsedPath && str_starts_with($parsedPath, $uploadPrefix)) {
-                    $relative = substr($parsedPath, strlen($uploadPrefix) + 1);
-                } else {
-                    return;
-                }
+            $storagePrefix = '/storage/' . $this->getUploadFolder();
+            $uploadsPrefix = '/uploads/' . $this->getUploadFolder();
+
+            $relative = null;
+            // URL complète vers /storage
+            $parsedPath = is_string($url) ? parse_url($url, PHP_URL_PATH) : null;
+            if (is_string($url) && str_starts_with($url, $storagePrefix)) {
+                $relative = substr($url, strlen($storagePrefix) + 1);
+            } elseif ($parsedPath && str_starts_with($parsedPath, $storagePrefix)) {
+                $relative = substr($parsedPath, strlen($storagePrefix) + 1);
+            } elseif (is_string($url) && str_starts_with($url, $uploadsPrefix)) {
+                // ancien emplacement public/uploads
+                $relative = substr($url, strlen($uploadsPrefix) + 1);
+                // la racine pour les anciens fichiers est public/uploads
+                $fullPath = public_path('uploads' . DIRECTORY_SEPARATOR . $this->getUploadFolder() . DIRECTORY_SEPARATOR . $relative);
+            } elseif ($parsedPath && str_starts_with($parsedPath, $uploadsPrefix)) {
+                $relative = substr($parsedPath, strlen($uploadsPrefix) + 1);
+                $fullPath = public_path('uploads' . DIRECTORY_SEPARATOR . $this->getUploadFolder() . DIRECTORY_SEPARATOR . $relative);
             }
 
-            $fullPath = $this->getUploadPath() . DIRECTORY_SEPARATOR . $relative;
+            if ($relative !== null && !isset($fullPath)) {
+                $fullPath = $this->getUploadPath() . DIRECTORY_SEPARATOR . $relative;
+            }
+
             if (file_exists($fullPath)) {
                 unlink($fullPath);
             }
@@ -181,6 +189,11 @@ trait HasImageUpload
             return $value;
         }
 
+        // Si l'ancien format stockait `/uploads/...`, le convertir en `/storage/...`
+        if (str_starts_with($value, '/uploads/')) {
+            $value = str_replace('/uploads/', '/storage/', $value);
+        }
+
         return url($value);
     }
 
@@ -204,6 +217,9 @@ trait HasImageUpload
             }
             if (str_starts_with($item, 'http://') || str_starts_with($item, 'https://')) {
                 return $item;
+            }
+            if (str_starts_with($item, '/uploads/')) {
+                $item = str_replace('/uploads/', '/storage/', $item);
             }
             return url($item);
         }, $images);

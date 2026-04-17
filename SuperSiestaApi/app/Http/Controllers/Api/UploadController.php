@@ -44,14 +44,12 @@ class UploadController extends Controller
 
             $folder = $request->input('folder', '');
             
-            // Build the upload path
-            $uploadPath = 'uploads';
-            if ($folder) {
-                $uploadPath .= DIRECTORY_SEPARATOR . $folder;
-            }
+            // Build the upload path under storage/app/public so Nginx can serve via /storage
+            $uploadPath = 'storage' . DIRECTORY_SEPARATOR . ($folder ?: '');
+            $storageFolder = $folder ?: '';
 
-            // Ensure upload directory exists
-            $fullPath = public_path($uploadPath);
+            // Ensure upload directory exists in storage/app/public/{folder}
+            $fullPath = storage_path('app/public' . ($storageFolder ? DIRECTORY_SEPARATOR . $storageFolder : ''));
             if (!is_dir($fullPath)) {
                 mkdir($fullPath, 0755, true);
             }
@@ -62,12 +60,9 @@ class UploadController extends Controller
             // Move the file
             $file->move($fullPath, $filename);
 
-            // Build the public URL
-            $relativePath = $uploadPath . DIRECTORY_SEPARATOR . $filename;
-            
-            // Build URL with proper scheme and host including port
-            $urlPath = '/uploads/' . ($folder ? $folder . '/' : '') . $filename;
-            $url = $request->getScheme() . '://' . $request->getHttpHost() . $urlPath;
+            // Build the public URL path (served via public/storage)
+            $relativePath = '/storage/' . ($folder ? $folder . '/' : '') . $filename;
+            $url = url($relativePath);
 
             return response()->json([
                 'url' => $url,
