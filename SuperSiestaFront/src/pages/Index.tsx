@@ -242,9 +242,8 @@ export default function Index() {
                     <button
                       key={idx}
                       onClick={() => setBlogPageIndex(idx)}
-                      className={`h-2 rounded-full transition-all ${
-                        blogPageIndex === idx ? "w-8 bg-primary" : "w-2 bg-primary/20 hover:bg-primary/40"
-                      }`}
+                      className={`h-2 rounded-full transition-all ${blogPageIndex === idx ? "w-8 bg-primary" : "w-2 bg-primary/20 hover:bg-primary/40"
+                        }`}
                     />
                   ))}
                 </div>

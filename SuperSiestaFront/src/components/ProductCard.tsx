@@ -13,15 +13,15 @@ interface ProductCardProps {
 export default function ProductCard({ product, selectedDimension }: ProductCardProps) {
   const { addItem } = useCart();
   const navigate = useNavigate();
-  
+
   // Find the right size to display
   let displaySize = null;
   const isSpecificDimension = selectedDimension && selectedDimension !== "Tous";
-  
+
   if (isSpecificDimension) {
     displaySize = product.sizes?.find(s => s.label === selectedDimension);
   }
-  
+
   // If no specific dimension or not found, use minimal price size
   if (!displaySize && product.sizes && product.sizes.length > 0) {
     displaySize = [...product.sizes].sort((a, b) => a.price - b.price)[0];

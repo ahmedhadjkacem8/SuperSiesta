@@ -189,8 +189,14 @@ trait HasImageUpload
             return $value;
         }
 
-        // Si l'ancien format stockait `/uploads/...`, le convertir en `/storage/...`
+        // Si l'ancien format stockait `/uploads/...`, vérifier si le fichier existe
+        // dans `public/uploads` et le servir tel quel. Sinon, basculer vers
+        // `/storage/...` (nouveau format) pour garder la compatibilité.
         if (str_starts_with($value, '/uploads/')) {
+            $uploadsPath = public_path(ltrim($value, '/'));
+            if (file_exists($uploadsPath)) {
+                return url($value);
+            }
             $value = str_replace('/uploads/', '/storage/', $value);
         }
 
@@ -218,7 +224,13 @@ trait HasImageUpload
             if (str_starts_with($item, 'http://') || str_starts_with($item, 'https://')) {
                 return $item;
             }
+            // Comme pour `getImageUrlAttribute`, préférer `public/uploads` si le
+            // fichier existe, sinon utiliser `/storage/...`.
             if (str_starts_with($item, '/uploads/')) {
+                $uploadsPath = public_path(ltrim($item, '/'));
+                if (file_exists($uploadsPath)) {
+                    return url($item);
+                }
                 $item = str_replace('/uploads/', '/storage/', $item);
             }
             return url($item);
