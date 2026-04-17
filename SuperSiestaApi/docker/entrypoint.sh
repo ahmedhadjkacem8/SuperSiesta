@@ -11,9 +11,9 @@ mkdir -p storage/framework/cache/data \
          storage/logs \
          bootstrap/cache
 
-# Fix permissions
+# Fix permissions (appuser = uid 1000, défini dans le Dockerfile)
 chmod -R 775 storage bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
+chown -R 1000:1000 storage bootstrap/cache 2>/dev/null || true
 
 # ---- Test de connexion vers la Database ----
 echo "⏳ [entrypoint] Test de connexion vers ${DB_HOST}..."
@@ -24,7 +24,7 @@ done
 echo "✅ [entrypoint] Connexion MySQL OK !"
 
 # ---- Tasks ----
-php artisan storage:link --force 2>/dev/null || true
+# Note: storage:link n'est plus nécessaire car Nginx utilise alias directement
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
