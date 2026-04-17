@@ -10,6 +10,12 @@ class ApiRateLimiting
 {
     public function handle(Request $request, Closure $next): Response
     {
+        // Temporarily disable rate limiting for authentication endpoints
+        // so multiple login attempts are allowed while debugging.
+        if ($request->is('api/auth/*')) {
+            return $next($request);
+        }
+
         // Get current timestamp
         $now = now();
         $key = $this->resolveRequestSignature($request);

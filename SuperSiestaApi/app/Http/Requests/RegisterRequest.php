@@ -31,7 +31,6 @@ class RegisterRequest extends FormRequest
                 Password::min(8)
                     ->mixedCase()
                     ->numbers()
-                    ->symbols()
             ],
             'password_confirmation' => [
                 'required',
@@ -75,7 +74,7 @@ class RegisterRequest extends FormRequest
             'password.min' => 'Le mot de passe doit contenir au moins 8 caractères',
             'password.mixed_case' => 'Le mot de passe doit contenir des majuscules et des minuscules',
             'password.numbers' => 'Le mot de passe doit contenir au moins un chiffre',
-            'password.symbols' => 'Le mot de passe doit contenir au moins un caractère spécial (!@#$%^&*)',
+            // caractères spéciaux non obligatoires désormais
             
             'full_name.required' => 'Le nom complet est requis',
             'full_name.min' => 'Le nom doit contenir au moins 3 caractères',

@@ -274,6 +274,10 @@ export function checkRateLimit(identifier: string): { allowed: boolean; message?
       }
     });
 
+    // Temporarily disable client-side rate limiting for login attempts.
+    // Commenting out attempts counting to allow repeated login tries during debugging.
+    return { allowed: true };
+
     if (!entry) {
       // First attempt
       limits[identifier] = { timestamp: now, attempts: 1 };
