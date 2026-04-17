@@ -10,6 +10,7 @@ interface CachedImageProps {
   onError?: () => void
   loading?: "lazy" | "eager"
   fetchPriority?: "high" | "low" | "auto"
+  noCache?: boolean
 }
 
 /**
@@ -31,8 +32,8 @@ export default function CachedImage({
   // Détermine si c'est une image publique ou via API
   const isPublicFile = useMemo(() => {
     if (!src) return false
-    // Les fichiers publics commencent par / ou /uploads/
-    return src.startsWith('/uploads') || (src.startsWith('http') && src.includes('/uploads/'))
+    // Les fichiers publics commencent par /storage/ ou /uploads/
+    return src.startsWith('/storage') || src.startsWith('/uploads') || (src.startsWith('http') && (src.includes('/storage/') || src.includes('/uploads/')))
   }, [src])
 
   useEffect(() => {
@@ -44,7 +45,12 @@ export default function CachedImage({
     }
 
     setIsLoading(true)
-    setImageSrc(src)
+    let resolved = src
+    if (noCache) {
+      const sep = resolved.includes('?') ? '&' : '?'
+      resolved = `${resolved}${sep}_=${Date.now()}`
+    }
+    setImageSrc(resolved)
     setIsLoading(false)
   }, [src, fallback])
 
@@ -68,7 +74,6 @@ export default function CachedImage({
       onError={handleError}
       loading={loading}
       referrerPolicy="no-referrer"
-      crossOrigin={isPublicFile ? undefined : "anonymous"}
       {...({ fetchpriority: fetchPriority } as any)}
       decoding="async"
     />
