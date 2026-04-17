@@ -187,7 +187,7 @@ export default function AdminHeroSlides() {
       <div className="space-y-3">
         {slides.map((s, i) => (
           <div key={s.id} className="flex items-center gap-4 bg-card border border-border rounded-xl p-4">
-            {s.image_url && <CachedImage src={s.image_url} alt="" className="w-24 h-16 object-cover rounded-lg flex-shrink-0" />}
+            {s.image_url && <CachedImage src={s.image_url} alt="" className="w-24 h-16 object-cover rounded-lg flex-shrink-0" noCache />}
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm truncate">{s.title || "(Sans titre)"}</p>
               <p className="text-xs text-muted-foreground truncate">{s.subtitle}</p>

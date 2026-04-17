@@ -25,6 +25,7 @@ export default function CachedImage({
   onError,
   loading = "lazy",
   fetchPriority = "auto",
+  noCache = false,
 }: CachedImageProps) {
   const [imageSrc, setImageSrc] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
@@ -52,7 +53,7 @@ export default function CachedImage({
     }
     setImageSrc(resolved)
     setIsLoading(false)
-  }, [src, fallback])
+  }, [src, fallback, noCache])
 
   const handleLoad = useCallback(() => {
     setIsLoading(false)

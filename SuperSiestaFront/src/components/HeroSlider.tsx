@@ -105,6 +105,7 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
             className="w-full h-full object-cover" 
             loading="eager"
             fetchPriority="high"
+            noCache
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent md:from-black/70 md:via-black/30 md:to-transparent" />
           
