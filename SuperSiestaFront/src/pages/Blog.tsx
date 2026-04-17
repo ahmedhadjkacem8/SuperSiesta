@@ -4,6 +4,7 @@ import { Loader2, Calendar, Tag, ArrowRight } from "lucide-react";
 import { api } from "@/lib/apiClient";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronRight, ChevronLeft } from "lucide-react";
+import { getImageUrl } from "@/utils/imageUtils";
 
 interface BlogPost {
   id: string;
@@ -65,7 +66,7 @@ export default function Blog() {
                       <Link to={`/blog/${post.slug}`} className="group block h-full bg-card border border-border rounded-2xl overflow-hidden hover:shadow-xl transition-all">
                         <div className="aspect-video bg-muted overflow-hidden relative">
                           {post.image_url ? (
-                            <img src={post.image_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <img src={getImageUrl(post.image_url)} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-accent text-3xl">⭐</div>
                           )}
@@ -123,7 +124,7 @@ export default function Blog() {
               <Link key={post.id} to={`/blog/${post.slug}`} className="group bg-card border border-border rounded-2xl overflow-hidden hover:shadow-xl transition-all">
                 <div className="aspect-[16/9] bg-muted overflow-hidden">
                   {post.image_url ? (
-                    <img src={post.image_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <img src={getImageUrl(post.image_url)} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-accent">
                       <span className="text-4xl">{post.category === "conseil" ? "💡" : "📰"}</span>

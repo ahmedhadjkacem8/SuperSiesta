@@ -19,13 +19,13 @@ export function getImageUrl(imagePath: string | null | undefined): string {
     return imagePath
   }
 
-  // Si c'est un chemin relatif vers uploads (fichiers publics)
-  if (imagePath.startsWith('/uploads')) {
+  // Si c'est un chemin relatif vers API
+  if (imagePath.startsWith('/uploads') || imagePath.startsWith('/storage')) {
     return `${API_URL}${imagePath}`
   }
 
   // Par défaut, considère que c'est un chemin relatif
-  return `/uploads/${imagePath}`
+  return `${API_URL}/storage/${imagePath}`
 }
 
 /**

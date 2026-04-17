@@ -4,6 +4,7 @@ import { useCart } from "@/context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { formatPrice } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { getImageUrl } from "@/utils/imageUtils";
 
 interface ProductCardProps {
   product: Product;
@@ -42,7 +43,7 @@ export default function ProductCard({ product, selectedDimension }: ProductCardP
       onClick={() => navigate(`/produit/${product.slug}`)}
     >
       <div className="relative overflow-hidden aspect-[4/3] bg-muted">
-        <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+        <img src={getImageUrl(product.image)} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
         {product.badge && <span className="absolute top-3 left-3 bg-primary text-primary-foreground text-xs font-bold px-2.5 py-1 rounded-md">{product.badge}</span>}
         {product.inPromo && <span className="absolute top-3 right-3 bg-secondary text-secondary-foreground text-xs font-bold px-2.5 py-1 rounded-md">Promo</span>}
       </div>

@@ -12,6 +12,7 @@ import ThreeDShowcase from "@/components/ThreeDShowcase";
 import { api } from "@/lib/apiClient";
 
 import { useHeroSlides } from "@/hooks/useHeroSlides";
+import { getImageUrl } from "@/utils/imageUtils";
 
 interface BlogPreview {
   id: string;
@@ -215,7 +216,7 @@ export default function Index() {
                         >
                           <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-border shadow-sm">
                             {post.image_url ? (
-                              <img src={post.image_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                              <img src={getImageUrl(post.image_url)} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center bg-muted/50 text-muted-foreground/30 font-black">★</div>
                             )}
@@ -288,7 +289,7 @@ export default function Index() {
                   >
                     <div className="w-28 h-20 sm:w-36 sm:h-24 rounded-2xl border-2 border-primary/20 p-1 group-hover:border-primary transition-colors overflow-hidden shrink-0">
                       {g.cover_image ? (
-                        <img src={g.cover_image} alt={g.name} className="w-full h-full object-cover rounded-xl group-hover:scale-110 transition-transform duration-500" />
+                        <img src={getImageUrl(g.cover_image)} alt={g.name} className="w-full h-full object-cover rounded-xl group-hover:scale-110 transition-transform duration-500" />
                       ) : (
                         <div className="w-full h-full bg-muted rounded-xl flex items-center justify-center">
                           <span className="text-[10px] text-muted-foreground text-center">Sans image</span>
@@ -441,7 +442,7 @@ export default function Index() {
                 <ChevronRight className="w-10 h-10 rotate-[-45deg]" />
               </div>
               {c.image ? (
-                <img src={c.image} alt={c.label} className="w-16 h-16 object-contain mb-3 group-hover:scale-110 transition-transform duration-500" />
+                <img src={getImageUrl(c.image)} alt={c.label} className="w-16 h-16 object-contain mb-3 group-hover:scale-110 transition-transform duration-500" />
               ) : (
                 <div className="w-16 h-16 bg-background/50 rounded-xl mb-3 flex items-center justify-center shadow-sm">
                   <span className="text-[10px] opacity-40">Plus</span>
@@ -612,7 +613,7 @@ export default function Index() {
                 <Link to={`/blog/${post.slug}`} className="group block bg-card border border-border rounded-[2.5rem] overflow-hidden hover:shadow-2xl transition-all hover:-translate-y-2 h-full">
                   <div className="aspect-[16/10] overflow-hidden relative">
                     {post.image_url ? (
-                      <img src={post.image_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                      <img src={getImageUrl(post.image_url)} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                     ) : (
                       <div className="w-full h-full bg-muted flex items-center justify-center">
                         <Star className="w-12 h-12 text-muted-foreground opacity-10" />

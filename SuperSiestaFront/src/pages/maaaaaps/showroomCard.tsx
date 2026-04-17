@@ -1,5 +1,6 @@
 import { MapPin, Phone, Mail, Clock, User, ExternalLink, Calendar } from 'lucide-react';
 import { Showroom } from '../types';
+import { getImageUrl } from '@/utils/imageUtils';
 
 interface ShowroomCardProps {
   showroom: Showroom;
@@ -16,7 +17,7 @@ export function ShowroomCard({ showroom, viewMode = 'grid', isActive = false }: 
       <div className={`bg-white rounded-xl border overflow-hidden w-full flex flex-col transition-all duration-300 ${isActive ? 'border-blue-500 shadow-lg scale-[1.02] ring-1 ring-blue-500' : 'border-gray-200 shadow-sm hover:border-gray-300'}`}>
         <div className="h-32 relative">
           <img
-            src={showroom.image_url}
+            src={getImageUrl(showroom.image_url)}
             alt={showroom.name}
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
@@ -62,7 +63,7 @@ export function ShowroomCard({ showroom, viewMode = 'grid', isActive = false }: 
       {/* Image Section */}
       <div className={`relative overflow-hidden ${isList ? 'md:w-5/12 h-64 md:h-auto shrink-0' : 'h-56 w-full'}`}>
         <img
-          src={showroom.image_url}
+          src={getImageUrl(showroom.image_url)}
           alt={showroom.name}
           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           referrerPolicy="no-referrer"

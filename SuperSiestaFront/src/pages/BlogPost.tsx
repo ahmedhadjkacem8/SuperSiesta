@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Loader2, ChevronLeft, Calendar, Tag, Share2, Facebook, Twitter } from "lucide-react";
 import { api } from "@/lib/apiClient";
+import { getImageUrl } from "@/utils/imageUtils";
 
 interface Post {
   id: string;
@@ -68,7 +69,7 @@ export default function BlogPost() {
       <article>
         {post.image_url && (
           <div className="aspect-[16/9] rounded-3xl overflow-hidden mb-8 bg-muted">
-            <img src={post.image_url} alt={post.title} className="w-full h-full object-cover" />
+            <img src={getImageUrl(post.image_url)} alt={post.title} className="w-full h-full object-cover" />
           </div>
         )}
 

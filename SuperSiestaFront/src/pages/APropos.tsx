@@ -3,6 +3,7 @@ import { Shield, Award, Users, Factory, Heart, Star, Layout, Loader2 } from "luc
 import * as LucideIcons from "lucide-react";
 import { api } from "@/lib/apiClient";
 import { motion } from "framer-motion";
+import { getImageUrl } from "@/utils/imageUtils";
 
 interface AboutSection {
   id: number;
@@ -79,7 +80,7 @@ export default function APropos() {
                       >
                         <div className="absolute -inset-4 bg-primary/10 rounded-[3rem] blur-2xl" />
                         <img 
-                          src={section.image_url} 
+                          src={getImageUrl(section.image_url)} 
                           alt={section.title || ""} 
                           className="relative w-full aspect-square object-cover rounded-[3rem] shadow-2xl border-4 border-white"
                         />
@@ -116,7 +117,7 @@ export default function APropos() {
                 >
                   <div className="absolute -inset-4 bg-primary/5 rounded-[3rem] blur-2xl rotate-3" />
                   <div className="relative bg-muted rounded-[3rem] overflow-hidden aspect-[4/3] shadow-2xl border-8 border-white">
-                    <img src={section.image_url || "/images/tendresse.jpg"} alt={section.title || ""} className="w-full h-full object-cover" />
+                    <img src={section.image_url ? getImageUrl(section.image_url) : "/images/tendresse.jpg"} alt={section.title || ""} className="w-full h-full object-cover" />
                   </div>
                 </motion.div>
               </div>

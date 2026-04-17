@@ -7,6 +7,7 @@ import { Check, ChevronLeft, Package, Phone, MapPin, User, Loader2, Navigation, 
 import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
 import { formatPrice } from "@/lib/utils";
+import { getImageUrl } from "@/utils/imageUtils";
 
 const villes = [
   "Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan",
@@ -292,7 +293,7 @@ export default function Commander() {
             <div className="space-y-3 mb-5">
               {items.map((item) => (
                 <div key={`${item.product.id}-${item.size.label}`} className="flex gap-3">
-                  <img src={item.product.image} alt={item.product.name} className="w-16 h-16 object-cover rounded-xl flex-shrink-0" />
+                  <img src={getImageUrl(item.product.image)} alt={item.product.name} className="w-16 h-16 object-cover rounded-xl flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{item.product.name}</p>
                     <p className="text-xs text-muted-foreground">Taille {item.size.label} × {item.quantity}</p>
@@ -307,7 +308,7 @@ export default function Commander() {
                         {(item.product as any).freeGifts.map((gift: any) => (
                           <div key={gift.id} className="bg-accent/30 rounded-lg p-2 border border-primary/5">
                             <div className="flex items-center gap-2">
-                              {gift.image && <img src={gift.image} alt={gift.titre} className="w-8 h-8 object-cover rounded-md flex-shrink-0" />}
+                              {gift.image && <img src={getImageUrl(gift.image)} alt={gift.titre} className="w-8 h-8 object-cover rounded-md flex-shrink-0" />}
                               <div className="flex-1 min-w-0">
                                 <p className="font-bold text-[11px] truncate">{gift.titre}</p>
                               </div>

@@ -6,6 +6,7 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/hooks/useAuthSecure";
 import { Star, Shield, Truck, CreditCard, ChevronLeft, Plus, Minus, Check, Loader2, Play, Gift } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { getImageUrl } from "@/utils/imageUtils";
 
 export default function ProduitDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -65,13 +66,13 @@ export default function ProduitDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="space-y-3">
           <div className="aspect-square bg-muted rounded-3xl overflow-hidden">
-            <img src={product.images[activeImg] || product.image} alt={product.name} className="w-full h-full object-cover" />
+            <img src={getImageUrl(product.images[activeImg] || product.image)} alt={product.name} className="w-full h-full object-cover" />
           </div>
           {product.images.length > 1 && (
             <div className="flex gap-2">
               {product.images.map((img, i) => (
                 <button key={i} onClick={() => setActiveImg(i)} className={`w-20 h-20 rounded-xl overflow-hidden border-2 transition-colors ${activeImg === i ? "border-primary" : "border-border"}`}>
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img src={getImageUrl(img)} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -155,7 +156,7 @@ export default function ProduitDetail() {
                   <div key={gift.id} className="flex items-center gap-3 bg-accent/30 p-3 rounded-2xl border border-primary/10">
                     {gift.image ? (
                       <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-white">
-                        <img src={gift.image} alt={gift.titre} className="w-full h-full object-cover" />
+                        <img src={getImageUrl(gift.image)} alt={gift.titre} className="w-full h-full object-cover" />
                       </div>
                     ) : (
                       <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -196,11 +197,11 @@ export default function ProduitDetail() {
             <div className="max-w-md mx-auto">
               <div className="relative rounded-3xl overflow-hidden bg-muted" style={{ aspectRatio: "9/16" }}>
                 <video
-                  src={gamme.video_url}
+                  src={getImageUrl(gamme.video_url)}
                   controls
                   playsInline
                   className="w-full h-full object-cover"
-                  poster={gamme.photos?.[0] || undefined}
+                  poster={getImageUrl(gamme.photos?.[0]) || undefined}
                 />
               </div>
               <p className="text-center text-sm text-muted-foreground mt-3">
