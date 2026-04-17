@@ -61,7 +61,9 @@ trait HasImageUpload
         // Déplacer le fichier
         $file->move($uploadPath, $filename);
 
-        return $this->getUploadBaseUrl() . '/' . $filename;
+        // Retourner uniquement le chemin relatif pour enregistrer dans la base de données,
+        // par ex. /uploads/{folder}/{filename}
+        return '/uploads/' . $this->getUploadFolder() . '/' . $filename;
     }
 
     /**
@@ -111,14 +113,29 @@ trait HasImageUpload
         }
 
         try {
-            // Utiliser le request pour obtenir le host correct (avec port), ou fallback au config
+            // Supporte :
+            // - URL complète retournée précédemment (http://host/uploads/...)
+            // - chemin relatif stocké (/uploads/...)
             $baseUrl = $this->getUploadBaseUrl();
-            if (str_starts_with($url, $baseUrl)) {
-                $relative = str_replace($baseUrl . '/', '', $url);
-                $fullPath = public_path('uploads' . DIRECTORY_SEPARATOR . $relative);
-                if (file_exists($fullPath)) {
-                    unlink($fullPath);
+            $uploadPrefix = '/uploads/' . $this->getUploadFolder();
+
+            if (is_string($url) && str_starts_with($url, $baseUrl)) {
+                $relative = substr($url, strlen($baseUrl) + 1);
+            } elseif (is_string($url) && str_starts_with($url, $uploadPrefix)) {
+                $relative = substr($url, strlen($uploadPrefix) + 1);
+            } else {
+                // Essayer d'extraire le path si c'est une URL ou une autre forme
+                $parsedPath = is_string($url) ? parse_url($url, PHP_URL_PATH) : null;
+                if ($parsedPath && str_starts_with($parsedPath, $uploadPrefix)) {
+                    $relative = substr($parsedPath, strlen($uploadPrefix) + 1);
+                } else {
+                    return;
                 }
+            }
+
+            $fullPath = $this->getUploadPath() . DIRECTORY_SEPARATOR . $relative;
+            if (file_exists($fullPath)) {
+                unlink($fullPath);
             }
         } catch (\Throwable $e) {
             Log::warning('HasImageUpload: impossible de supprimer le fichier', [
@@ -148,5 +165,47 @@ trait HasImageUpload
                 $this->deleteLocalImage($value);
             }
         }
+    }
+
+    /**
+     * Eloquent accessor pour renvoyer l'URL publique complète pour `image_url`.
+     * Si la valeur est déjà une URL complète, la retourne telle quelle.
+     */
+    public function getImageUrlAttribute(mixed $value): mixed
+    {
+        if (!is_string($value) || $value === '') {
+            return $value;
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        return url($value);
+    }
+
+    /**
+     * Eloquent accessor pour renvoyer les URLs publiques complètes pour `images` (array).
+     */
+    public function getImagesAttribute(mixed $value): mixed
+    {
+        if (is_null($value) || $value === '') {
+            return $value;
+        }
+
+        $images = is_array($value) ? $value : json_decode($value, true);
+        if (!is_array($images)) {
+            return $value;
+        }
+
+        return array_map(function ($item) {
+            if (!is_string($item) || $item === '') {
+                return $item;
+            }
+            if (str_starts_with($item, 'http://') || str_starts_with($item, 'https://')) {
+                return $item;
+            }
+            return url($item);
+        }, $images);
     }
 }
