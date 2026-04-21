@@ -14,59 +14,61 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 py-14 grid grid-cols-1 md:grid-cols-4 gap-10">
         <div className="md:col-span-1">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <span className="text-primary-foreground font-black text-sm">SS</span>
-            </div>
-            <div>
-              <div className="font-black text-sm text-background leading-tight">SUPER SIESTA</div>
-              <div className="text-[10px] text-background/60 tracking-widest">OFFICIEL</div>
-            </div>
+            <img src="/images/logo.png" alt="Super Siesta" className="h-10 w-auto" />
           </div>
           <p className="text-sm text-background/70 leading-relaxed">
             {settings.footer_description || "Matelas N°1 en Tunisie depuis 1993. Qualité, confort et hygiène pour votre sommeil."}
           </p>
           <div className="flex gap-3 mt-4">
-            {socials.filter(s => s.is_active).map((s) => {
-              let url = s.url;
-              if (s.name.toLowerCase() === 'whatsapp' && !url.startsWith('http')) {
-                url = `https://wa.me/${url.replace(/\s+/g, '')}`;
-              }
-              
-              return (
-                <a 
-                  key={s.id} 
-                  href={url} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="p-2 bg-background/10 rounded-xl transition-all hover:scale-110"
-                  style={{ color: s.icon.hex_color || 'currentColor' }}
-                >
-                  <LucideIcon name={s.icon.lucide_name} label={s.name} className="w-4 h-4" />
-                </a>
-              );
-            })}
+            {socials.filter(s => s.is_active).map((s) => (
+              <a 
+                key={s.id} 
+                href={s.url} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="p-2 bg-background/10 rounded-xl transition-all hover:scale-110"
+                style={{ color: s.icon.hex_color || 'currentColor' }}
+              >
+                <LucideIcon name={s.icon.lucide_name} label={s.name} className="w-4 h-4" />
+              </a>
+            ))}
           </div>
         </div>
 
         <div>
-          <h3 className="font-bold mb-4 text-background">Boutique</h3>
+          <h3 className="font-bold mb-4 text-background">Plan du site</h3>
           <ul className="space-y-2 text-sm text-background/70">
-            {["Collections", "Best Sellers", "Promotions", "Nouveautés"].map((l) => (
-              <li key={l}><Link to="/boutique" className="hover:text-primary transition-colors">{l}</Link></li>
+            {[
+              { label: "Accueil", href: "/" },
+              { label: "Boutique", href: "/boutique" },
+              { label: "Nos Showrooms", href: "/showrooms" },
+              { label: "Blog & Actualités", href: "/blog" },
+              { label: "À Propos", href: "/a-propos" },
+              { label: "Contact", href: "/contact" },
+            ].map((l) => (
+              <li key={l.label}><Link to={l.href} className="hover:text-primary transition-colors">{l.label}</Link></li>
             ))}
           </ul>
         </div>
 
         <div>
-          <h3 className="font-bold mb-4 text-background">Informations</h3>
+          <h3 className="font-bold mb-4 text-background">Mon Compte</h3>
           <ul className="space-y-2 text-sm text-background/70">
             {[
-              { label: "À Propos", href: "/a-propos" },
-              { label: "Blog & Conseils", href: "/blog" },
-              { label: "Contact", href: "/contact" },
-              { label: "Mon Compte", href: "/connexion" },
+              { label: "Se connecter", href: "/connexion" },
+              { label: "Créer un compte", href: "/register" },
+              { label: "Mes Commandes", href: "/mon-compte" },
+              { label: "Panier", href: "#", onClick: (e: any) => { e.preventDefault(); (window as any).dispatchEvent(new CustomEvent('open-cart')); } },
             ].map((l) => (
-              <li key={l.label}><Link to={l.href} className="hover:text-primary transition-colors">{l.label}</Link></li>
+              <li key={l.label}>
+                <Link 
+                  to={l.href} 
+                  onClick={l.onClick}
+                  className="hover:text-primary transition-colors"
+                >
+                  {l.label}
+                </Link>
+              </li>
             ))}
           </ul>
         </div>

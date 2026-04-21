@@ -73,13 +73,26 @@ class NotificationService
     ): void {
         // Notification admin
         $clientName = $order->client->name ?? 'Client inconnu';
-        $this->notifyAdmin(
-            title: "Nouvelle commande #{$order->order_number}",
-            message: "Commande de {$clientName} - {$order->total_amount} €",
-            type: 'order',
-            path: "/orders/{$order->id}",
-            color: 'blue'
-        );
+
+        // Empêcher la création de doublons : si une notification admin de type 'order'
+        // pour le même chemin (/orders/{id}) existe récemment et n'est pas expirée, skip
+        $orderPath = "/orders/{$order->id}";
+        $recentExists = Notification::forAdmin()
+            ->where('type', 'order')
+            ->where('path', $orderPath)
+            ->where('status', '!=', 'expired')
+            ->where('created_at', '>=', now()->subMinutes(10))
+            ->exists();
+
+        if (! $recentExists) {
+            $this->notifyAdmin(
+                title: "Nouvelle commande #{$order->order_number}",
+                message: "Commande de {$clientName} - {$order->total_amount} €",
+                type: 'order',
+                path: $orderPath,
+                color: 'blue'
+            );
+        }
 
         // Notification client si enabled
         if ($notifyClient && $order->client_id) {

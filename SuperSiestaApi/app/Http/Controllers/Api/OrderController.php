@@ -10,6 +10,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use App\Services\NotificationService;
 
 class OrderController extends BaseController
 {
@@ -230,6 +231,13 @@ class OrderController extends BaseController
             'total' => $subtotal,
         ]);
 
+        // Notify admin about the new order
+        try {
+            app(NotificationService::class)->notifyOrderCreated($order, false);
+        } catch (\Throwable $e) {
+            // Ne pas empêcher la création de la commande si la notification échoue
+        }
+
         $responseData = [
             'order' => $order->load('items'),
         ];
@@ -286,6 +294,13 @@ class OrderController extends BaseController
                 'quantity' => $item->quantity,
                 'total' => $item->total,
             ]);
+        }
+
+        // Notify admin that an order was created from a quote
+        try {
+            app(NotificationService::class)->notifyOrderCreated($order, false);
+        } catch (\Throwable $e) {
+            // Ignorer les erreurs de notification
         }
 
         // Marquer le devis comme accepté

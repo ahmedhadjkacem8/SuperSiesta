@@ -26,7 +26,7 @@ class HeroSlideController extends BaseController
             'subtitle'   => 'nullable|string',
             'cta_text'   => 'nullable|string|max:100',
             'cta_link'   => 'nullable|string',
-            'image_url'  => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'image_url'  => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:204800',
             'sort_order' => 'integer',
             'active'     => 'boolean',
         ]);
@@ -55,7 +55,7 @@ class HeroSlideController extends BaseController
             'subtitle'   => 'nullable|string',
             'cta_text'   => 'nullable|string|max:100',
             'cta_link'   => 'nullable|string',
-            'image_url'  => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'image_url'  => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:204800',
             'sort_order' => 'integer',
             'active'     => 'boolean',
         ]);

@@ -231,6 +231,23 @@ class NotificationController extends BaseController
     }
 
     /**
+     * Supprimer toutes les notifications admin (clean all)
+     */
+    public function cleanAllAdmin(): JsonResponse
+    {
+        // Autoriser seulement les admins (utiliser la règle 'create' qui vérifie isAdmin)
+        $this->authorize('create', Notification::class);
+
+        $deleted = Notification::forAdmin()->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$deleted} notifications administrateur supprimées",
+            'deleted_count' => $deleted,
+        ]);
+    }
+
+    /**
      * Récupérer les statistiques de notifications
      */
     public function getStats(Request $request): JsonResponse

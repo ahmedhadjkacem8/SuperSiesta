@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useOptimizedProducts } from "@/hooks/useOptimizedProducts";
 import { useGammes } from "@/hooks/useGammes";
@@ -10,8 +10,15 @@ import { formatPrice } from "@/lib/utils";
 import { api } from "@/lib/apiClient";
 
 export default function Boutique() {
-  const [searchParams] = useSearchParams();
-  const { products, loading, hasMore, loadMore, search } = useOptimizedProducts();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Build initial filters from URL params to avoid an extra unfiltered fetch
+  const initialFilters: any = {};
+  if (searchParams.get("categorie") && searchParams.get("categorie") !== "Tous") initialFilters.categorie = searchParams.get("categorie");
+  if (searchParams.get("fermete") && searchParams.get("fermete") !== "Tous") initialFilters.fermete = searchParams.get("fermete");
+  if (searchParams.get("gamme") && searchParams.get("gamme") !== "Tous") initialFilters.gamme = searchParams.get("gamme");
+  if (searchParams.get("dimension") && searchParams.get("dimension") !== "Tous") initialFilters.dimension = searchParams.get("dimension");
+
+  const { products, loading, hasMore, loadMore, search, filterClientSide } = useOptimizedProducts(initialFilters as any, { preloadAll: true, maxPerPage: 10000 });
   const { data: gammesData } = useGammes();
   const gammes = ["Tous", ...(gammesData || []).map((g) => g.name)];
 
@@ -49,20 +56,48 @@ export default function Boutique() {
   const [showFilters, setShowFilters] = useState(false);
   const [dimSearch, setDimSearch] = useState("");
 
-  // Send filter changes to server
+  // Send filter changes to server (debounced) but apply client-side immediately
+  const filterTimer = useRef<number | null>(null);
   const handleFilterChange = async () => {
     const filters: any = {};
-    
+
     if (categorie !== "Tous") filters.categorie = categorie;
     if (fermete !== "Tous") filters.fermete = fermete;
     if (gamme !== "Tous") filters.gamme = gamme;
     if (dimension !== "Tous") filters.dimension = dimension;
 
-    await search(filters);
+    // Update URL params to reflect active filters
+    const sp = new URLSearchParams();
+    if (filters.categorie) sp.set('categorie', String(filters.categorie));
+    if (filters.fermete) sp.set('fermete', String(filters.fermete));
+    if (filters.gamme) sp.set('gamme', String(filters.gamme));
+    if (filters.dimension) sp.set('dimension', String(filters.dimension));
+    setSearchParams(sp, { replace: true });
+
+    // Immediate client-side filtering for snappy UI
+    try {
+      filterClientSide(filters);
+    } catch (err) {
+      // ignore, fallback to server search below
+    }
+
+    // Debounce server call: wait for user to finish changing filters
+    if (filterTimer.current) {
+      window.clearTimeout(filterTimer.current)
+    }
+    filterTimer.current = window.setTimeout(async () => {
+      await search(filters);
+      filterTimer.current = null
+    }, 450)
   };
 
-  // Re-run when filters change
+  // Re-run when filters change (skip initial mount because initialFilters already applied)
+  const isFirstRun = useRef(true);
   useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      return;
+    }
     handleFilterChange();
   }, [categorie, fermete, gamme, dimension]);
 

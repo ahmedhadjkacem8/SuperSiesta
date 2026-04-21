@@ -2,6 +2,8 @@ import { motion } from "framer-motion";
 import { Maximize2, Sparkles, ShieldCheck, Wind, Zap } from "lucide-react";
 
 
+import LucideIcon from "@/components/common/LucideIcon";
+
 // Déclarer l'élément personnalisé pour TypeScript
 declare global {
   namespace JSX {
@@ -11,21 +13,36 @@ declare global {
   }
 }
 
+interface FeatureBadge {
+  icon: string | any;
+  title: string;
+  sub: string;
+}
+
 interface ThreeDShowcaseProps {
   modelPath?: string;
   poster?: string;
+  features?: FeatureBadge[];
 }
 
 export default function ThreeDShowcase({ 
   modelPath = "/models/matelaTendresse.glb",
-  poster = "/images/tendresse.jpg"
+  poster = "/images/tendresse.jpg",
+  features = []
 }: ThreeDShowcaseProps) {
-  const features = [
-    { icon: Sparkles, text: "Confort Premium", pos: "top-[-5%] left-[10%]", delay: 0.3 },
-    { icon: ShieldCheck, text: "Garantie 10 ans", pos: "bottom-[10%] left-[-2%]", delay: 0.5 },
-    { icon: Wind, text: "Système Respirant", pos: "top-[15%] right-[-5%]", delay: 0.7 },
-    { icon: Zap, text: "Soutien Ferme", pos: "bottom-[-5%] right-[15%]", delay: 0.9 },
+  const positions = [
+    "top-[-5%] left-[10%]",
+    "bottom-[10%] left-[-2%]",
+    "top-[15%] right-[-5%]",
+    "bottom-[-5%] right-[15%]"
   ];
+
+  const showcaseFeatures = features.map((f, i) => ({
+    icon: f.icon,
+    text: f.title,
+    pos: positions[i % 4],
+    delay: 0.3 + (i * 0.2)
+  }));
 
   return (
     <motion.section 
@@ -46,7 +63,7 @@ export default function ThreeDShowcase({
 
       <div className="relative max-w-4xl mx-auto">
         {/* Floating Feature Badges */}
-        {features.map((f, i) => (
+        {showcaseFeatures.map((f, i) => (
           <motion.div
             key={i}
             initial={{ scale: 0, opacity: 0 }}
@@ -56,7 +73,7 @@ export default function ThreeDShowcase({
             className={`absolute z-20 ${f.pos} bg-white/90 backdrop-blur-md border border-slate-100 shadow-xl rounded-2xl px-4 py-3 flex items-center gap-3 hidden md:flex cursor-default hover:border-primary/30 transition-colors`}
           >
             <div className="p-1.5 bg-primary/10 rounded-lg">
-              <f.icon className="w-4 h-4 text-primary" />
+              <LucideIcon name={f.icon} className="w-4 h-4 text-primary" />
             </div>
             <span className="text-[11px] font-black text-slate-700 uppercase tracking-tight">{f.text}</span>
           </motion.div>
@@ -105,10 +122,10 @@ export default function ThreeDShowcase({
       
       {/* Mobile-only features display */}
       <div className="grid grid-cols-2 gap-3 mt-6 md:hidden">
-        {features.map((f, i) => (
+        {showcaseFeatures.map((f, i) => (
           <div key={i} className="bg-white border border-slate-100 p-3 rounded-2xl flex items-center gap-3">
              <div className="p-1.5 bg-primary/10 rounded-lg">
-                <f.icon className="w-3.5 h-3.5 text-primary" />
+                <LucideIcon name={f.icon} className="w-3.5 h-3.5 text-primary" />
              </div>
              <span className="text-[10px] font-black text-slate-700 uppercase tracking-tighter leading-tight">{f.text}</span>
           </div>

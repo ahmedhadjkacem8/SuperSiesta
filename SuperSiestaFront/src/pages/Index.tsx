@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Star, Shield, Truck, Clock, CreditCard,
-  ChevronRight, Loader2, ArrowRight, ChevronDown
+  ChevronRight, Loader2, ArrowRight, ChevronDown, Send
 } from "lucide-react";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProducts, useCategories } from "@/hooks/useProducts";
 import ProductCard from "@/components/ProductCard";
@@ -13,6 +14,10 @@ import { api } from "@/lib/apiClient";
 
 import { useHeroSlides } from "@/hooks/useHeroSlides";
 import { getImageUrl } from "@/utils/imageUtils";
+import { useSettings } from "@/hooks/useSettings";
+import { useNewsletters } from "@/hooks/useNewsletters";
+import { useSocialNetworks } from "@/hooks/useSocialNetworks";
+import LucideIcon from "@/components/common/LucideIcon";
 
 interface BlogPreview {
   id: string;
@@ -33,6 +38,7 @@ export default function Index() {
   const [blogPosts, setBlogPosts] = useState<BlogPreview[]>([]);
   const [favoritePosts, setFavoritePosts] = useState<BlogPreview[]>([]);
   const [showAllDimensions, setShowAllDimensions] = useState(false);
+  const { settings } = useSettings();
 
   // ÉTATS DYNAMIQUES VIA REACT QUERY
   const { data: heroSlides = [], isLoading: slidesLoading } = useHeroSlides(true);
@@ -44,6 +50,9 @@ export default function Index() {
   const [categories, setCategories] = useState<{ id: string, label: string, image: string | null, description: string | null, color: string | null, text_color: string | null }[]>([]);
   const [dynamicReviews, setDynamicReviews] = useState<any[]>([]);
   const [averageRating, setAverageRating] = useState<number>(5.0);
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const { subscribe, isSubscribing } = useNewsletters();
+  const { socials } = useSocialNetworks();
 
   // CHARGEMENT DES AUTRES DONNÉES
   useEffect(() => {
@@ -154,6 +163,63 @@ export default function Index() {
     },
     viewport: { once: true }
   };
+
+  let trustBadges = [];
+  try {
+    trustBadges = JSON.parse(settings.trust_badges || "[]");
+  } catch (e) {
+    trustBadges = [];
+  }
+  if (!Array.isArray(trustBadges) || trustBadges.length === 0) {
+    trustBadges = [
+      { icon: "Truck", title: "Livraison gratuite", sub: "Partout en Tunisie" },
+      { icon: "CreditCard", title: "Paiement à la livraison", sub: "Sans frais cachés" },
+      { icon: "ShieldCheck", title: "Garantie 10 ans", sub: "Sur tous nos matelas" },
+      { icon: "Clock", title: "Service client 24/7", sub: "+216 71 000 000" },
+    ];
+  }
+
+  const collectionsRef = useRef<HTMLDivElement>(null);
+  const [activeCollectionDot, setActiveCollectionDot] = useState(0);
+
+  const handleCollectionsScroll = () => {
+    if (collectionsRef.current && categories.length > 5) {
+      const scrollLeft = collectionsRef.current.scrollLeft;
+      // Largeur moyenne d'un item + gap pour le calcul du point actif
+      const itemWidth = 280; 
+      const index = Math.round(scrollLeft / itemWidth);
+      setActiveCollectionDot(index);
+    }
+  };
+
+  const scrollToCollection = (targetIdx: number) => {
+    if (collectionsRef.current) {
+      const itemWidth = 280;
+      collectionsRef.current.scrollTo({
+        left: targetIdx * itemWidth,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail) return;
+
+    try {
+      await subscribe(newsletterEmail);
+      toast.success("Succès !", {
+        description: "Vous êtes maintenant inscrit à notre newsletter."
+      });
+      setNewsletterEmail("");
+    } catch (err: any) {
+      const message = err.response?.data?.message || "Une erreur est survenue lors de l'inscription.";
+      toast.error("Erreur", {
+        description: message
+      });
+    }
+  };
+
 
   return (
     <main className="overflow-hidden">
@@ -275,7 +341,7 @@ export default function Index() {
               initial="initial"
               whileInView="whileInView"
               viewport={{ once: true }}
-              className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 snap-x [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
+              className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 snap-x custom-scrollbar"
             >
               {gammes.map((g) => (
                 <motion.div
@@ -314,19 +380,14 @@ export default function Index() {
         className="bg-primary text-primary-foreground py-10"
       >
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          {[
-            { icon: Truck, title: "Livraison gratuite", sub: "Partout en Tunisie" },
-            { icon: CreditCard, title: "Paiement à la livraison", sub: "Sans frais cachés" },
-            { icon: Shield, title: "Garantie 10 ans", sub: "Sur tous nos matelas" },
-            { icon: Clock, title: "Service client 24/7", sub: "+216 71 000 000" },
-          ].map(({ icon: Icon, title, sub }) => (
+          {trustBadges.map(({ icon, title, sub }, i) => (
             <motion.div
-              key={title}
+              key={i}
               variants={fadeInUp}
               className="flex flex-col items-center gap-3"
             >
               <div className="p-3 bg-white/10 rounded-2xl">
-                <Icon className="w-7 h-7" />
+                <LucideIcon name={icon} className="w-7 h-7" />
               </div>
               <p className="font-bold text-sm tracking-tight">{title}</p>
               <p className="text-xs opacity-80">{sub}</p>
@@ -345,10 +406,17 @@ export default function Index() {
           <h2 className="text-3xl md:text-4xl font-black mt-2 mb-2">Choisissez votre dimension</h2>
           <p className="text-muted-foreground text-sm">Sélectionnez la taille de votre matelas pour voir les modèles disponibles</p>
         </div>
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <motion.div
             layout
-            className="grid grid-cols-3 sm:grid-cols-6 gap-3"
+            className={`grid grid-cols-3 ${
+              showAllDimensions 
+                ? 'sm:grid-cols-6 md:grid-cols-8' 
+                : visibleDimensions.length === 7 ? 'sm:grid-cols-7'
+                : visibleDimensions.length === 5 ? 'sm:grid-cols-5'
+                : visibleDimensions.length === 8 ? 'sm:grid-cols-4 md:grid-cols-8'
+                : 'sm:grid-cols-6'
+            } gap-3`}
           >
             <AnimatePresence>
               {visibleDimensions.map((d, index) => {
@@ -411,7 +479,7 @@ export default function Index() {
       </motion.section>
 
       {/* 3D SHOWCASE */}
-      <ThreeDShowcase />
+      <ThreeDShowcase features={trustBadges} />
 
       {/* COLLECTIONS */}
       <motion.section
@@ -422,39 +490,79 @@ export default function Index() {
           <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Explorez</span>
           <h2 className="text-2xl md:text-3xl font-black mt-1 mb-2">Nos Collections</h2>
         </div>
-        <motion.div
-          variants={staggerContainer}
-          initial="initial"
-          whileInView="whileInView"
-          viewport={{ once: true }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-4"
-        >
-          {categories.length > 0 ? categories.slice(0, 3).map((c) => (
-            <motion.button
-              key={c.id}
-              variants={fadeInUp}
-              whileHover={{ y: -5, scale: 1.01 }}
-              onClick={() => navigate(`/boutique?categorie=${encodeURIComponent(c.label)}`)}
-              className="rounded-2xl p-6 text-center shadow-sm hover:shadow-xl transition-all group relative overflow-hidden flex flex-col items-center justify-center min-h-[160px]"
-              style={{ backgroundColor: c.color || '#f5f0eb', color: c.text_color || '#1a1a2e' }}
-            >
-              <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-                <ChevronRight className="w-10 h-10 rotate-[-45deg]" />
-              </div>
-              {c.image ? (
-                <img src={getImageUrl(c.image)} alt={c.label} className="w-16 h-16 object-contain mb-3 group-hover:scale-110 transition-transform duration-500" />
-              ) : (
-                <div className="w-16 h-16 bg-background/50 rounded-xl mb-3 flex items-center justify-center shadow-sm">
-                  <span className="text-[10px] opacity-40">Plus</span>
+        <div className="relative group/carousel">
+          <motion.div
+            ref={collectionsRef}
+            onScroll={handleCollectionsScroll}
+            variants={staggerContainer}
+            initial="initial"
+            whileInView="whileInView"
+            viewport={{ once: true }}
+            className={
+              categories.length > 5
+                ? "flex gap-4 sm:gap-6 overflow-x-auto pb-8 pt-2 px-2 -mx-2 snap-x [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none'] transition-all scroll-smooth"
+                : `grid grid-cols-1 gap-4 ${
+                    categories.length === 1 ? 'md:grid-cols-1 max-w-md mx-auto w-full' :
+                    categories.length === 2 ? 'md:grid-cols-2 max-w-3xl mx-auto w-full' :
+                    categories.length === 4 ? 'md:grid-cols-2 lg:grid-cols-4' :
+                    categories.length === 5 ? 'md:grid-cols-3 lg:grid-cols-5' :
+                    'md:grid-cols-3'
+                  }`
+            }
+          >
+            {categories.length > 0 ? categories.map((c) => (
+              <motion.button
+                key={c.id}
+                variants={fadeInUp}
+                whileHover={{ y: -5, scale: 1.02 }}
+                onClick={() => navigate(`/boutique?categorie=${encodeURIComponent(c.label)}`)}
+                className={`rounded-2xl p-6 text-center shadow-sm hover:shadow-xl transition-all group relative overflow-hidden flex flex-col items-center justify-center min-h-[160px] ${
+                  categories.length > 5 ? 'min-w-[240px] max-w-[260px] snap-center shrink-0 flex-1' : 'w-full'
+                }`}
+                style={{ backgroundColor: c.color || '#f5f0eb', color: c.text_color || '#1a1a2e' }}
+              >
+                <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <ChevronRight className="w-10 h-10 rotate-[-45deg]" />
                 </div>
-              )}
-              <h3 className="font-black text-base capitalize relative z-10">{c.label}</h3>
-              <p className="text-xs opacity-70 relative z-10 max-w-[180px] line-clamp-1">{c.description}</p>
-            </motion.button>
-          )) : (
-            <div className="col-span-1 md:col-span-3 text-center py-6 text-muted-foreground">Aucune collection disponible</div>
+                {c.image ? (
+                  <img src={getImageUrl(c.image)} alt={c.label} className="w-16 h-16 object-contain mb-3 group-hover:scale-110 transition-transform duration-500" />
+                ) : (
+                  <div className="w-16 h-16 bg-background/50 rounded-xl mb-3 flex items-center justify-center shadow-sm">
+                    <span className="text-[10px] opacity-40">Plus</span>
+                  </div>
+                )}
+                <h3 className="font-black text-base capitalize relative z-10">{c.label}</h3>
+                <p className="text-xs opacity-70 relative z-10 max-w-[180px] line-clamp-1">{c.description}</p>
+              </motion.button>
+            )) : (
+              <div className="col-span-full text-center py-6 text-muted-foreground w-full">Aucune collection disponible</div>
+            )}
+          </motion.div>
+
+          {/* Dots Pagination - Seulement pour ce qui dépasse les 5 premiers */}
+          {categories.length > 5 && (
+            <div className="flex justify-center gap-2.5 mt-6">
+              {/* Le point principal pour les 5 premiers */}
+              <button
+                onClick={() => scrollToCollection(0)}
+                className={`h-1.5 rounded-full transition-all duration-500 ${activeCollectionDot < 5 ? 'w-10 bg-primary shadow-[0_0_15px_rgba(var(--primary),0.4)]' : 'w-2.5 bg-primary/20 hover:bg-primary/40'}`}
+                title="Début"
+              />
+              {/* Les points pour les suivants */}
+              {Array.from({ length: categories.length - 5 }).map((_, idx) => {
+                const targetIdx = idx + 5;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => scrollToCollection(targetIdx)}
+                    className={`h-1.5 rounded-full transition-all duration-500 ${activeCollectionDot === targetIdx ? 'w-10 bg-primary shadow-[0_0_15px_rgba(var(--primary),0.4)]' : 'w-2.5 bg-primary/20 hover:bg-primary/40'}`}
+                    title={`Collection ${targetIdx + 1}`}
+                  />
+                );
+              })}
+            </div>
           )}
-        </motion.div>
+        </div>
       </motion.section>
 
       {/* BEST SELLERS */}
@@ -595,7 +703,7 @@ export default function Index() {
           >
             <div>
               <span className="text-xs font-bold text-primary uppercase tracking-widest">Le Mag Super Siesta</span>
-              <h2 className="text-4xl font-black mt-1">Derniers Conseils & Actus</h2>
+              <h2 className="text-4xl font-black mt-1">Derniers Conseils & Actualités</h2>
             </div>
             <Link to="/blog" className="flex items-center gap-1 text-sm font-bold text-primary hover:underline">
               Voir tout <ChevronRight className="w-4 h-4" />
@@ -611,7 +719,7 @@ export default function Index() {
             {blogPosts.map((post) => (
               <motion.div key={post.id} variants={fadeInUp}>
                 <Link to={`/blog/${post.slug}`} className="group block bg-card border border-border rounded-[2.5rem] overflow-hidden hover:shadow-2xl transition-all hover:-translate-y-2 h-full">
-                  <div className="aspect-[16/10] overflow-hidden relative">
+                  <div className="aspect-square overflow-hidden relative">
                     {post.image_url ? (
                       <img src={getImageUrl(post.image_url)} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                     ) : (
@@ -646,9 +754,12 @@ export default function Index() {
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
           <h2 className="text-3xl md:text-5xl font-black mb-4 text-accent-foreground relative z-10 leading-tight">Restez informé de nos offres</h2>
           <p className="text-muted-foreground mb-10 text-base md:text-lg max-w-2xl mx-auto relative z-10">Inscrivez-vous à notre newsletter et recevez nos meilleures promotions directement dans votre boîte mail.</p>
-          <form className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto relative z-10" onSubmit={(e) => e.preventDefault()}>
+          <form className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto relative z-10" onSubmit={handleNewsletterSubmit}>
             <input
               type="email"
+              required
+              value={newsletterEmail}
+              onChange={(e) => setNewsletterEmail(e.target.value)}
               placeholder="votre-email@exemple.com"
               className="flex-1 bg-white border-2 border-transparent rounded-2xl px-6 py-4 text-lg shadow-inner focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all"
             />
@@ -656,9 +767,14 @@ export default function Index() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               type="submit"
-              className="bg-primary text-primary-foreground font-black px-8 py-4 rounded-2xl hover:bg-primary/90 transition-all text-lg shadow-lg shadow-primary/20"
+              disabled={isSubscribing}
+              className="bg-primary text-primary-foreground font-black px-8 py-4 rounded-2xl hover:bg-primary/90 transition-all text-lg shadow-lg shadow-primary/20 flex items-center justify-center gap-2 min-w-[160px]"
             >
-              S'inscrire
+              {isSubscribing ? <Loader2 className="w-6 h-6 animate-spin" /> : (
+                <>
+                  S'inscrire <Send className="w-5 h-5 ml-1" />
+                </>
+              )}
             </motion.button>
           </form>
           <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl" />
@@ -673,7 +789,7 @@ export default function Index() {
         transition={{ delay: 1, type: "spring" }}
         whileHover={{ scale: 1.2, rotate: 10 }}
         whileTap={{ scale: 0.9 }}
-        href="https://wa.me/21671000000"
+        href={socials.find(s => s.name.toLowerCase().includes('whatsapp') || s.icon.lucide_name.toLowerCase().includes('message'))?.url || `https://wa.me/${(settings.contact_phone || "21671000000").replace(/[^\d]/g, '')}`}
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-8 right-8 z-40 bg-green-500 text-white w-16 h-16 rounded-3xl flex items-center justify-center shadow-xl hover:bg-green-600 transition-colors"

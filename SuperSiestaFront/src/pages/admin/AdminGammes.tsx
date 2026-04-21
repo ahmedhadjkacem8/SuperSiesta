@@ -277,6 +277,7 @@ export default function AdminGammes() {
               preview={form.images_3d_preview}
               label="Images 3D"
               placeholder="Glissez ou cliquez pour uploader les images 3D"
+              accept={"image/*,model/gltf-binary,model/gltf+json,.glb,.gltf"}
             />
             <Button onClick={handleSave} className="w-full">{editing ? "Mettre à jour" : "Créer"}</Button>
           </div>

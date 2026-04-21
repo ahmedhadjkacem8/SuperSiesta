@@ -1,4 +1,13 @@
 import { useState } from "react";
+
+// Allow JSX intrinsic element for model-viewer in this file
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      "model-viewer": any;
+    }
+  }
+}
 import { Button } from "@/components/ui/button";
 import { Upload, X, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +20,7 @@ interface MultiImageUploadProps {
   label?: string;
   placeholder?: string;
   preview?: string[];
+  accept?: string;
 }
 
 export default function MultiImageUpload({
@@ -21,6 +31,7 @@ export default function MultiImageUpload({
   label = "Images",
   placeholder = "Cliquez pour uploader des images",
   preview = [],
+  accept = "image/*",
 }: MultiImageUploadProps) {
   const [previewErrors, setPreviewErrors] = useState<Set<number>>(new Set());
 
@@ -33,11 +44,13 @@ export default function MultiImageUpload({
     for (let i = 0; i < fileList.length; i++) {
       const file = fileList[i];
 
-      // Validate file is image
-      if (!file.type.startsWith("image/")) {
-        toast.error(`${file.name} n'est pas une image`);
-        continue;
-      }
+        // Validate file is image or 3D model (.glb/.gltf)
+        const isImage = file.type.startsWith("image/");
+        const isModel = file.type.startsWith("model/") || file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf');
+        if (!isImage && !isModel) {
+          toast.error(`${file.name} n'est pas un format supporté`);
+          continue;
+        }
 
       newFiles.push(file);
     }
@@ -95,7 +108,7 @@ export default function MultiImageUpload({
           <input
             type="file"
             multiple
-            accept="image/*"
+            accept={accept}
             onChange={handleFileChange}
             className="hidden"
           />
@@ -110,23 +123,30 @@ export default function MultiImageUpload({
       {allImages.length > 0 && (
         <div className="grid grid-cols-3 gap-2">
           {allImages.map((img) => {
-            const hasError = previewErrors.has(img.index);
-            const previewUrl = img.type === 'file' ? URL.createObjectURL(img.data as File) : (img.data as string);
-            
-            return (
-              <div key={img.index} className="relative group rounded-lg overflow-hidden bg-muted">
-                {hasError ? (
-                  <div className="w-full h-24 flex items-center justify-center bg-destructive/10 border border-destructive">
-                    <span className="text-xs text-destructive text-center px-1">Image impossible à charger</span>
-                  </div>
-                ) : (
-                  <img
-                    src={previewUrl}
-                    alt={`Preview ${img.index}`}
-                    className="w-full h-24 object-cover"
-                    onError={() => handlePreviewError(img.index)}
-                  />
-                )}
+                const hasError = previewErrors.has(img.index);
+                const previewUrl = img.type === 'file' ? URL.createObjectURL(img.data as File) : (img.data as string);
+                const name = img.type === 'file' ? (img.data as File).name : String(img.data);
+
+                const isModel = (n: string) => n.toLowerCase().endsWith('.glb') || n.toLowerCase().endsWith('.gltf');
+
+                return (
+                  <div key={img.index} className="relative group rounded-lg overflow-hidden bg-muted">
+                    {hasError ? (
+                      <div className="w-full h-24 flex items-center justify-center bg-destructive/10 border border-destructive">
+                        <span className="text-xs text-destructive text-center px-1">Aperçu impossible</span>
+                      </div>
+                    ) : isModel(name) ? (
+                      <div className="w-full h-24">
+                        <model-viewer src={previewUrl} alt={`Model ${img.index}`} style={{ width: '100%', height: '100%' }} camera-controls auto-rotate interaction-prompt="none" />
+                      </div>
+                    ) : (
+                      <img
+                        src={previewUrl}
+                        alt={`Preview ${img.index}`}
+                        className="w-full h-24 object-cover"
+                        onError={() => handlePreviewError(img.index)}
+                      />
+                    )}
                 <button
                   type="button"
                   onClick={() => handleRemove(img.index)}

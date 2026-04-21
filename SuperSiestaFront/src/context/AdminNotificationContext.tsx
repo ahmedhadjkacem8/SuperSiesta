@@ -24,6 +24,7 @@ interface AdminNotificationContextType {
   unreadCount: number;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
+  cleanAll: () => Promise<void>;
   getColorClass: (color: string) => string;
   refresh: () => Promise<void>;
 }
@@ -191,8 +192,16 @@ export const AdminNotificationProvider = ({ children }: { children: ReactNode })
     } catch (e) {}
   };
 
+  const cleanAll = async () => {
+    try {
+      await api.post("/admin/notifications/clean-all", {});
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (e) {}
+  };
+
   return (
-    <AdminNotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, getColorClass, refresh: fetchNotificationList }}>
+    <AdminNotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, cleanAll, getColorClass, refresh: fetchNotificationList }}>
       {children}
     </AdminNotificationContext.Provider>
   );

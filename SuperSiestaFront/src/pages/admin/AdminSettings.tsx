@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImageUpload from "@/components/ImageUpload";
-import { Plus, Trash2, Pencil, Ruler, Layers, Feather, Gift, Hash } from "lucide-react";
+import { Plus, Trash2, Pencil, Ruler, Layers, Feather, Gift, Hash, ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
@@ -52,6 +52,8 @@ interface Product {
 
 export default function AdminSettings() {
   const [dimensions, setDimensions] = useState<Dimension[]>([]);
+  const [dimCurrentPage, setDimCurrentPage] = useState(1);
+  const [dimRowsPerPage, setDimRowsPerPage] = useState(5);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Dimension | null>(null);
   const [width, setWidth] = useState("");
@@ -98,6 +100,13 @@ export default function AdminSettings() {
     footer_description: ""
   });
 
+  const [trustBadges, setTrustBadges] = useState([
+    { icon: "Truck", title: "Livraison gratuite", sub: "Partout en Tunisie" },
+    { icon: "CreditCard", title: "Paiement à la livraison", sub: "Sans frais cachés" },
+    { icon: "ShieldCheck", title: "Garantie 10 ans", sub: "Sur tous nos matelas" },
+    { icon: "Clock", title: "Service client 24/7", sub: "+216 71 000 000" },
+  ]);
+
   const { socials, icons, refresh: loadSocials } = useSocialNetworks();
   const [socialOpen, setSocialOpen] = useState(false);
   const [socialEditing, setSocialEditing] = useState<SocialNetwork | null>(null);
@@ -111,6 +120,7 @@ export default function AdminSettings() {
   const load = async () => {
     try {
       const data = await api.get<Dimension[]>("/dimensions");
+      // Ensure local state preserves returned order
       setDimensions(data || []);
     } catch (err: any) {
       toast.error("Erreur lors du chargement des dimensions");
@@ -151,6 +161,14 @@ export default function AdminSettings() {
           top_banner_text: data.top_banner_text || "🚚 Livraison gratuite partout en Tunisie | 📞 71 000 000 | Paiement à la livraison",
           footer_description: data.footer_description || "Matelas N°1 en Tunisie depuis 1993. Qualité, confort et hygiène pour votre sommeil."
         }));
+        if (data.trust_badges) {
+          try {
+            const parsed = JSON.parse(data.trust_badges);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setTrustBadges(parsed);
+            }
+          } catch(e) {}
+        }
       }
     } catch (e) {
       // Ignorer
@@ -161,7 +179,12 @@ export default function AdminSettings() {
 
   const handleSaveSettings = async () => {
     try {
-      await api.post("/settings", { settings: contactSettings });
+      await api.post("/settings", { 
+        settings: {
+          ...contactSettings,
+          trust_badges: JSON.stringify(trustBadges)
+        }
+      });
       toast.success("Paramètres de contact enregistrés");
     } catch {
       toast.error("Erreur lors de l'enregistrement des paramètres");
@@ -201,6 +224,84 @@ export default function AdminSettings() {
       load();
     } catch (err: any) {
       toast.error("Impossible de supprimer cette dimension (elle est peut-être utilisée)");
+    }
+  };
+
+  // Drag & drop ordering (immediate visual reordering via drag-enter)
+  const [dragOrder, setDragOrder] = useState<string[] | null>(null);
+  const draggedRef = useRef<string | null>(null);
+
+  const onDragStart = (e: React.DragEvent, id: string) => {
+    draggedRef.current = id;
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const onDragEnter = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const draggedId = draggedRef.current;
+    if (!draggedId || draggedId === targetId) return;
+    const current = [...dimensions];
+    const fromIdx = current.findIndex(d => d.id === draggedId);
+    const toIdx = current.findIndex(d => d.id === targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const [moved] = current.splice(fromIdx, 1);
+    current.splice(toIdx, 0, moved);
+    setDimensions(current);
+    setDragOrder(current.map(d => d.id));
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    draggedRef.current = null;
+  };
+
+  const onDragEnd = () => {
+    draggedRef.current = null;
+  };
+
+  const moveUp = (id: string) => {
+    const current = [...dimensions];
+    const idx = current.findIndex(d => d.id === id);
+    if (idx <= 0) return;
+    const [item] = current.splice(idx, 1);
+    current.splice(idx - 1, 0, item);
+    setDimensions(current);
+    setDragOrder(current.map(d => d.id));
+  };
+
+  const moveDown = (id: string) => {
+    const current = [...dimensions];
+    const idx = current.findIndex(d => d.id === id);
+    if (idx === -1 || idx >= current.length - 1) return;
+    const [item] = current.splice(idx, 1);
+    current.splice(idx + 1, 0, item);
+    setDimensions(current);
+    setDragOrder(current.map(d => d.id));
+  };
+
+  // Auto-save reorder with debounce (800ms)
+  useEffect(() => {
+    if (!dragOrder || dragOrder.length === 0) return;
+    const t = setTimeout(() => {
+      handleSaveOrder();
+    }, 800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dragOrder]);
+
+  const handleSaveOrder = async () => {
+    if (!dragOrder || dragOrder.length === 0) return toast.error('Aucun changement d\'ordre détecté');
+    try {
+      await api.post('/dimensions/reorder', { ids: dragOrder });
+      toast.success('Ordre des dimensions enregistré');
+      setDragOrder(null);
+      load();
+    } catch (err: any) {
+      toast.error('Erreur lors de l\'enregistrement de l\'ordre');
     }
   };
 
@@ -416,6 +517,20 @@ export default function AdminSettings() {
                   </Dialog>
                 </div>
 
+                <div className="flex items-center gap-3 mb-4 bg-muted/30 px-3 py-1.5 rounded-lg border border-border/50 w-fit">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Afficher :</span>
+                  <select 
+                    value={dimRowsPerPage} 
+                    onChange={(e) => { setDimRowsPerPage(parseInt(e.target.value)); setDimCurrentPage(1); }}
+                    className="bg-transparent text-xs font-bold outline-none cursor-pointer"
+                  >
+                    <option value="5">5 lignes</option>
+                    <option value="10">10 lignes</option>
+                    <option value="20">20 lignes</option>
+                    <option value="50">50 lignes</option>
+                  </select>
+                </div>
+
                 <div className="bg-background border border-border rounded-lg overflow-hidden">
                   <Table>
                     <TableHeader>
@@ -428,14 +543,19 @@ export default function AdminSettings() {
                     <TableBody>
                       {dimensions.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
                             Aucune dimension paramétrée
                           </TableCell>
                         </TableRow>
                       ) : (
-                        dimensions.map((d) => (
-                          <TableRow key={d.id}>
-                            <TableCell className="font-medium">{d.label}</TableCell>
+                        dimensions
+                          .slice((dimCurrentPage - 1) * dimRowsPerPage, dimCurrentPage * dimRowsPerPage)
+                          .map((d) => (
+                          <TableRow key={d.id} draggable onDragStart={(e) => onDragStart(e, d.id)} onDragOver={onDragOver} onDragEnter={(e) => onDragEnter(e, d.id)} onDrop={onDrop} onDragEnd={onDragEnd} className="cursor-grab">
+                            <TableCell className="font-medium flex items-center gap-3">
+                              <span className="w-6 h-6 flex items-center justify-center text-xs text-muted-foreground">☰</span>
+                              {d.label}
+                            </TableCell>
                             <TableCell>
                               {d.is_standard ? (
                                 <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-bold">Standard</span>
@@ -444,7 +564,7 @@ export default function AdminSettings() {
                               )}
                             </TableCell>
                             <TableCell>
-                              <div className="flex gap-1">
+                              <div className="flex gap-1 items-center">
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -466,6 +586,8 @@ export default function AdminSettings() {
                                 >
                                   <Trash2 className="w-4 h-4 text-destructive" />
                                 </Button>
+                                <Button variant="ghost" size="icon" onClick={() => moveUp(d.id)}><ArrowUp className="w-4 h-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => moveDown(d.id)}><ArrowDown className="w-4 h-4" /></Button>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -474,6 +596,44 @@ export default function AdminSettings() {
                     </TableBody>
                   </Table>
                 </div>
+
+                {dragOrder && (
+                  <div className="flex justify-end gap-2 mt-3">
+                    <Button size="sm" onClick={() => { setDragOrder(null); load(); }} variant="ghost">Annuler</Button>
+                    <Button size="sm" onClick={handleSaveOrder}>Enregistrer l'ordre</Button>
+                  </div>
+                )}
+
+                {dimensions.length > dimRowsPerPage && (
+                  <div className="flex items-center justify-between mt-4 px-1">
+                    <span className="text-xs text-muted-foreground">
+                      Total: {dimensions.length} dimensions
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        disabled={dimCurrentPage === 1}
+                        onClick={() => setDimCurrentPage(p => p - 1)}
+                      >
+                        <ChevronLeft className="h-3 w-3" />
+                      </Button>
+                      <span className="text-xs font-medium">
+                        {dimCurrentPage} / {Math.ceil(dimensions.length / dimRowsPerPage)}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        disabled={dimCurrentPage >= Math.ceil(dimensions.length / dimRowsPerPage)}
+                        onClick={() => setDimCurrentPage(p => p + 1)}
+                      >
+                        <ChevronRight className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Fermetés - In Catalogue but second col if possible, or below Dimensions */}
@@ -853,10 +1013,51 @@ export default function AdminSettings() {
                   </div>
                 </div>
               </div>
+
+              {/* Trust Badges Config */}
+              <div className="space-y-6 md:col-span-2">
+                <h3 className="font-bold text-sm tracking-wide uppercase text-primary/80 bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 flex justify-between items-center">
+                  <span>Badges de Confiance (Accueil & 3D)</span>
+                  <Button variant="outline" size="sm" onClick={() => setTrustBadges([...trustBadges, { icon: "Star", title: "Nouveau Badge", sub: "Description" }])}>
+                    <Plus className="w-4 h-4 mr-1" /> Ajouter
+                  </Button>
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-1">
+                  {trustBadges.map((badge, idx) => (
+                    <div key={idx} className="bg-muted/30 border border-border/60 rounded-xl p-4 space-y-3 relative group shadow-sm transition-all hover:border-primary/50">
+                      <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80" onClick={() => {
+                        const newB = [...trustBadges];
+                        newB.splice(idx, 1);
+                        setTrustBadges(newB);
+                      }}>
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase text-muted-foreground flex justify-between">
+                          <span>Nom d'icône (Lucide)</span>
+                          <LucideIcon name={badge.icon} className="w-3 h-3 text-primary" />
+                        </label>
+                        <Input value={badge.icon} onChange={(e) => { const newB = [...trustBadges]; newB[idx].icon = e.target.value; setTrustBadges(newB); }} className="h-8 text-sm" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase text-muted-foreground">Titre</label>
+                        <Input value={badge.title} onChange={(e) => { const newB = [...trustBadges]; newB[idx].title = e.target.value; setTrustBadges(newB); }} className="h-8 text-sm" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase text-muted-foreground">Sous-titre</label>
+                        <Input value={badge.sub} onChange={(e) => { const newB = [...trustBadges]; newB[idx].sub = e.target.value; setTrustBadges(newB); }} className="h-8 text-sm" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
             
-            <div className="mt-10 pt-6 border-t border-border/40 flex justify-end">
-              <Button onClick={handleSaveSettings} size="lg" className="font-bold px-10 rounded-xl shadow-md shadow-primary/20">Enregistrer les paramètres</Button>
+            <div className="mt-8 flex justify-end pt-6 border-t border-border/40">
+              <Button onClick={handleSaveSettings} size="lg" className="px-8 shadow-lg shadow-primary/20">
+                Enregistrer les modifications
+              </Button>
             </div>
           </div>
         </TabsContent>
@@ -886,8 +1087,18 @@ export default function AdminSettings() {
                       <Input value={socialForm.name} onChange={(e) => setSocialForm({ ...socialForm, name: e.target.value })} placeholder="Facebook" />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">URL</label>
-                      <Input value={socialForm.url} onChange={(e) => setSocialForm({ ...socialForm, url: e.target.value })} placeholder="https://..." />
+                      <label className="text-sm font-medium">
+                        {(socialForm.name.toLowerCase().includes('whatsapp') || (icons.find(i => i.id.toString() === socialForm.icon_id)?.name.toLowerCase().includes('whatsapp'))) 
+                          ? "Numéro WhatsApp (ex: 21612345678)" 
+                          : "URL"}
+                      </label>
+                      <Input 
+                        value={socialForm.url} 
+                        onChange={(e) => setSocialForm({ ...socialForm, url: e.target.value })} 
+                        placeholder={(socialForm.name.toLowerCase().includes('whatsapp') || (icons.find(i => i.id.toString() === socialForm.icon_id)?.name.toLowerCase().includes('whatsapp'))) 
+                          ? "216XXXXXXXX" 
+                          : "https://..."} 
+                      />
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Icone</label>

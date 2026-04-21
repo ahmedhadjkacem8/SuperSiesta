@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 
 export default function AdminNotificationsPanel() {
   const [isOpen, setIsOpen] = useState(false);
-  const { notifications, unreadCount, markAsRead, markAllAsRead, getColorClass } = useAdminNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, cleanAll, getColorClass } = useAdminNotifications();
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -75,14 +75,24 @@ export default function AdminNotificationsPanel() {
                 <h3 className="font-black text-sm uppercase tracking-wider">Notifications</h3>
                 <p className="text-[10px] text-muted-foreground">{unreadCount} non lues</p>
               </div>
-              {unreadCount > 0 && (
-                <button 
-                  onClick={markAllAsRead}
-                  className="flex items-center gap-1.5 text-[10px] font-black text-primary hover:underline uppercase"
-                >
-                  <CheckCheck className="w-3.5 h-3.5" /> Tout marquer comme lu
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                {unreadCount > 0 && (
+                  <button 
+                    onClick={markAllAsRead}
+                    className="flex items-center gap-1.5 text-[10px] font-black text-primary hover:underline uppercase"
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" /> Tout marquer comme lu
+                  </button>
+                )}
+                {notifications.length > 0 && (
+                  <button
+                    onClick={async () => { await cleanAll(); setIsOpen(false); }}
+                    className="flex items-center gap-1.5 text-[10px] font-black text-destructive hover:underline uppercase"
+                  >
+                    <X className="w-3.5 h-3.5" /> Nettoyer tout
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="max-h-[500px] overflow-y-auto">

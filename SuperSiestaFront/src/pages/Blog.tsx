@@ -64,7 +64,7 @@ export default function Blog() {
                   {posts.filter(p => (p as any).is_favorite).map(post => (
                     <div key={post.id} className="flex-[0_0_100%] md:flex-[0_0_50%] lg:flex-[0_0_33.33%] min-w-0 pl-4">
                       <Link to={`/blog/${post.slug}`} className="group block h-full bg-card border border-border rounded-2xl overflow-hidden hover:shadow-xl transition-all">
-                        <div className="aspect-video bg-muted overflow-hidden relative">
+                        <div className="aspect-square bg-muted overflow-hidden relative">
                           {post.image_url ? (
                             <img src={getImageUrl(post.image_url)} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           ) : (
@@ -122,7 +122,7 @@ export default function Blog() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((post) => (
               <Link key={post.id} to={`/blog/${post.slug}`} className="group bg-card border border-border rounded-2xl overflow-hidden hover:shadow-xl transition-all">
-                <div className="aspect-[16/9] bg-muted overflow-hidden">
+                <div className="aspect-square bg-muted overflow-hidden">
                   {post.image_url ? (
                     <img src={getImageUrl(post.image_url)} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   ) : (

@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/hooks/useAuthSecure";
 import { AdminNotificationProvider } from "@/context/AdminNotificationContext";
@@ -38,14 +38,26 @@ import AdminBonLivraison from "./pages/admin/AdminBonLivraison";
 import AdminLivreurs from "./pages/admin/AdminLivreurs";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminReviews from "./pages/admin/AdminReviews";
+import AdminNewsletter from "./pages/admin/AdminNewsletter";
 import GammeDetail from "./pages/GammeDetail";
 import Register from "./pages/Register";
 import Showrooms from "./pages/Showrooms";
 import ProtectedRoute from "@/components/admin/ProtectedRoute";
+import React from "react";
 
 const queryClient = new QueryClient();
 
 function PublicLayout({ children }: { children: React.ReactNode }) {
+  // Ensure we scroll to top on each navigation so the user doesn't stay stuck at footer
+  const loc = useLocation();
+  React.useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    } catch (e) {
+      window.scrollTo(0, 0);
+    }
+  }, [loc.pathname]);
+
   return (
     <>
       <Navbar />
@@ -101,6 +113,7 @@ const App = () => (
                       <Route path="/livreurs" element={<AdminLivreurs />} />
                       <Route path="/reviews" element={<AdminReviews />} />
                       <Route path="/settings" element={<AdminSettings />} />
+                      <Route path="/newsletter" element={<AdminNewsletter />} />
                     </Routes>
                   </AdminNotificationProvider>
                 </ProtectedRoute>

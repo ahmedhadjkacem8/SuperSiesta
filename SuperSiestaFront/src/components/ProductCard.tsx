@@ -50,10 +50,10 @@ export default function ProductCard({ product, selectedDimension }: ProductCardP
       <div className="p-4">
         <p className="text-xs text-muted-foreground mb-1 capitalize">{product.categorie}</p>
         <h3 className="font-bold text-lg mb-1">{product.name}</h3>
-        <div className="flex items-center gap-1 mb-3">
+        {/* <div className="flex items-center gap-1 mb-3">
           {[1, 2, 3, 4, 5].map((i) => <Star key={i} className="w-3.5 h-3.5 fill-brand-gold text-brand-gold" />)}
           <span className="text-xs text-muted-foreground ml-1">(128)</span>
-        </div>
+        </div> */}
         <div className="flex items-center justify-between">
           <div>
             {displaySize ? (

@@ -32,7 +32,7 @@ class AboutSectionController extends BaseController
             'title'       => 'nullable|string|max:255',
             'subtitle'    => 'nullable|string|max:255',
             'description' => 'nullable|string',
-            'image_url'   => 'nullable|image|max:5120',
+            'image_url'   => 'nullable|image|max:204800',
             'items'       => 'nullable|array',
             'sort_order'  => 'integer',
             'is_active'   => 'boolean'
@@ -66,7 +66,7 @@ class AboutSectionController extends BaseController
             'title'       => 'nullable|string|max:255',
             'subtitle'    => 'nullable|string|max:255',
             'description' => 'nullable|string',
-            'image_url'   => 'nullable|image|max:5120',
+            'image_url'   => 'nullable|image|max:204800',
             'items'       => 'nullable|array',
             'sort_order'  => 'integer',
             'is_active'   => 'boolean'

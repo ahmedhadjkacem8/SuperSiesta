@@ -26,6 +26,9 @@ class ShowroomController extends BaseController
 
         $validated = $request->validate([
             'name'                  => 'required|string|max:255',
+            'responsible_name'      => 'nullable|string|max:255',
+            'responsible_phone'     => 'nullable|string|max:20',
+            'responsible_email'     => 'nullable|email',
             'contact_person_name'   => 'nullable|string|max:255',
             'contact_person_phone'  => 'nullable|string|max:20',
             'contact_person_email'  => 'nullable|email',
@@ -35,9 +38,9 @@ class ShowroomController extends BaseController
             'email'                 => 'nullable|email',
             'lat'                   => 'nullable|numeric',
             'lng'                   => 'nullable|numeric',
-            'image_url'             => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'image_url'             => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:204800',
             'images'                => 'nullable|array',
-            'images.*'              => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'images.*'              => 'image|mimes:jpeg,png,jpg,gif,webp|max:204800',
             'opening_hours'         => 'nullable|string',
             'opening_hours_from'    => 'nullable|string',
             'opening_hours_until'   => 'nullable|string',
@@ -69,6 +72,9 @@ class ShowroomController extends BaseController
 
         $request->validate([
             'name'                  => 'string|max:255',
+            'responsible_name'      => 'nullable|string|max:255',
+            'responsible_phone'     => 'nullable|string|max:20',
+            'responsible_email'     => 'nullable|email',
             'contact_person_name'   => 'nullable|string|max:255',
             'contact_person_phone'  => 'nullable|string|max:20',
             'contact_person_email'  => 'nullable|email',
@@ -78,9 +84,9 @@ class ShowroomController extends BaseController
             'email'                 => 'nullable|email',
             'lat'                   => 'nullable|numeric',
             'lng'                   => 'nullable|numeric',
-            'image_url'             => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'image_url'             => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:204800',
             'images'                => 'nullable|array',
-            'images.*'              => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'images.*'              => 'image|mimes:jpeg,png,jpg,gif,webp|max:204800',
             'opening_hours'         => 'nullable|string',
             'opening_hours_from'    => 'nullable|string',
             'opening_hours_until'   => 'nullable|string',
@@ -101,6 +107,23 @@ class ShowroomController extends BaseController
                 $request->file('image_url'),
                 $showroom->image_url
             );
+        }
+
+        // Allow clearing contact/responsible fields: if present and empty string, set to null
+        if ($request->has('contact_person_name')) {
+            $showroom->contact_person_name = $request->input('contact_person_name') === '' ? null : $request->input('contact_person_name');
+        }
+        if ($request->has('contact_person_phone')) {
+            $showroom->contact_person_phone = $request->input('contact_person_phone') === '' ? null : $request->input('contact_person_phone');
+        }
+        if ($request->has('responsible_name')) {
+            $showroom->responsible_name = $request->input('responsible_name') === '' ? null : $request->input('responsible_name');
+        }
+        if ($request->has('responsible_phone')) {
+            $showroom->responsible_phone = $request->input('responsible_phone') === '' ? null : $request->input('responsible_phone');
+        }
+        if ($request->has('responsible_email')) {
+            $showroom->responsible_email = $request->input('responsible_email') === '' ? null : $request->input('responsible_email');
         }
 
         if ($request->has('remove_images')) {

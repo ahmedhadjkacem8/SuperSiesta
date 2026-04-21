@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\IconController;
 use App\Http\Controllers\Api\SocialNetworkController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\NewsletterController;
 
 // Public routes (no authentication required)
 Route::middleware('api')->group(function () {
@@ -108,6 +109,9 @@ Route::middleware('api')->group(function () {
 
     // About sections
     Route::get('/about-sections', [\App\Http\Controllers\Api\AboutSectionController::class, 'index']);
+
+    // Newsletter (Public)
+    Route::post('/newsletters', [NewsletterController::class, 'store']);
 
     // Public file access (with proper MIME type validation)
     Route::get('/files/{path}', [FileController::class, 'serve'])
@@ -254,6 +258,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Dimensions - Admin only (write)
     Route::post('/dimensions', [DimensionController::class, 'store']);
+    Route::post('/dimensions/reorder', [DimensionController::class, 'reorder']);
     Route::put('/dimensions/{dimension}', [DimensionController::class, 'update']);
     Route::delete('/dimensions/{dimension}', [DimensionController::class, 'destroy']);
 
@@ -301,6 +306,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [NotificationController::class, 'store']);
         Route::get('/stats', [NotificationController::class, 'getStats']);
         Route::post('/mark-all-read', [NotificationController::class, 'markAllAdminAsRead']);
+        Route::post('/clean-all', [NotificationController::class, 'cleanAllAdmin']);
         Route::post('/clean-expired', [NotificationController::class, 'cleanExpired']);
     });
 
@@ -314,6 +320,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/read', [NotificationController::class, 'markAsRead']);
         Route::delete('/', [NotificationController::class, 'destroy']);
     });
+
+    // Newsletter (Admin)
+    Route::get('/newsletters', [NewsletterController::class, 'index']);
+    Route::get('/newsletters/export', [NewsletterController::class, 'export']);
+    Route::delete('/newsletters/{id}', [NewsletterController::class, 'destroy']);
 
     // Get signed temporary URLs for files (1 hour validity)
     Route::post('/files/signed-url', [FileController::class, 'getSignedUrl']);

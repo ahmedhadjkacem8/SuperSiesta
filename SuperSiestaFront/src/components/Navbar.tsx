@@ -27,8 +27,14 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border shadow-sm">
-      <div className="bg-primary text-primary-foreground text-xs text-center py-1.5 px-4">
-        {settings.top_banner_text || "🚚 Livraison gratuite partout en Tunisie | 📞 71 000 000 | Paiement à la livraison"}
+      <div className="bg-primary text-primary-foreground text-xs py-1.5 overflow-hidden relative flex items-center">
+        <div className="whitespace-nowrap animate-marquee flex w-max">
+          {[...Array(10)].map((_, i) => (
+            <span key={i} className="px-8">
+              {settings.top_banner_text || "🚚 Livraison gratuite partout en Tunisie | 📞 71 000 000 | Paiement à la livraison"}
+            </span>
+          ))}
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
@@ -49,27 +55,19 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden sm:flex items-center gap-2">
-            {socials.filter(s => s.is_active).map((s) => {
-              // Ensure whatsapp link is correctly formatted if it's just a number
-              let url = s.url;
-              if (s.name.toLowerCase() === 'whatsapp' && !url.startsWith('http')) {
-                url = `https://wa.me/${url.replace(/\s+/g, '')}`;
-              }
-              
-              return (
-                <a 
-                  key={s.id} 
-                  href={url} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  title={s.name}
-                  className="w-8 h-8 flex items-center justify-center bg-accent rounded-full transition-all hover:scale-110"
-                  style={{ color: s.icon.hex_color || 'currentColor' }}
-                >
-                  <LucideIcon name={s.icon.lucide_name} label={s.name} className="w-4 h-4" />
-                </a>
-              );
-            })}
+            {socials.filter(s => s.is_active).map((s) => (
+              <a 
+                key={s.id} 
+                href={s.url} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                title={s.name}
+                className="w-8 h-8 flex items-center justify-center bg-accent rounded-full transition-all hover:scale-110"
+                style={{ color: s.icon.hex_color || 'currentColor' }}
+              >
+                <LucideIcon name={s.icon.lucide_name} label={s.name} className="w-4 h-4" />
+              </a>
+            ))}
           </div>
 
           <button onClick={openCart} className="relative p-2 rounded-xl bg-muted hover:bg-primary hover:text-primary-foreground transition-colors">

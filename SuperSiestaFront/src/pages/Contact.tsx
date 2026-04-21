@@ -181,27 +181,20 @@ export default function Contact() {
 
             {/* Social */}
             <div className="flex flex-wrap gap-3">
-              {socials.filter(s => s.is_active).map((s) => {
-                let url = s.url;
-                if (s.name.toLowerCase() === 'whatsapp' && !url.startsWith('http')) {
-                  url = `https://wa.me/${url.replace(/\s+/g, '')}`;
-                }
-
-                return (
-                  <a 
-                    key={s.id} 
-                    href={url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="flex-1 min-w-[140px] bg-card border border-border rounded-xl p-3 flex items-center justify-center gap-2 hover:bg-accent transition-all hover:scale-105 font-bold text-sm"
-                  >
-                    <div style={{ color: s.icon.hex_color || 'var(--primary)' }}>
-                      <LucideIcon name={s.icon.lucide_name} label={s.name} className="w-5 h-5 transition-colors" />
-                    </div>
-                    <span>{s.name}</span>
-                  </a>
-                );
-              })}
+              {socials.filter(s => s.is_active).map((s) => (
+                <a 
+                  key={s.id} 
+                  href={s.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex-1 min-w-[140px] bg-card border border-border rounded-xl p-3 flex items-center justify-center gap-2 hover:bg-accent transition-all hover:scale-105 font-bold text-sm"
+                >
+                  <div style={{ color: s.icon.hex_color || 'var(--primary)' }}>
+                    <LucideIcon name={s.icon.lucide_name} label={s.name} className="w-5 h-5 transition-colors" />
+                  </div>
+                  <span>{s.name}</span>
+                </a>
+              ))}
             </div>
           </div>
         </div>

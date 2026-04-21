@@ -218,8 +218,9 @@ class SecureApiService {
       throw new Error(`File type ${file.type} is not allowed`)
     }
 
-    if (file.size > 50 * 1024 * 1024) {
-      throw new Error('File size exceeds 50MB limit')
+    // Allow larger files up to 200MB (server must also allow this via php.ini)
+    if (file.size > 200 * 1024 * 1024) {
+      throw new Error('File size exceeds 200MB limit')
     }
 
     const formData = new FormData()

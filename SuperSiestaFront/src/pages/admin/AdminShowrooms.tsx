@@ -68,6 +68,9 @@ export default function AdminShowrooms() {
     google_maps_url: "",
     lat: "" as string | number,
     lng: "" as string | number,
+    responsible_name: "",
+    responsible_phone: "",
+    responsible_email: "",
     image_file: null as File | null,
     images_files: [] as File[],
   });
@@ -117,6 +120,9 @@ export default function AdminShowrooms() {
       google_maps_url: "",
       lat: "",
       lng: "",
+      responsible_name: "",
+      responsible_phone: "",
+      responsible_email: "",
       image_file: null,
       images_files: [],
     });
@@ -136,6 +142,9 @@ export default function AdminShowrooms() {
       name: s.name,
       contact_person_name: s.contact_person_name || "",
       contact_person_phone: s.contact_person_phone || "",
+      responsible_name: (s as any).responsible_name || "",
+      responsible_phone: (s as any).responsible_phone || "",
+      responsible_email: (s as any).responsible_email || "",
       contact_person_email: s.contact_person_email || "",
       address: s.address,
       city: s.city,
@@ -162,9 +171,13 @@ export default function AdminShowrooms() {
     formData.append("opening_hours_until", form.opening_hours_until);
     formData.append("opening_days", JSON.stringify(form.opening_days));
     
-    if (form.contact_person_name) formData.append("contact_person_name", form.contact_person_name);
-    if (form.contact_person_phone) formData.append("contact_person_phone", form.contact_person_phone);
+    // Always send contact fields (even empty) so clearing them during edit is persisted to the server
+    formData.append("contact_person_name", form.contact_person_name || "");
+    formData.append("contact_person_phone", form.contact_person_phone || "");
     if (form.contact_person_email) formData.append("contact_person_email", form.contact_person_email);
+    formData.append("responsible_name", form.responsible_name || "");
+    formData.append("responsible_phone", form.responsible_phone || "");
+    if (form.responsible_email) formData.append("responsible_email", form.responsible_email);
     if (form.phone) formData.append("phone", form.phone);
     if (form.email) formData.append("email", form.email);
     if (form.google_maps_url) formData.append("google_maps_url", form.google_maps_url);
@@ -320,19 +333,19 @@ export default function AdminShowrooms() {
             <section>
               <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Informations Générales</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nom du showroom" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
-                <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Adresse complète" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
-                <select value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+                <input value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nom du showroom" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                <input value={form.address ?? ""} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Adresse complète" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                <select value={form.city ?? ""} onChange={(e) => setForm({ ...form, city: e.target.value })} className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all">
                   <option value="">Sélectionner une ville...</option>
                   {villes.map((v) => <option key={v} value={v}>{v}</option>)}
                 </select>
-                <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Téléphone" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
-                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Email" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all md:col-span-2" />
+                <input value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Téléphone" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                <input type="email" value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Email" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all md:col-span-2" />
                 <div className="md:col-span-2">
-                  <input value={form.google_maps_url} onChange={(e) => setForm({ ...form, google_maps_url: e.target.value })} placeholder="Lien Google Maps (URL ou CID)" className="w-full px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                  <input value={form.google_maps_url ?? ""} onChange={(e) => setForm({ ...form, google_maps_url: e.target.value })} placeholder="Lien Google Maps (URL ou CID)" className="w-full px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
                 </div>
-                <input type="number" step="any" value={form.lat} onChange={(e) => setForm({ ...form, lat: e.target.value })} placeholder="Latitude (ex: 36.8065)" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
-                <input type="number" step="any" value={form.lng} onChange={(e) => setForm({ ...form, lng: e.target.value })} placeholder="Longitude (ex: 10.1815)" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                <input type="number" step="any" value={form.lat ?? ""} onChange={(e) => setForm({ ...form, lat: e.target.value })} placeholder="Latitude (ex: 36.8065)" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                <input type="number" step="any" value={form.lng ?? ""} onChange={(e) => setForm({ ...form, lng: e.target.value })} placeholder="Longitude (ex: 10.1815)" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
               </div>
             </section>
 
@@ -340,8 +353,11 @@ export default function AdminShowrooms() {
             <section>
               <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Responsable du Showroom</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input value={form.contact_person_name} onChange={(e) => setForm({ ...form, contact_person_name: e.target.value })} placeholder="Nom complet" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
-                <input value={form.contact_person_phone} onChange={(e) => setForm({ ...form, contact_person_phone: e.target.value })} placeholder="Téléphone" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                <input value={form.contact_person_name ?? ""} onChange={(e) => setForm({ ...form, contact_person_name: e.target.value })} placeholder="Nom complet" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                <input value={form.contact_person_phone ?? ""} onChange={(e) => setForm({ ...form, contact_person_phone: e.target.value })} placeholder="Téléphone" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                  <input value={form.responsible_name ?? ""} onChange={(e) => setForm({ ...form, responsible_name: e.target.value })} placeholder="Nom du responsable (optionnel)" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                  <input value={form.responsible_phone ?? ""} onChange={(e) => setForm({ ...form, responsible_phone: e.target.value })} placeholder="Téléphone du responsable (optionnel)" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                <input value={form.responsible_email ?? ""} onChange={(e) => setForm({ ...form, responsible_email: e.target.value })} placeholder="Email du responsable (optionnel)" className="px-4 py-3 border border-border rounded-xl bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all md:col-span-2" />
               </div>
             </section>
 
@@ -494,11 +510,11 @@ export default function AdminShowrooms() {
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
                   <label className="text-[10px] font-bold text-muted-foreground uppercase mb-1 block ml-1">Ouverture</label>
-                  <input type="time" value={form.opening_hours_from} onChange={(e) => setForm({ ...form, opening_hours_from: e.target.value })} className="w-full px-4 py-3 border border-border rounded-xl bg-background text-sm font-bold" />
+                  <input type="time" value={form.opening_hours_from ?? ""} onChange={(e) => setForm({ ...form, opening_hours_from: e.target.value })} className="w-full px-4 py-3 border border-border rounded-xl bg-background text-sm font-bold" />
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-muted-foreground uppercase mb-1 block ml-1">Fermeture</label>
-                  <input type="time" value={form.opening_hours_until} onChange={(e) => setForm({ ...form, opening_hours_until: e.target.value })} className="w-full px-4 py-3 border border-border rounded-xl bg-background text-sm font-bold" />
+                  <input type="time" value={form.opening_hours_until ?? ""} onChange={(e) => setForm({ ...form, opening_hours_until: e.target.value })} className="w-full px-4 py-3 border border-border rounded-xl bg-background text-sm font-bold" />
                 </div>
               </div>
 

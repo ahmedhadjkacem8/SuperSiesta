@@ -34,7 +34,24 @@ export function useSocialNetworks() {
         api.get<SocialNetwork[]>("/social-networks"),
         api.get<Icon[]>("/icons")
       ]);
-      setSocials(sData || []);
+      
+      const formattedSocials = (sData || []).map(s => {
+        let url = s.url;
+        const identifier = `${s.name} ${s.icon?.name} ${s.icon?.lucide_name}`.toLowerCase();
+        
+        if (identifier.includes('whatsapp') || identifier.includes('message') || identifier.includes('phone')) {
+          if (url && !url.startsWith('http') && !url.startsWith('https') && !url.startsWith('wa.me')) {
+            // Remove any non-digit characters except maybe a leading +
+            const cleanNumber = url.replace(/[^\d+]/g, '');
+            if (cleanNumber.length >= 8) {
+              url = `https://wa.me/${cleanNumber}`;
+            }
+          }
+        }
+        return { ...s, url };
+      });
+
+      setSocials(formattedSocials);
       setIcons(iData || []);
     } catch (e) {
       console.error(e);

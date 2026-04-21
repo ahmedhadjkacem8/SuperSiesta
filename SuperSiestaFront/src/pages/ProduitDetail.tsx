@@ -1,4 +1,13 @@
 import { useState, useEffect } from "react";
+
+// Allow model-viewer element in this TSX file
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      "model-viewer": any;
+    }
+  }
+}
 import { useParams, useNavigate } from "react-router-dom";
 import { useProduct } from "@/hooks/useProducts";
 import { useGammes } from "@/hooks/useGammes";
@@ -7,6 +16,7 @@ import { useAuth } from "@/hooks/useAuthSecure";
 import { Star, Shield, Truck, CreditCard, ChevronLeft, Plus, Minus, Check, Loader2, Play, Gift } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { getImageUrl } from "@/utils/imageUtils";
+import { api } from '@/lib/apiClient'
 
 export default function ProduitDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -21,12 +31,48 @@ export default function ProduitDetail() {
   const [activeImg, setActiveImg] = useState(0);
   const [added, setAdded] = useState(false);
 
+  // Reviews state (moved up so hooks order is stable)
+  const [reviews, setReviews] = useState<any[]>([])
+  const [averageRating, setAverageRating] = useState<number | null>(null)
+  const [loadingReviews, setLoadingReviews] = useState(false)
+  const [showReviewForm, setShowReviewForm] = useState(false)
+  const [reviewMessage, setReviewMessage] = useState("")
+  const [reviewRating, setReviewRating] = useState<number>(5)
+
   // Set default size when product loads
   useEffect(() => {
     if (product && product.sizes.length > 0 && !selectedSize) {
       setSelectedSize(product.sizes[0]);
     }
   }, [product, selectedSize]);
+
+  // Fetch reviews when product changes
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!product) return
+      try {
+        setLoadingReviews(true)
+        const res: any = await api.get(`/published-reviews?product_id=${product.id}`)
+        if (res) {
+          if (Array.isArray(res)) {
+            setReviews(res)
+            setAverageRating(null)
+          } else {
+            setReviews(res.reviews || [])
+            setAverageRating(res.average ?? null)
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching product reviews', err)
+        setReviews([])
+        setAverageRating(null)
+      } finally {
+        setLoadingReviews(false)
+      }
+    }
+
+    fetchReviews()
+  }, [product])
 
   if (isLoading) {
     return (
@@ -50,6 +96,34 @@ export default function ProduitDetail() {
   // Check if user is B2B
   const isB2B = false; // Will be set from profile context
   const displayPrice = isB2B && selectedSize.resellerPrice ? selectedSize.resellerPrice : selectedSize.price;
+ 
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) return
+    try {
+      await api.post('/reviews', {
+        product_id: product?.id,
+        rating: reviewRating,
+        message: reviewMessage,
+      })
+      setReviewMessage('')
+      setReviewRating(5)
+      setShowReviewForm(false)
+      // Refresh reviews
+      const res: any = await api.get(`/published-reviews?product_id=${product?.id}`)
+      if (res) {
+        if (Array.isArray(res)) {
+          setReviews(res)
+        } else {
+          setReviews(res.reviews || [])
+          setAverageRating(res.average ?? null)
+        }
+      }
+    } catch (err) {
+      console.error('Error submitting review', err)
+    }
+  }
 
   const handleAddToCart = () => {
     addItem(product as any, selectedSize, qty);
@@ -86,9 +160,19 @@ export default function ProduitDetail() {
             <h1 className="text-3xl md:text-4xl font-black mt-2">{product.name}</h1>
             <div className="flex items-center gap-2 mt-2">
               <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map((i) => <Star key={i} className="w-4 h-4 fill-brand-gold text-brand-gold" />)}
+                {(() => {
+                  const avg = averageRating ?? (reviews.length > 0 ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length) : 0)
+                  const rounded = Math.round((avg || 0) * 2) / 2
+                  return [1,2,3,4,5].map((i) => (
+                    <Star key={i} className={`w-4 h-4 ${i <= Math.ceil(rounded) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}`} />
+                  ))
+                })()}
               </div>
-              <span className="text-sm text-muted-foreground">(128 avis)</span>
+              {user ? (
+                <span className="text-sm text-muted-foreground">({reviews.length} avis)</span>
+              ) : (
+                <span className="text-sm text-muted-foreground">Avis</span>
+              )}
             </div>
           </div>
 
@@ -181,32 +265,118 @@ export default function ProduitDetail() {
               ))}
             </ul>
           </div>
+
+          <div className="border-t border-border pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold">Avis des clients</h3>
+              {user ? (
+                <button onClick={() => setShowReviewForm(!showReviewForm)} className="text-xs text-primary font-black uppercase tracking-wider">{showReviewForm ? 'Annuler' : 'Donner un avis'}</button>
+              ) : (
+                <span className="text-xs text-muted-foreground">Connectez-vous pour laisser un avis</span>
+              )}
+            </div>
+
+            {showReviewForm && user && (
+              <form onSubmit={handleSubmitReview} className="space-y-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm">Note :</label>
+                  <select value={reviewRating} onChange={(e) => setReviewRating(Number(e.target.value))} className="px-3 py-2 rounded-lg border">
+                    {[5,4,3,2,1].map(r => <option key={r} value={r}>{r} étoiles</option>)}
+                  </select>
+                </div>
+                <textarea value={reviewMessage} onChange={(e) => setReviewMessage(e.target.value)} required placeholder="Votre avis..." className="w-full p-3 border rounded-lg" />
+                <div>
+                  <button type="submit" className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-lg">Envoyer</button>
+                </div>
+              </form>
+            )}
+
+            {loadingReviews ? (
+              <p className="text-sm text-muted-foreground">Chargement des avis...</p>
+            ) : (
+              <div className="space-y-4">
+                {reviews && reviews.length > 0 ? reviews.map((r, i) => (
+                  <div key={i} className="p-4 bg-card rounded-xl border border-border">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-primary/10 rounded-md flex items-center justify-center font-bold">{r.name?.[0] || 'U'}</div>
+                        <div>
+                          <div className="font-bold">{r.name || 'Utilisateur'}</div>
+                          <div className="text-xs text-muted-foreground">{r.city || ''}</div>
+                        </div>
+                      </div>
+                      <div className="text-sm font-bold">{r.rating}/5</div>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{r.message}</p>
+                  </div>
+                )) : (
+                  <p className="text-sm text-muted-foreground">Aucun avis pour le moment.</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Video Reel de la gamme */}
+      {/* 3D model + Video showcase for the product's gamme */}
       {(() => {
         const gamme = gammes?.find((g) => g.name === product.gamme);
-        if (!gamme?.video_url) return null;
+        if (!gamme) return null;
+
+        const videoUrl = gamme.video_url || null;
+        // prefer GLB/GLTF assets for the 3D viewer
+        const modelUrl = (gamme.images_3d || []).find((u: string) => /\.(glb|gltf)(\?|$)/i.test(u)) || (gamme.images_3d || [])[0] || null;
+
+        if (!videoUrl && !modelUrl) return null;
+
+        // Debug: log the raw and resolved URLs to help diagnose 404 /api/storage issues
+        const resolvedModelUrl = modelUrl ? getImageUrl(modelUrl) : null;
+        const resolvedVideoUrl = videoUrl ? getImageUrl(videoUrl) : null;
+        // eslint-disable-next-line no-console
+        console.debug('ProduitDetail media URLs', { modelUrl, resolvedModelUrl, videoUrl, resolvedVideoUrl });
+
         return (
           <section className="mt-16">
             <div className="flex items-center gap-3 mb-6">
               <Play className="w-5 h-5 text-primary" />
-              <h2 className="text-2xl font-black">Découvrez la gamme {gamme.name}</h2>
+              <h2 className="text-2xl font-black">Multimédia — Gamme {gamme.name}</h2>
             </div>
-            <div className="max-w-md mx-auto">
-              <div className="relative rounded-3xl overflow-hidden bg-muted" style={{ aspectRatio: "9/16" }}>
-                <video
-                  src={getImageUrl(gamme.video_url)}
-                  controls
-                  playsInline
-                  className="w-full h-full object-cover"
-                  poster={getImageUrl(gamme.photos?.[0]) || undefined}
-                />
-              </div>
-              <p className="text-center text-sm text-muted-foreground mt-3">
-                Vidéo Reel — Gamme {gamme.name}
-              </p>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+              {/* 3D model (if available) */}
+              {modelUrl && (
+                <div className="bg-white border border-border rounded-2xl shadow-lg overflow-hidden h-80 flex items-center justify-center">
+                  <model-viewer
+                    src={getImageUrl(modelUrl)}
+                    alt={`3D modèle gamme ${gamme.name}`}
+                    poster={getImageUrl(gamme.photos?.[0]) || undefined}
+                    shadow-intensity="1"
+                    camera-controls
+                    auto-rotate
+                    interaction-prompt="auto"
+                    style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }}
+                    camera-orbit="45deg 75deg 105%"
+                    loading="eager"
+                    ar
+                    ar-modes="webxr scene-viewer quick-look"
+                  >
+                    <button slot="ar-button" className="absolute bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-2xl font-black text-xs">Voir en AR</button>
+                  </model-viewer>
+                </div>
+              )}
+
+              {/* Video reel (if available) */}
+              {videoUrl && (
+                <div className="bg-white border border-border rounded-2xl shadow-lg overflow-hidden h-80 flex items-center justify-center">
+                  <video
+                    src={getImageUrl(videoUrl)}
+                    controls
+                    playsInline
+                    className="w-full h-full object-cover"
+                    poster={getImageUrl(gamme.photos?.[0]) || undefined}
+                  />
+                </div>
+              )}
             </div>
           </section>
         );

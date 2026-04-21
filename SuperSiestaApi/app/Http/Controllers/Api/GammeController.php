@@ -30,9 +30,10 @@ class GammeController extends BaseController
             'description' => 'nullable|string',
             'video_url'   => 'nullable', // Can be a file or a string URL
             'photos'      => 'nullable|array',
-            'photos.*'    => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+                'photos.*'    => 'image|mimes:jpeg,png,jpg,gif,webp|max:204800',
             'images_3d'   => 'nullable|array',
-            'images_3d.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+                    // Accept files but validate extensions below to avoid strict MIME false-negatives
+                    'images_3d.*' => 'nullable|file|max:204800',
             'sort_order'  => 'integer',
         ]);
 
@@ -54,6 +55,18 @@ class GammeController extends BaseController
         }
 
         if ($request->hasFile('images_3d')) {
+            // Validate extensions explicitly to accept .glb/.gltf even if MIME is generic
+            $allowedExt = ['jpeg','jpg','png','gif','webp','glb','gltf'];
+            $files = is_array($request->file('images_3d')) ? $request->file('images_3d') : [$request->file('images_3d')];
+            foreach ($files as $f) {
+                if ($f && method_exists($f, 'getClientOriginalExtension')) {
+                    $ext = strtolower($f->getClientOriginalExtension());
+                    if (!in_array($ext, $allowedExt)) {
+                        return response()->json([ 'error' => 'Invalid 3D asset extension', 'message' => "Extension .$ext non supportée" ], 422);
+                    }
+                }
+            }
+
             $gamme->images_3d = $gamme->saveUploadedImages($request->file('images_3d'));
         }
 
@@ -74,7 +87,7 @@ class GammeController extends BaseController
             'photos'      => 'nullable|array',
             'photos.*'    => 'nullable', // Allow both strings (URLs) and Files
             'images_3d'   => 'nullable|array',
-            'images_3d.*' => 'nullable', // Allow both strings (URLs) and Files
+            'images_3d.*' => 'nullable|file|max:204800', // Allow both strings (URLs) and Files — extension check done manually
             'sort_order'  => 'integer',
         ]);
 
@@ -103,6 +116,18 @@ class GammeController extends BaseController
         }
 
         if ($request->hasFile('images_3d')) {
+            // Validate extensions explicitly for updates as well
+            $allowedExt = ['jpeg','jpg','png','gif','webp','glb','gltf'];
+            $files = is_array($request->file('images_3d')) ? $request->file('images_3d') : [$request->file('images_3d')];
+            foreach ($files as $f) {
+                if ($f && method_exists($f, 'getClientOriginalExtension')) {
+                    $ext = strtolower($f->getClientOriginalExtension());
+                    if (!in_array($ext, $allowedExt)) {
+                        return response()->json([ 'error' => 'Invalid 3D asset extension', 'message' => "Extension .$ext non supportée" ], 422);
+                    }
+                }
+            }
+
             $validated['images_3d'] = $gamme->saveUploadedImages(
                 $request->file('images_3d'),
                 $gamme->images_3d ?? []

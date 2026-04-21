@@ -24,6 +24,12 @@ const defaultSettings: SiteSettings = {
   contact_hours: "Lun-Sam 9h-19h",
   top_banner_text: "🚚 Livraison gratuite partout en Tunisie | 📞 71 000 000 | Paiement à la livraison",
   footer_description: "Matelas N°1 en Tunisie depuis 1993. Qualité, confort et hygiène pour votre sommeil.",
+  trust_badges: JSON.stringify([
+    { icon: "Truck", title: "Livraison gratuite", sub: "Partout en Tunisie" },
+    { icon: "CreditCard", title: "Paiement à la livraison", sub: "Sans frais cachés" },
+    { icon: "ShieldCheck", title: "Garantie 10 ans", sub: "Sur tous nos matelas" },
+    { icon: "Clock", title: "Service client 24/7", sub: "+216 71 000 000" },
+  ]),
 };
 
 // Simple singleton to cache settings between components

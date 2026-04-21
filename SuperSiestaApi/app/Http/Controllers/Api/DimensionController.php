@@ -13,7 +13,8 @@ class DimensionController extends BaseController
      */
     public function index(): JsonResponse
     {
-        $dimensions = Dimension::orderBy('label', 'asc')->get();
+        // Order by explicit admin sort_order first, then fallback to label
+        $dimensions = Dimension::orderBy('sort_order', 'asc')->orderBy('label', 'asc')->get();
         return $this->sendResponse($dimensions, 'Dimensions retrieved successfully');
     }
 
@@ -29,9 +30,36 @@ class DimensionController extends BaseController
             'is_standard' => 'boolean',
         ]);
 
+        // Assign next available sort_order if not provided
+        if (!array_key_exists('sort_order', $validated)) {
+            $max = Dimension::max('sort_order') ?? 0;
+            $validated['sort_order'] = $max + 1;
+        }
+
         $dimension = Dimension::create($validated);
 
         return $this->sendResponse($dimension, 'Dimension created successfully', 201);
+    }
+
+    /**
+     * Reorder dimensions (admin)
+     */
+    public function reorder(Request $request): JsonResponse
+    {
+        $this->authorize('reorder', Dimension::class);
+
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|uuid|exists:dimensions,id'
+        ]);
+
+        // Update sort_order according to provided order
+        $ids = $validated['ids'];
+        foreach ($ids as $index => $id) {
+            Dimension::where('id', $id)->update(['sort_order' => $index]);
+        }
+
+        return $this->sendResponse(null, 'Order updated');
     }
 
     /**

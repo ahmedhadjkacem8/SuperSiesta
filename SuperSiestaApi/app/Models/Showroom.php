@@ -33,6 +33,9 @@ class Showroom extends Model
     'opening_hours_from',
     'opening_hours_until',
     'opening_days',
+    'responsible_name',
+    'responsible_phone',
+    'responsible_email',
     'sort_order',
     'created_at',
   ];
@@ -44,6 +47,9 @@ class Showroom extends Model
     'opening_days' => 'json',
     'images' => 'array',
     'created_at' => 'datetime',
+    'responsible_name' => 'string',
+    'responsible_phone' => 'string',
+    'responsible_email' => 'string',
   ];
 
   protected static function booted(): void

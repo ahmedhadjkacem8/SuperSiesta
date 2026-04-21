@@ -41,6 +41,14 @@ class DimensionPolicy
     }
 
     /**
+     * Determine whether the user can reorder dimensions (class-level).
+     */
+    public function reorder(User $user): bool
+    {
+        return $user->isAdmin();
+    }
+
+    /**
      * Determine whether the user can delete the model.
      */
     public function delete(User $user, Dimension $dimension): bool

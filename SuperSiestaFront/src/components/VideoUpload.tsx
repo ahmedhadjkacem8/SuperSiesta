@@ -31,9 +31,9 @@ export default function VideoUpload({
       return;
     }
 
-    // Limit size to 50MB (adjust as needed)
-    if (file.size > 51200 * 1024) {
-      toast.error("La vidéo est trop lourde (max 50Mo)");
+    // Limit size to 200MB (must match server limits)
+    if (file.size > 200 * 1024 * 1024) {
+      toast.error("La vidéo est trop lourde (max 200Mo)");
       return;
     }
 
