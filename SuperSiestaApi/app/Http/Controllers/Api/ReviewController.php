@@ -49,6 +49,12 @@ class ReviewController extends BaseController
         }
 
         $review = Review::create($validated);
+
+        // Notifier l'admin
+        try {
+            app(\App\Services\NotificationService::class)->notifyNewReview($review);
+        } catch (\Exception $e) { }
+
         return $this->sendResponse($review, 'Merci ! Votre message a été envoyé avec succès.');
     }
 

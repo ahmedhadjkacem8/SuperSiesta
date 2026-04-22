@@ -5,10 +5,11 @@ import { toast } from 'sonner';
 export interface Order {
   id: string;
   order_number: string;
-  status: 'en_attente' | 'confirmée' | 'expédiée' | 'livrée' | 'annulée';
+  status: 'en_attente' | 'accepté' | 'annulée';
   full_name: string;
   email: string;
   phone: string;
+  phone2?: string | null;
   address: string;
   city: string;
   subtotal: number;

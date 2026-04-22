@@ -169,7 +169,7 @@ PUT /api/orders/{id}
 ```
 
 Parameters:
-- `status` - en_attente, confirmée, expédiée, livrée, annulée
+- `status` - en_attente, accepté, annulée
 - Other fields from creation
 
 #### Delete Order (Admin only)

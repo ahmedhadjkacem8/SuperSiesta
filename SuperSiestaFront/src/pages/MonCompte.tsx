@@ -8,8 +8,7 @@ import { formatPrice } from "@/lib/utils";
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   en_attente: { label: "En attente", color: "bg-amber-100 text-amber-800" },
-  'confirmée': { label: "Confirmée", color: "bg-blue-100 text-blue-800" },
-  'expédiée': { label: "En livraison", color: "bg-indigo-100 text-indigo-800" },
+  'accepté': { label: "Acceptée", color: "bg-blue-100 text-blue-800" },
   'livrée': { label: "Livrée", color: "bg-green-100 text-green-800" },
   'annulée': { label: "Annulée", color: "bg-red-100 text-red-800" },
 };

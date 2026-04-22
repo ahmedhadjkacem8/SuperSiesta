@@ -21,6 +21,7 @@ class Order extends Model
         'full_name',
         'email',
         'phone',
+        'phone2',
         'address',
         'city',
         'latitude',

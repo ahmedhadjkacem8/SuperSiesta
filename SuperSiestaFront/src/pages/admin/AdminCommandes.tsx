@@ -6,20 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Search, Eye, XCircle, Clock, CheckCircle, Truck, Receipt, Navigation, Loader2, RefreshCw, Package } from "lucide-react";
+import { Search, Eye, XCircle, Clock, CheckCircle, Truck, Receipt, Navigation, Loader2, RefreshCw, Package, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
 import { confirmDelete } from "@/lib/swal";
 import { formatPrice } from "@/lib/utils";
 import { useOrders, type Order } from "@/hooks/useOrders";
+import { AdminCreateOrderDialog } from "@/components/admin/AdminCreateOrderDialog";
 
 // Local Order interface removed, using the one from useOrders
 
 const STATUSES = [
   { value: "en_attente", label: "En attente", icon: Clock, color: "bg-amber-100 text-amber-800" },
-  { value: "confirmée", label: "Confirmée", icon: CheckCircle, color: "bg-blue-100 text-blue-800" },
-  { value: "expédiée", label: "En livraison", icon: Truck, color: "bg-indigo-100 text-indigo-800" },
-  { value: "livrée", label: "Livrée", icon: CheckCircle, color: "bg-green-100 text-green-800" },
+  { value: "accepté", label: "Acceptée", icon: CheckCircle, color: "bg-blue-100 text-blue-800" },
   { value: "annulée", label: "Annulée", icon: XCircle, color: "bg-red-100 text-red-800" },
 ];
 
@@ -28,6 +27,7 @@ export default function AdminCommandes() {
   const [filterStatus, setFilterStatus] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Use optimized hook with admin endpoint
   const { orders, loading, fetchOrders, updateOrderStatus } = useOrders({ adminEndpoint: true });
@@ -36,7 +36,8 @@ export default function AdminCommandes() {
     const matchSearch = !search || 
       o.full_name.toLowerCase().includes(search.toLowerCase()) || 
       o.order_number.toLowerCase().includes(search.toLowerCase()) || 
-      o.phone.includes(search);
+      o.phone.includes(search) ||
+      (o.phone2 && o.phone2.includes(search));
     const matchStatus = !filterStatus || o.status === filterStatus;
     return matchSearch && matchStatus;
   });
@@ -54,10 +55,6 @@ export default function AdminCommandes() {
     };
 
     fetchData();
-
-    // Auto-refresh every 10 seconds for real-time feel
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
   }, [filterStatus]);
 
   const viewDetail = (o: Order) => {
@@ -115,6 +112,13 @@ export default function AdminCommandes() {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Rafraîchir
+          </Button>
+          <Button
+            onClick={() => setCreateDialogOpen(true)}
+            className="gap-2 bg-primary hover:bg-primary/90"
+          >
+            <Plus className="w-4 h-4" />
+            Créer une commande
           </Button>
           <Badge variant="outline">{orders.length} commande{orders.length > 1 ? "s" : ""}</Badge>
         </div>
@@ -207,7 +211,10 @@ export default function AdminCommandes() {
                             <Badge variant="outline" className="text-[9px] h-3.5 px-1 text-muted-foreground border-dashed">ANONYME</Badge>
                           )}
                         </div>
-                        <p className="text-[11px] text-muted-foreground">{o.phone}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {o.phone}
+                          {o.phone2 && <span className="ml-1 opacity-70">/ {o.phone2}</span>}
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell className="text-xs font-medium">{o.city}</TableCell>
@@ -258,15 +265,7 @@ export default function AdminCommandes() {
                         
                         {/* Invoice button removed as requested */}
 
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-amber-600 hover:bg-amber-50"
-                          onClick={() => fetchOrders({ adminEndpoint: true })} 
-                          title="Actualiser cet état"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5" />
-                        </Button>
+
 
                         <Button 
                           variant="ghost" 
@@ -286,6 +285,13 @@ export default function AdminCommandes() {
           </Table>
         </div>
       )}
+
+      {/* Create Order Dialog */}
+      <AdminCreateOrderDialog 
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSuccess={() => fetchOrders({ adminEndpoint: true })}
+      />
 
       {/* Detail Dialog with new component */}
       <Dialog open={detailDialogOpen} onOpenChange={(open) => {

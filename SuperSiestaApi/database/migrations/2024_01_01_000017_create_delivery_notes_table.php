@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('delivery_number')->unique();
             $table->uuid('order_id')->nullable();
             $table->uuid('client_id')->nullable();
-            $table->enum('status', ['en_attente', 'en_cours', 'livrée', 'annulée'])->default('en_attente');
+            $table->enum('status', ['preparation', 'en_livraison', 'livrée', 'annulée', 'retour'])->default('preparation');
             $table->string('delivery_address')->nullable();
             $table->string('delivery_city')->nullable();
             $table->string('full_name');

@@ -99,8 +99,6 @@ export default function AdminDevis() {
 
   useEffect(() => { 
     load(); 
-    const interval = setInterval(load, 60000); // Sync every minute
-    return () => clearInterval(interval);
   }, []);
 
   const fetchNextNumber = async () => {

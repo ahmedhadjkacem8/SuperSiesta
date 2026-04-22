@@ -9,6 +9,7 @@ import { Search, Eye, Printer, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
 import { confirmDelete } from "@/lib/swal";
+import { OrderProgressBar } from '@/components/common/OrderProgressBar';
 
 interface DeliveryNote {
   id: string;
@@ -59,8 +60,8 @@ interface DeliveryItem {
 }
 
 const STATUSES = [
-  { value: "en_attente", label: "En attente", color: "bg-amber-100 text-amber-800" },
-  { value: "en_cours", label: "Partielle", color: "bg-blue-100 text-blue-800" },
+  { value: "preparation", label: "Préparation", color: "bg-amber-100 text-amber-800" },
+  { value: "en_livraison", label: "En livraison", color: "bg-indigo-100 text-indigo-800" },
   { value: "livrée", label: "Livrée", color: "bg-green-100 text-green-800" },
   { value: "annulée", label: "Annulée", color: "bg-red-100 text-red-800" },
 ];
@@ -95,14 +96,6 @@ export default function AdminBonLivraison() {
 
   useEffect(() => {
     load();
-    // Refresh when user comes back to this tab (Issue 1)
-    window.addEventListener("focus", load);
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(load, 30000);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("focus", load);
-    };
   }, []);
 
   const viewDetail = async (dn: DeliveryNote) => {
@@ -651,6 +644,9 @@ export default function AdminBonLivraison() {
                     </div>
                   ))}
                 </div>
+              </div>
+              <div className="mt-4">
+                <OrderProgressBar currentStatus={detail.status} />
               </div>
             </div>
           )}

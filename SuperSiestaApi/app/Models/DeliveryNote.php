@@ -20,6 +20,7 @@ class DeliveryNote extends Model
         'delivery_city',
         'full_name',
         'phone',
+        'phone2',
         'notes',
         'delivered_at',
         'delivery_man_id',

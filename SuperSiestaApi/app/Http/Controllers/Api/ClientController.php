@@ -51,6 +51,11 @@ class ClientController extends BaseController
 
         $client = Client::create($validated);
 
+        // Notifier l'admin
+        try {
+            app(\App\Services\NotificationService::class)->notifyNewClient($client);
+        } catch (\Exception $e) { }
+
         return $this->sendResponse($client, 'Client created successfully', 201);
     }
 

@@ -9,23 +9,17 @@ interface OrderStep {
   bgColorClass: string;
 }
 
+
 const ORDER_STEPS: OrderStep[] = [
   {
-    status: 'en_attente',
-    label: 'En attente',
-    icon: <Clock className="w-5 h-5" />,
+    status: 'preparation',
+    label: 'Préparation',
+    icon: <PackageCheck className="w-5 h-5" />,
     colorClass: 'text-amber-600',
     bgColorClass: 'bg-amber-50 border-amber-200',
   },
   {
-    status: 'confirmée',
-    label: 'Confirmée',
-    icon: <CheckCircle2 className="w-5 h-5" />,
-    colorClass: 'text-blue-600',
-    bgColorClass: 'bg-blue-50 border-blue-200',
-  },
-  {
-    status: 'expédiée',
+    status: 'en_livraison',
     label: 'En livraison',
     icon: <Truck className="w-5 h-5" />,
     colorClass: 'text-indigo-600',
@@ -34,7 +28,7 @@ const ORDER_STEPS: OrderStep[] = [
   {
     status: 'livrée',
     label: 'Livrée',
-    icon: <PackageCheck className="w-5 h-5" />,
+    icon: <CheckCircle2 className="w-5 h-5" />,
     colorClass: 'text-green-600',
     bgColorClass: 'bg-green-50 border-green-200',
   },
@@ -103,28 +97,20 @@ export function OrderProgressBar({ currentStatus, showLabel = false, compact = f
           <div className="text-xs text-muted-foreground mb-2">
             {ORDER_STEPS.map((step, idx) => (
               <span key={step.status} className="mr-4">
-                <span
-                  className={`font-medium ${idx <= currentIndex ? 'text-foreground font-semibold' : ''}`}
-                >
-                  {step.label}
-                </span>
+                <span className={`font-medium ${idx <= currentIndex ? 'text-foreground font-semibold' : ''}`}>{step.label}</span>
                 {idx < ORDER_STEPS.length - 1 && <span className="text-gray-300 mx-2">→</span>}
               </span>
             ))}
           </div>
 
-          {/* Current step details */}
           <div className={`flex items-start gap-3 p-3 rounded-lg border ${ORDER_STEPS[currentIndex]?.bgColorClass}`}>
-            <div className={`flex-shrink-0 ${ORDER_STEPS[currentIndex]?.colorClass}`}>
-              {ORDER_STEPS[currentIndex]?.icon}
-            </div>
+            <div className={`flex-shrink-0 ${ORDER_STEPS[currentIndex]?.colorClass}`}>{ORDER_STEPS[currentIndex]?.icon}</div>
             <div>
               <p className="text-sm font-semibold">Étape actuelle: {ORDER_STEPS[currentIndex]?.label}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {currentIndex === 0 && 'Votre commande est en attente de confirmation.'}
-                {currentIndex === 1 && 'Votre commande a été confirmée et est en préparation.'}
-                {currentIndex === 2 && 'Votre commande est en cours de livraison.'}
-                {currentIndex === 3 && 'Votre commande a été livrée avec succès!'}
+                {currentIndex === 0 && 'Le BL est en préparation.'}
+                {currentIndex === 1 && 'Le BL est en cours de livraison.'}
+                {currentIndex === 2 && 'Le BL a été livré.'}
               </p>
             </div>
           </div>

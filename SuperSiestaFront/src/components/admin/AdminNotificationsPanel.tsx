@@ -3,9 +3,10 @@ import { Bell, ShoppingCart, Users, PenSquare, CheckCheck, Clock, X } from "luci
 import { useAdminNotifications, AdminNotification } from "@/hooks/useAdminNotifications";
 import { useState, useRef, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function AdminNotificationsPanel() {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead, cleanAll, getColorClass } = useAdminNotifications();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -106,7 +107,14 @@ export default function AdminNotificationsPanel() {
                   {notifications.map((notif: AdminNotification) => (
                     <div
                       key={notif.id}
-                      className={`p-4 hover:bg-muted/50 transition-colors relative group/item ${
+                      onClick={() => {
+                        if (notif.status === 'new') markAsRead(notif.id);
+                        if (notif.path) {
+                          setIsOpen(false);
+                          navigate(notif.path);
+                        }
+                      }}
+                      className={`p-4 hover:bg-muted/50 transition-colors relative group/item cursor-pointer ${
                         notif.status === 'new' ? 'border-l-4' : ''
                       } ${notif.status === 'expired' ? 'opacity-60' : ''}`}
                       style={notif.status === 'new' ? { borderLeftColor: getColorForBorder(notif.color) } : {}}
@@ -161,7 +169,10 @@ export default function AdminNotificationsPanel() {
                         {/* Action */}
                         {notif.status === 'new' && (
                           <button
-                            onClick={() => markAsRead(notif.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markAsRead(notif.id);
+                            }}
                             className="opacity-0 group-hover/item:opacity-100 transition-opacity p-1 hover:bg-muted rounded"
                           >
                             <CheckCheck className="w-4 h-4 text-primary" />

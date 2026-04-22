@@ -5,7 +5,7 @@ import {
   Truck, XCircle, CheckCircle, ChevronRight, Info,
   Package, Calendar, CreditCard, Receipt, Loader2, Navigation
 } from 'lucide-react';
-import { OrderProgressBar } from '@/components/common/OrderProgressBar';
+// Progress bar moved to Delivery Note UI
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -75,12 +75,13 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
 
   const canGenerateDeliveryNote = () => {
     if (!order) return false;
-    return order.status !== 'annulée';
+    // Allow generation only when order is accepted or still allow accept+generate
+    return order.status === 'accepté' || order.status === 'en_attente';
   };
 
   const hasDeliveryNoteReady = () => {
     if (!order) return false;
-    return order.status === 'livrée' || !!order.delivery_note_id;
+    return !!order.delivery_note_id;
   };
 
   const generateInvoice = async () => {
@@ -108,6 +109,12 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
       if (response?.id) {
         setOrder({ ...order, delivery_note_id: response.id });
         toast.success(`Bon de livraison créé: ${response.delivery_number}`);
+        // Marquer la commande comme acceptée si nécessaire
+        try {
+          if (order.status !== 'accepté') await updateStatus('accepté');
+        } catch (e) {
+          console.error(e);
+        }
         if (onRefresh) onRefresh();
       }
     } catch (err: any) {
@@ -264,6 +271,7 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
                 <div style="text-align: right"><div class="section-title-box title-client"><h2>Coordonnées Client</h2></div></div>
                 <div class="client-info">
                   <div class="info-row"><span class="info-label">Client :</span><p><span>${dn.full_name}</span></p></div>
+                  <div class="info-row"><span class="info-label">Tél :</span><p><span>${dn.phone} ${dn.phone2 ? ` / ${dn.phone2}` : ""}</span></p></div>
                   <div class="info-row"><span class="info-label">Adresse :</span><p><span>${dn.delivery_address} ${dn.delivery_city || ""}</span></p></div>
                 </div>
               </div>
@@ -332,13 +340,14 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
 
   const statusConfig: Record<string, { label: string, icon: any, color: string, bg: string }> = {
     en_attente: { label: 'En attente', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
-    confirmée: { label: 'Confirmée', icon: CheckCircle, color: 'text-blue-600', bg: 'bg-blue-50' },
-    expédiée: { label: 'En livraison', icon: Truck, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-    livrée: { label: 'Livrée', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+    'accepté': { label: 'Acceptée', icon: CheckCircle, color: 'text-blue-600', bg: 'bg-blue-50' },
     annulée: { label: 'Annulée', icon: XCircle, color: 'text-red-600', bg: 'bg-red-50' },
   };
 
   const currentStatus = statusConfig[order.status] || statusConfig.en_attente;
+
+  const HeaderIcon = (currentStatus.icon || Clock) as any;
+  const TrackIcon = (statusConfig[order.status]?.icon || Clock) as any;
 
   return (
     <div className="space-y-6 pb-6">
@@ -346,7 +355,7 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-muted/30 p-4 rounded-xl border border-border">
         <div className="flex items-center gap-4">
           <div className={`p-3 rounded-full ${currentStatus.bg} ${currentStatus.color}`}>
-            <currentStatus.icon className="w-6 h-6" />
+            <HeaderIcon className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -385,36 +394,30 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <OrderProgressBar currentStatus={order.status} />
-              
-              {order.status !== 'annulée' && order.status !== 'livrée' && (
-                <div className="mt-8 pt-6 border-t border-dashed border-border">
-                  <p className="text-sm font-medium mb-3 flex items-center gap-2">
-                    <ChevronRight className="w-4 h-4 text-primary" />
-                    Mettre à jour le statut
-                  </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {(['en_attente', 'confirmée', 'expédiée', 'livrée'] as const).map((status) => {
-                      const cfg = statusConfig[status];
-                      const Icon = cfg.icon;
-                      return (
-                        <Button
-                          key={status}
-                          variant={order.status === status ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => updateStatus(status)}
-                          className={`flex flex-col h-auto py-3 px-2 gap-2 transition-all ${
-                            order.status === status ? 'ring-2 ring-primary ring-offset-2' : 'hover:bg-muted'
-                          }`}
-                        >
-                          <Icon className={`w-4 h-4 ${order.status === status ? 'text-white' : cfg.color}`} />
-                          <span className="text-[10px] sm:text-xs font-semibold">{cfg.label}</span>
-                        </Button>
-                      );
-                    })}
+              <div className="mt-2">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded ${statusConfig[order.status]?.bg} ${statusConfig[order.status]?.color}`}>
+                      <TrackIcon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold">{statusConfig[order.status]?.label}</div>
+                      <div className="text-xs text-muted-foreground">Statut actuel de la commande</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {order.status === 'en_attente' && (
+                      <>
+                        <Button size="sm" variant="default" onClick={() => updateStatus('accepté')}>Accepter</Button>
+                        <Button size="sm" variant="outline" onClick={() => updateStatus('annulée')}>Annuler</Button>
+                      </>
+                    )}
+                    {order.status === 'accepté' && (
+                      <Button size="sm" variant="outline" onClick={() => updateStatus('annulée')}>Annuler</Button>
+                    )}
                   </div>
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
 
@@ -511,7 +514,10 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
                 </div>
                 <div>
                   <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Téléphone</p>
-                  <p className="font-medium text-sm">{order.phone}</p>
+                  <p className="font-medium text-sm">
+                    {order.phone}
+                    {order.phone2 && <span className="block text-[11px] text-muted-foreground opacity-80">Alt: {order.phone2}</span>}
+                  </p>
                 </div>
               </div>
 
@@ -584,12 +590,14 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
                     <Printer className="w-4 h-4" />
                     IMPRIMER LE BON DE LIVRAISON
                   </Button>
-                ) : (
+                  ) : (
                   <Button
                     size="sm"
                     variant="secondary"
                     onClick={generateDeliveryNote}
-                    disabled={generating === 'delivery' || !canGenerateDeliveryNote()}
+                    disabled={
+                      generating === 'delivery' || !canGenerateDeliveryNote() || !!order.delivery_note_id
+                    }
                     className="w-full h-8 text-[11px] font-bold"
                   >
                     {generating === 'delivery' ? (

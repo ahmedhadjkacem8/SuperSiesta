@@ -100,7 +100,8 @@ class OrderController extends BaseController
             'full_name' => 'required|string|max:255',
             'email' => 'required_if:create_account,true|nullable|email|max:255',
             'phone' => 'required|string|max:20',
-            'address' => 'required|string|max:255',
+            'phone2' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:255',
             'city' => 'required|string|max:100',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
@@ -202,6 +203,7 @@ class OrderController extends BaseController
             'full_name' => $validated['full_name'],
             'email' => $validated['email'] ?? null,
             'phone' => $validated['phone'],
+            'phone2' => $validated['phone2'] ?? null,
             'address' => $validated['address'],
             'city' => $validated['city'],
             'latitude' => $validated['latitude'] ?? null,
@@ -314,7 +316,7 @@ class OrderController extends BaseController
         $this->authorize('update', $order);
 
         $validated = $request->validate([
-            'status' => 'string|in:en_attente,confirmée,expédiée,livrée,annulée',
+            'status' => 'string|in:en_attente,accepté,annulée',
             'full_name' => 'string|max:255',
             'phone' => 'string|max:20',
             'address' => 'string|max:255',
@@ -325,36 +327,42 @@ class OrderController extends BaseController
         $oldStatus = $order->status;
         $order->update($validated);
 
-        // Auto-générer la facture si le statut change à "confirmée"
-        if ($oldStatus !== 'confirmée' && $validated['status'] === 'confirmée' && !$order->invoice_id) {
-            // Créer la facture automatiquement
-            $clientId = null;
-            if ($order->user_id && $order->user) {
-                $client = \App\Models\Client::where('email', $order->user->email)->first();
-                if ($client) $clientId = $client->id;
-            }
+        // Lors du changement vers 'accepté', générer un BL si nécessaire (logique plus bas)
 
-            $invoice = Invoice::create([
-                'invoice_number' => Compteur::generateNumber('facture'),
-                'client_id' => $clientId,
-                'order_id' => $order->id,
-                'status' => 'brouillon',
-                'total' => $order->total,
-                'tax_rate' => 19,
-            ]);
+        // Si le statut change à 'accepté', générer un bon de livraison (une seule fois)
+        if ($oldStatus !== 'accepté' && ($validated['status'] === 'accepté')) {
+            if (!$order->deliveryNotes()->exists()) {
+                // Créer le bon de livraison à partir de la commande
+                $clientId = null;
+                if ($order->user_id && $order->user) {
+                    $client = \App\Models\Client::where('email', $order->user->email)->first();
+                    if ($client) $clientId = $client->id;
+                }
 
-            // Copier les articles de la commande à la facture
-            foreach ($order->items as $item) {
-                $invoice->items()->create([
-                    'description' => $item->product_name . ' (' . $item->size_label . ')',
-                    'quantity' => $item->quantity,
-                    'unit_price' => $item->unit_price,
-                    'total' => $item->total,
+                $note = \App\Models\DeliveryNote::create([
+                    'delivery_number' => Compteur::generateNumber('bon_livraison'),
+                    'order_id' => $order->id,
+                    'client_id' => $clientId,
+                    'status' => 'preparation',
+                    'delivery_address' => $order->address,
+                    'delivery_city' => $order->city,
+                    'full_name' => $order->full_name,
+                    'phone' => $order->phone,
+                    'notes' => $order->notes,
                 ]);
-            }
 
-            // Mettre à jour la commande avec l'ID de la facture
-            $order->update(['invoice_id' => $invoice->id]);
+                foreach ($order->items as $item) {
+                    $note->items()->create([
+                        'product_id'       => $item->product_id,
+                        'product_name'     => $item->product_name,
+                        'size_label'       => $item->size_label,
+                        'quantity'         => $item->quantity,
+                        'delivered_quantity' => $item->quantity,
+                        'grammage'         => $item->grammage,
+                    ]);
+                }
+            }
+            // nothing else to do for status here; order remains 'accepté'
         }
 
         return $this->sendResponse($order->load('invoice'), 'Order updated successfully');

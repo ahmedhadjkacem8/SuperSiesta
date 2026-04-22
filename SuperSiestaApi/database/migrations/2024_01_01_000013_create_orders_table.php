@@ -14,7 +14,7 @@ return new class extends Migration
             $table->uuid('quote_id')->nullable();
             $table->uuid('invoice_id')->nullable();
             $table->string('order_number')->unique();
-            $table->enum('status', ['en_attente', 'confirmée', 'expédiée', 'livrée', 'annulée'])->default('en_attente');
+            $table->enum('status', ['en_attente', 'accepté', 'annulée'])->default('en_attente');
             $table->string('full_name');
             $table->string('phone');
             $table->string('address');
