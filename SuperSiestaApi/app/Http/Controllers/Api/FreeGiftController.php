@@ -14,7 +14,7 @@ class FreeGiftController extends BaseController
      */
     public function index(): JsonResponse
     {
-        $freeGifts = FreeGift::with('products')->orderBy('titre', 'asc')->get();
+        $freeGifts = FreeGift::with('dimensions', 'products')->orderBy('titre', 'asc')->get();
         return $this->sendResponse($freeGifts, 'Free gifts retrieved successfully');
     }
 
@@ -31,6 +31,8 @@ class FreeGiftController extends BaseController
             'poids' => 'required|integer|min:0',
             'product_ids' => 'nullable|array',
             'product_ids.*' => 'exists:products,id',
+            'dimension_ids' => 'nullable|array',
+            'dimension_ids.*' => 'exists:dimensions,id',
         ]);
 
         $freeGift = new FreeGift([
@@ -45,12 +47,12 @@ class FreeGiftController extends BaseController
 
         $freeGift->save();
 
-        // Attacher les produits
-        if (!empty($validated['product_ids'])) {
-            $freeGift->products()->attach($validated['product_ids']);
+        // Attacher les dimensions
+        if (!empty($validated['dimension_ids'])) {
+            $freeGift->dimensions()->attach($validated['dimension_ids']);
         }
 
-        $freeGift->load('products');
+        $freeGift->load('products', 'dimensions');
         return $this->sendResponse($freeGift, 'Free gift created successfully', 201);
     }
 
@@ -59,7 +61,7 @@ class FreeGiftController extends BaseController
      */
     public function show(FreeGift $freeGift): JsonResponse
     {
-        $freeGift->load('products');
+        $freeGift->load('products', 'dimensions');
         return $this->sendResponse($freeGift, 'Free gift retrieved successfully');
     }
 
@@ -76,6 +78,8 @@ class FreeGiftController extends BaseController
             'poids' => 'required|integer|min:0',
             'product_ids' => 'nullable|array',
             'product_ids.*' => 'exists:products,id',
+            'dimension_ids' => 'nullable|array',
+            'dimension_ids.*' => 'exists:dimensions,id',
         ]);
 
         $freeGift->fill([
@@ -105,7 +109,11 @@ class FreeGiftController extends BaseController
             $freeGift->products()->sync($request->input('product_ids', []));
         }
 
-        $freeGift->load('products');
+        if ($request->has('dimension_ids')) {
+            $freeGift->dimensions()->sync($request->input('dimension_ids', []));
+        }
+
+        $freeGift->load('products', 'dimensions');
         return $this->sendResponse($freeGift, 'Free gift updated successfully');
     }
 

@@ -35,6 +35,7 @@ class GammeController extends BaseController
                     // Accept files but validate extensions below to avoid strict MIME false-negatives
                     'images_3d.*' => 'nullable|file|max:204800',
             'sort_order'  => 'integer',
+            'warranty'    => 'nullable|integer|min:0',
         ]);
 
         $gamme = new Gamme($validated);
@@ -89,6 +90,7 @@ class GammeController extends BaseController
             'images_3d'   => 'nullable|array',
             'images_3d.*' => 'nullable|file|max:204800', // Allow both strings (URLs) and Files — extension check done manually
             'sort_order'  => 'integer',
+            'warranty'    => 'nullable|integer|min:0',
         ]);
 
         if ($request->hasFile('cover_image')) {

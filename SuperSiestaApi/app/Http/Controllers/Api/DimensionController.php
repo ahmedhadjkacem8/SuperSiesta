@@ -14,7 +14,7 @@ class DimensionController extends BaseController
     public function index(): JsonResponse
     {
         // Order by explicit admin sort_order first, then fallback to label
-        $dimensions = Dimension::orderBy('sort_order', 'asc')->orderBy('label', 'asc')->get();
+        $dimensions = Dimension::with('freeGifts')->orderBy('sort_order', 'asc')->orderBy('label', 'asc')->get();
         return $this->sendResponse($dimensions, 'Dimensions retrieved successfully');
     }
 
@@ -28,6 +28,8 @@ class DimensionController extends BaseController
         $validated = $request->validate([
             'label' => 'required|string|unique:dimensions|max:100',
             'is_standard' => 'boolean',
+            'free_gift_ids' => 'nullable|array',
+            'free_gift_ids.*' => 'exists:free_gifts,id',
         ]);
 
         // Assign next available sort_order if not provided
@@ -38,7 +40,11 @@ class DimensionController extends BaseController
 
         $dimension = Dimension::create($validated);
 
-        return $this->sendResponse($dimension, 'Dimension created successfully', 201);
+        if ($request->has('free_gift_ids')) {
+            $dimension->freeGifts()->sync($validated['free_gift_ids']);
+        }
+
+        return $this->sendResponse($dimension->load('freeGifts'), 'Dimension created successfully', 201);
     }
 
     /**
@@ -53,11 +59,15 @@ class DimensionController extends BaseController
             'ids.*' => 'required|uuid|exists:dimensions,id'
         ]);
 
-        // Update sort_order according to provided order
         $ids = $validated['ids'];
-        foreach ($ids as $index => $id) {
-            Dimension::where('id', $id)->update(['sort_order' => $index]);
-        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($ids) {
+            foreach ($ids as $index => $id) {
+                \Illuminate\Support\Facades\DB::table('dimensions')
+                    ->where('id', $id)
+                    ->update(['sort_order' => $index]);
+            }
+        });
 
         return $this->sendResponse(null, 'Order updated');
     }
@@ -80,11 +90,17 @@ class DimensionController extends BaseController
         $validated = $request->validate([
             'label' => 'required|string|unique:dimensions,label,' . $dimension->id . '|max:100',
             'is_standard' => 'boolean',
+            'free_gift_ids' => 'nullable|array',
+            'free_gift_ids.*' => 'exists:free_gifts,id',
         ]);
 
         $dimension->update($validated);
 
-        return $this->sendResponse($dimension, 'Dimension updated successfully');
+        if ($request->has('free_gift_ids')) {
+            $dimension->freeGifts()->sync($validated['free_gift_ids']);
+        }
+
+        return $this->sendResponse($dimension->load('freeGifts'), 'Dimension updated successfully');
     }
 
     /**

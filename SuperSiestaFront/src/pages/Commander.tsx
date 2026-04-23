@@ -43,6 +43,7 @@ export default function Commander() {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [dimensions, setDimensions] = useState<any[]>([]);
   const [useSaved, setUseSaved] = useState(false);
 
   // Auto-fill from profile when logged in
@@ -65,6 +66,19 @@ export default function Commander() {
       }
     }).catch(() => {});
   }, [user]);
+
+  // Fetch dimensions for gifts
+  useEffect(() => {
+    const fetchDimensions = async () => {
+      try {
+        const res = await api.get('/dimensions')
+        if (res) setDimensions(Array.isArray(res) ? res : (res as any).data || [])
+      } catch (err) {
+        console.error('Error fetching dimensions', err)
+      }
+    }
+    fetchDimensions()
+  }, [])
 
 
 
@@ -128,8 +142,10 @@ export default function Commander() {
       const giftIds = new Set<string | number>();
 
       items.forEach(item => {
-        const productGifts = (item.product as any).freeGifts || [];
-        productGifts.forEach((gift: any) => {
+        const currentDim = dimensions.find(d => d.label === item.size.label);
+        const sizeGifts = currentDim?.free_gifts || [];
+        
+        sizeGifts.forEach((gift: any) => {
           if (!giftIds.has(gift.id)) {
             allGifts.push({
               free_gift_id: gift.id,
@@ -376,26 +392,32 @@ export default function Commander() {
                     <p className="text-xs text-muted-foreground mb-1">Dimensions: {item.size.label}</p>
                     <p className="text-sm font-black text-primary">{formatPrice(item.size.price * item.quantity)}</p>
                     
-                    {/* Free gifts section - Automatic display, no checkboxes */}
-                    {(item.product as any).freeGifts && (item.product as any).freeGifts.length > 0 && (
-                      <div className="mt-4 space-y-2 border-l-2 border-primary/20 pl-3">
-                        <p className="text-[10px] font-black text-primary uppercase flex items-center gap-1 tracking-tighter">
-                          <Gift className="w-3 h-3" /> Cadeau inclus
-                        </p>
-                        {(item.product as any).freeGifts.map((gift: any) => (
-                          <div key={gift.id} className="bg-emerald-50/50 rounded-xl p-2 border border-emerald-100 flex items-center gap-2 animate-in fade-in zoom-in-95 duration-300">
-                            {gift.image && <img src={getImageUrl(gift.image)} alt={gift.titre} className="w-10 h-10 object-cover rounded-lg flex-shrink-0 shadow-xs" />}
-                            <div className="flex-1 min-w-0">
-                              <p className="font-bold text-[11px] text-emerald-800 truncate">{gift.titre}</p>
-                              <p className="text-[9px] text-emerald-600 font-medium">Offert avec cet article</p>
+                    {(() => {
+                      const currentDim = dimensions.find(d => d.label === item.size.label);
+                      const sizeGifts = currentDim?.free_gifts || [];
+                      
+                      if (sizeGifts.length === 0) return null;
+
+                      return (
+                        <div className="mt-4 space-y-2 border-l-2 border-primary/20 pl-3">
+                          <p className="text-[10px] font-black text-primary uppercase flex items-center gap-1 tracking-tighter">
+                            <Gift className="w-3 h-3" /> Cadeau inclus
+                          </p>
+                          {sizeGifts.map((gift: any) => (
+                            <div key={gift.id} className="bg-emerald-50/50 rounded-xl p-2 border border-emerald-100 flex items-center gap-2 animate-in fade-in zoom-in-95 duration-300">
+                              {gift.image && <img src={getImageUrl(gift.image)} alt={gift.titre} className="w-10 h-10 object-cover rounded-lg flex-shrink-0 shadow-xs" />}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-bold text-[11px] text-emerald-800 truncate">{gift.titre}</p>
+                                <p className="text-[9px] text-emerald-600 font-medium">Offert avec cette dimension</p>
+                              </div>
+                              <div className="bg-emerald-100 p-1 rounded-full">
+                                <Sparkles className="w-3 h-3 text-emerald-600" />
+                              </div>
                             </div>
-                            <div className="bg-emerald-100 p-1 rounded-full">
-                              <Sparkles className="w-3 h-3 text-emerald-600" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               ))}

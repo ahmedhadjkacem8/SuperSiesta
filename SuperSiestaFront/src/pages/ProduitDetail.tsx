@@ -38,6 +38,7 @@ export default function ProduitDetail() {
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [reviewMessage, setReviewMessage] = useState("")
   const [reviewRating, setReviewRating] = useState<number>(5)
+  const [dimensions, setDimensions] = useState<any[]>([])
 
   // Set default size when product loads
   useEffect(() => {
@@ -73,6 +74,19 @@ export default function ProduitDetail() {
 
     fetchReviews()
   }, [product])
+
+  // Fetch dimensions for gifts
+  useEffect(() => {
+    const fetchDimensions = async () => {
+      try {
+        const res = await api.get('/dimensions')
+        if (res) setDimensions(Array.isArray(res) ? res : (res as any).data || [])
+      } catch (err) {
+        console.error('Error fetching dimensions', err)
+      }
+    }
+    fetchDimensions()
+  }, [])
 
   if (isLoading) {
     return (
@@ -224,38 +238,62 @@ export default function ProduitDetail() {
             ))}
           </div>
 
-          {product.freeGifts && product.freeGifts.length > 0 && (
-            <div className="border-t border-border pt-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="bg-primary/10 p-2 rounded-lg">
-                  <Gift className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold">Cadeau offert ! 🎁</h3>
-                  <p className="text-xs text-muted-foreground">Inclus gratuitement avec cet article</p>
-                </div>
-              </div>
-              <div className="space-y-3">
-                {product.freeGifts.map((gift: any) => (
-                  <div key={gift.id} className="flex items-center gap-3 bg-accent/30 p-3 rounded-2xl border border-primary/10">
-                    {gift.image ? (
-                      <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-white">
-                        <img src={getImageUrl(gift.image)} alt={gift.titre} className="w-full h-full object-cover" />
-                      </div>
-                    ) : (
-                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Gift className="w-6 h-6 text-primary/50" />
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-sm font-bold">{gift.titre}</p>
-                      {gift.description && <p className="text-[10px] text-muted-foreground line-clamp-1">{gift.description}</p>}
-                    </div>
+          {(() => {
+            const currentDim = dimensions.find(d => d.label === selectedSize.label);
+            const sizeGifts = currentDim?.free_gifts || [];
+            const hasGifts = sizeGifts.length > 0;
+            const gamme = gammes?.find(g => g.name === product.gamme);
+            const hasWarranty = gamme && gamme.warranty;
+
+            if (!hasGifts && !hasWarranty) return null;
+
+            return (
+              <div className="border-t border-border pt-5 space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="bg-primary/10 p-2 rounded-lg">
+                    <Gift className="w-5 h-5 text-primary" />
                   </div>
-                ))}
+                  <div>
+                    <h3 className="text-sm font-bold">Cadeaux & Garanties ! 🎁</h3>
+                    <p className="text-xs text-muted-foreground">Offres incluses avec cette dimension ({selectedSize.label})</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {/* Gamme Warranty */}
+                  {hasWarranty && (
+                    <div className="flex items-center gap-3 bg-primary/5 p-3 rounded-2xl border border-primary/20 animate-in fade-in zoom-in-95 duration-500">
+                      <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <Shield className="w-6 h-6 text-primary-foreground" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold">Garantie {gamme.warranty} ans</p>
+                        <p className="text-[10px] text-muted-foreground">Sérénité totale garantie par Super Siesta</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Dimension Gifts */}
+                  {sizeGifts.map((gift: any) => (
+                    <div key={gift.id} className="flex items-center gap-3 bg-accent/30 p-3 rounded-2xl border border-primary/10 animate-in slide-in-from-bottom-2 duration-500">
+                      {gift.image ? (
+                        <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-white">
+                          <img src={getImageUrl(gift.image)} alt={gift.titre} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Gift className="w-6 h-6 text-primary/50" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-bold">{gift.titre}</p>
+                        {gift.description && <p className="text-[10px] text-muted-foreground line-clamp-1">{gift.description}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           <div className="border-t border-border pt-5">
             <h3 className="text-sm font-bold mb-3">Caractéristiques</h3>

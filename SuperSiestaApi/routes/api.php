@@ -181,6 +181,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Gammes - Admin only
     Route::post('/gammes', [GammeController::class, 'store']);
+    Route::post('/gammes/reorder', [GammeController::class, 'reorder']);
     Route::post('/gammes/{gamme}', [GammeController::class, 'update']); // POST pour multipart
     Route::put('/gammes/{gamme}', [GammeController::class, 'update']);
     Route::delete('/gammes/{gamme}', [GammeController::class, 'destroy']);

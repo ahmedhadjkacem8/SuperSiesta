@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import ImageUpload from "@/components/ImageUpload";
 import MultiImageUpload from "@/components/MultiImageUpload";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Video, Image, Box } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Video, Image, Box, Shield } from "lucide-react";
 import { api } from "@/lib/apiClient";
 import VideoUpload from "@/components/VideoUpload";
 import { confirmDelete } from "@/lib/swal";
@@ -22,6 +22,7 @@ interface Gamme {
   photos: string[];
   images_3d: string[];
   sort_order: number;
+  warranty: number | null;
 }
 
 
@@ -36,6 +37,7 @@ interface FormState {
   photos_preview: string[];
   images_3d_files: File[];
   images_3d_preview: string[];
+  warranty: string;
 }
 
 export default function AdminGammes() {
@@ -54,11 +56,12 @@ export default function AdminGammes() {
     photos_preview: [],
     images_3d_files: [],
     images_3d_preview: [],
+    warranty: "",
   });
 
   const load = async () => {
     try {
-      const data = await api.get<Gamme[]>("/gammes");
+      const data = await api.get<Gamme[]>(`/gammes?t=${Date.now()}`);
       setGammes(data || []);
     } catch (err: any) {
       toast.error("Erreur lors du chargement des gammes");
@@ -81,6 +84,7 @@ export default function AdminGammes() {
       photos_preview: [],
       images_3d_files: [],
       images_3d_preview: [],
+      warranty: "",
     });
     setEditing(null);
   };
@@ -100,6 +104,7 @@ export default function AdminGammes() {
       photos_preview: g.photos || [],
       images_3d_files: [],
       images_3d_preview: g.images_3d || [],
+      warranty: g.warranty?.toString() || "",
     });
     setOpen(true);
   };
@@ -115,6 +120,7 @@ export default function AdminGammes() {
     formData.append("slug", slug);
     formData.append("description", form.description || "");
     formData.append("sort_order", String(editing?.sort_order ?? gammes.length));
+    formData.append("warranty", form.warranty || "0");
 
     if (form.cover_image_file) {
       formData.append("cover_image", form.cover_image_file);
@@ -220,6 +226,7 @@ export default function AdminGammes() {
                 {g.video_url && <span className="inline-flex items-center gap-1"><Video className="w-3 h-3" /> Vidéo</span>}
                 <span className="inline-flex items-center gap-1"><Image className="w-3 h-3" /> {g.photos?.length || 0} photos</span>
                 <span className="inline-flex items-center gap-1"><Box className="w-3 h-3" /> {g.images_3d?.length || 0} 3D</span>
+                {g.warranty && <span className="inline-flex items-center gap-1 font-bold text-primary"><Shield className="w-3 h-3" /> {g.warranty} ans</span>}
               </div>
             </div>
             <div className="flex gap-1">
@@ -247,6 +254,10 @@ export default function AdminGammes() {
             <div>
               <label className="text-sm font-medium">Description</label>
               <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} placeholder="Description de la gamme..." />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Garantie (en années)</label>
+              <Input type="number" value={form.warranty} onChange={(e) => setForm({ ...form, warranty: e.target.value })} placeholder="Ex: 10" />
             </div>
             <ImageUpload
               value={form.cover_image_file}

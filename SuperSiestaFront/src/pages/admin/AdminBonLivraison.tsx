@@ -55,6 +55,7 @@ interface DeliveryItem {
   gifts_grammage?: Record<string, string> | null;
   product?: {
     id: string;
+    gamme?: string | null;
     free_gifts?: GiftItem[];
   } | null;
 }
@@ -77,18 +78,24 @@ export default function AdminBonLivraison() {
   const [customLivreurName, setCustomLivreurName] = useState<string>("");
   const [customLivreurPhone, setCustomLivreurPhone] = useState<string>("");
   const [customLivreurVehicle, setCustomLivreurVehicle] = useState<string>("");
+  const [gammes, setGammes] = useState<any[]>([]);
+  const [dimensions, setDimensions] = useState<any[]>([]);
   const printRef = useRef<HTMLDivElement>(null);
 
   const load = async () => {
     try {
       // Add timestamp to bypass potential browser/network caching (Issue: Instant Sync)
       const timestamp = Date.now();
-      const [notesData, livreursData] = await Promise.all([
+      const [notesData, livreursData, gammesData, dimensionsData] = await Promise.all([
         api.get<DeliveryNote[]>(`/delivery-notes?t=${timestamp}`),
-        api.get<{ id: string, name: string, is_active: boolean }[]>(`/delivery-men?t=${timestamp}`)
+        api.get<{ id: string, name: string, is_active: boolean }[]>(`/delivery-men?t=${timestamp}`),
+        api.get<any[]>(`/gammes?t=${timestamp}`),
+        api.get<any[]>(`/dimensions?t=${timestamp}`)
       ]);
       setNotes(notesData || []);
       setLivreurs(livreursData || []);
+      setGammes(Array.isArray(gammesData) ? gammesData : (gammesData as any).data || []);
+      setDimensions(Array.isArray(dimensionsData) ? dimensionsData : (dimensionsData as any).data || []);
     } catch (err: any) {
       toast.error("Erreur lors du chargement des données");
     }
@@ -611,6 +618,20 @@ export default function AdminBonLivraison() {
                           <Input type="number" min={0} max={item.quantity} value={item.delivered_quantity} onChange={e => updateDeliveredQty(item.id, Number(e.target.value))} className="w-16 h-7 text-xs" />
                         </div>
                       </div>
+                      {/* Garantie Display in Dialog */}
+                      {(() => {
+                        const productGammeName = (item as any).product?.gamme;
+                        const gamme = gammes.find(g => g.name === productGammeName || g.slug === productGammeName || g.id === productGammeName);
+                        if (gamme && gamme.warranty) {
+                          return (
+                            <div className="mx-2 mb-2 p-2 rounded-lg bg-primary/5 border border-primary/10 flex items-center gap-2">
+                               <div className="bg-primary text-white text-[9px] font-black px-1.5 py-0.5 rounded">GARANTIE</div>
+                               <span className="text-xs font-bold">Garantie {gamme.warranty} ans</span>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                       {item.product?.free_gifts && item.product.free_gifts.length > 0 && (
                         <div className="border-t border-green-100 bg-green-50/40 px-3 py-2 space-y-2">
                           {item.product.free_gifts.map(gift => (
@@ -774,15 +795,39 @@ export default function AdminBonLivraison() {
                                 {it.unit_price ? (Number(it.unit_price) * it.delivered_quantity).toFixed(3) : "—"}
                               </td>
                             </tr>
-                            {it.product?.free_gifts?.map((gift, gi) => (
-                              <tr key={`gift-${it.id}-${gi}`} className="gift-row">
-                                <td colSpan={5}>
-                                  <div className="gift-text">
-                                    {gift.titre} { (it.gifts_grammage?.[gift.id] || gift.poids) && `— ${(it.gifts_grammage?.[gift.id] || gift.poids)} g`}
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
+                            {(() => {
+                              const productGammeName = (it as any).product?.gamme;
+                              const gamme = gammes.find(g => g.name === productGammeName || g.slug === productGammeName || g.id === productGammeName);
+                              const hasWarranty = gamme && gamme.warranty;
+                              
+                              // New logic: find gifts from dimensions
+                              const currentDim = dimensions.find(d => d.label === it.size_label);
+                              const sizeGifts = currentDim?.free_gifts || [];
+                              const hasGifts = sizeGifts.length > 0;
+
+                              if (hasWarranty || hasGifts) {
+                                return (
+                                  <tr className="gift-row">
+                                    <td colSpan={5} style={{ padding: '8px 20px 12px 60px' }}>
+                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                        {hasWarranty && (
+                                          <div className="gift-text" style={{ borderColor: '#adc80a', color: '#1d2972', background: '#f7fee7' }}>
+                                            <span style={{ background: '#adc80a', color: '#fff', fontSize: '9px', fontWeight: '900', padding: '2px 6px', borderRadius: '4px' }}>GARANTIE</span>
+                                            Garantie {gamme.warranty} ans
+                                          </div>
+                                        )}
+                                        {sizeGifts.map((gift: any, gi: number) => (
+                                          <div key={`gift-${it.id}-${gi}`} className="gift-text">
+                                            {gift.titre} {(it.gifts_grammage?.[gift.id] || gift.poids) && `— ${(it.gifts_grammage?.[gift.id] || gift.poids)} g`}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              }
+                              return null;
+                            })()}
                           </React.Fragment>
                         ))}
                       </tbody>

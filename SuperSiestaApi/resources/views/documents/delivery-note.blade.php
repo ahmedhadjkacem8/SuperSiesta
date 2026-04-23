@@ -310,36 +310,47 @@
                         @endif
                     </td>
                 </tr>
-                @if($item->product && $item->product->freeGifts->count() > 0)
-                    @foreach($item->product->freeGifts as $gift)
-                    @php
-                        $giftGrammage = $item->gifts_grammage[$gift->id] ?? $gift->poids;
-                        $giftImageSrc = '';
-                        if ($gift->image) {
-                            $giftPath = public_path(str_replace('/storage/', 'storage/', parse_url($gift->image, PHP_URL_PATH)));
-                            if (file_exists($giftPath)) {
-                                $type = pathinfo($giftPath, PATHINFO_EXTENSION);
-                                $data = file_get_contents($giftPath);
-                                $giftImageSrc = 'data:image/' . $type . ';base64,' . base64_encode($data);
-                            } else {
-                                $giftImageSrc = $gift->image; // Fallback to URL
-                            }
-                        }
-                    @endphp
-                    <tr class="gift-row">
-                        <td colspan="4" style="padding: 10px 15px 10px 25px; vertical-align: middle;">
-                            @if($giftImageSrc)
-                                <img src="{!! $giftImageSrc !!}" style="display: inline-block; width: 35px; height: 35px; border-radius: 4px; margin: 0 10px; vertical-align: middle; object-fit: cover;" alt="" />
-                            @endif
-                            <span style="font-weight: bold; font-size: 13px; vertical-align: middle;">{{ $gift->titre }}</span>
-                            @if($giftGrammage)
-                                <span style="float: right; font-weight: bold; color: #15803d; background: #fff; padding: 2px 10px; border-radius: 4px; border: 1px solid #86efac; font-size: 11px; margin-top: 5px;">
-                                    {{ $giftGrammage }} g
-                                </span>
-                            @endif
-                        </td>
-                    </tr>
-                    @endforeach
+
+                {{-- Garantie & Cadeaux Row (Consolidated) --}}
+                @php
+                    $product = $item->product;
+                    if (!$product && $item->product_name) {
+                        $product = \App\Models\Product::where('name', $item->product_name)->first();
+                    }
+                    
+                    $itemGamme = null;
+                    if ($product && $product->gamme) {
+                        $gammeName = $product->gamme;
+                        $itemGamme = \App\Models\Gamme::where('name', $gammeName)->orWhere('slug', $gammeName)->orWhere('id', $gammeName)->first();
+                    }
+                    
+                    $hasWarranty = $itemGamme && $itemGamme->warranty;
+                    
+                    // Resolver cadeaux par dimension
+                    $itemDimension = \App\Models\Dimension::with('freeGifts')->where('label', $item->size_label)->first();
+                    $dimensionGifts = $itemDimension ? $itemDimension->freeGifts : collect();
+                    $hasGifts = $dimensionGifts->count() > 0;
+                @endphp
+
+                @if($hasWarranty || $hasGifts)
+                <tr class="gift-row">
+                    <td colspan="4" style="padding: 10px 15px 10px 25px;">
+                        @if($hasWarranty)
+                            <span class="gift-badge" style="background: #adc80a; color: #fff; border-color: #adc80a;">GARANTIE</span>
+                            <span style="font-weight: bold; margin-right: 15px;">Garantie {{ $itemGamme->warranty }} ans</span>
+                        @endif
+
+                        @if($hasGifts)
+                            @foreach($dimensionGifts as $gift)
+                                @php
+                                    $giftGrammage = isset($item->gifts_grammage[$gift->id]) ? $item->gifts_grammage[$gift->id] : $gift->poids;
+                                @endphp
+                                <span class="gift-badge">OFFERT</span>
+                                <span style="font-weight: bold; margin-right: 15px;">{{ $gift->titre }} @if($giftGrammage) ({{ $giftGrammage }}g) @endif</span>
+                            @endforeach
+                        @endif
+                    </td>
+                </tr>
                 @endif
                 @empty
                 <tr>

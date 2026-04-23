@@ -10,6 +10,7 @@ export interface Gamme {
   photos: string[]
   images_3d: string[]
   sort_order: number
+  warranty: number | null
 }
 
 export function useGammes() {
@@ -22,7 +23,7 @@ export function useGammes() {
       try {
         setLoading(true)
         setError(null)
-        const data = await api.getGammes()
+        const data = await api.getGammes({ t: Date.now() })
         const gammesList = Array.isArray(data) ? data : (data as any).data || []
         const mappedGammes = gammesList.map((g: any) => ({
           id: g.id,
@@ -33,6 +34,7 @@ export function useGammes() {
           photos: g.photos || [],
           images_3d: g.images_3d || [],
           sort_order: g.sort_order,
+          warranty: g.warranty,
         }))
         setGammes(mappedGammes)
       } catch (err) {
@@ -72,6 +74,7 @@ export function useGamme(slug: string | undefined) {
           photos: (data as any).photos || [],
           images_3d: (data as any).images_3d || [],
           sort_order: (data as any).sort_order,
+          warranty: (data as any).warranty,
         }
         setGamme(mappedGamme)
       } catch (err) {

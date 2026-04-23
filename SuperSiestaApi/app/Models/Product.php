@@ -59,7 +59,11 @@ class Product extends Model
 
     public function sizes(): HasMany
     {
-        return $this->hasMany(ProductSize::class);
+        return $this->hasMany(ProductSize::class)
+            ->leftJoin('dimensions', 'product_sizes.label', '=', 'dimensions.label')
+            ->orderBy('dimensions.sort_order', 'asc')
+            ->orderBy('product_sizes.label', 'asc')
+            ->select('product_sizes.*');
     }
 
     public function orderItems(): HasMany

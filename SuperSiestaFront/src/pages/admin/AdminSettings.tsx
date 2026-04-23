@@ -20,6 +20,7 @@ interface Dimension {
   id: string;
   label: string;
   is_standard: boolean;
+  free_gifts?: FreeGift[];
 }
 
 interface Categorie {
@@ -43,6 +44,7 @@ interface FreeGift {
   image: string | null;
   poids: number;
   products?: any[];
+  dimensions?: any[];
 }
 
 interface Product {
@@ -59,6 +61,7 @@ export default function AdminSettings() {
   const [width, setWidth] = useState("");
   const [length, setLength] = useState("");
   const [isStandard, setIsStandard] = useState(false);
+  const [selectedGiftIds, setSelectedGiftIds] = useState<string[]>([]);
 
   const [categories, setCategories] = useState<Categorie[]>([]);
   const [catOpen, setCatOpen] = useState(false);
@@ -119,7 +122,7 @@ export default function AdminSettings() {
 
   const load = async () => {
     try {
-      const data = await api.get<Dimension[]>("/dimensions");
+      const data = await api.get<Dimension[]>(`/dimensions?t=${Date.now()}`);
       // Ensure local state preserves returned order
       setDimensions(data || []);
     } catch (err: any) {
@@ -199,10 +202,18 @@ export default function AdminSettings() {
     }
     try {
       if (editing) {
-        await api.put(`/dimensions/${editing.id}`, { label: finalLabel, is_standard: isStandard });
+        await api.put(`/dimensions/${editing.id}`, { 
+          label: finalLabel, 
+          is_standard: isStandard,
+          free_gift_ids: selectedGiftIds
+        });
         toast.success("Dimension mise à jour");
       } else {
-        await api.post("/dimensions", { label: finalLabel, is_standard: isStandard });
+        await api.post("/dimensions", { 
+          label: finalLabel, 
+          is_standard: isStandard,
+          free_gift_ids: selectedGiftIds
+        });
         toast.success("Dimension ajoutée");
       }
       setOpen(false);
@@ -244,14 +255,20 @@ export default function AdminSettings() {
     e.preventDefault();
     const draggedId = draggedRef.current;
     if (!draggedId || draggedId === targetId) return;
-    const current = [...dimensions];
-    const fromIdx = current.findIndex(d => d.id === draggedId);
-    const toIdx = current.findIndex(d => d.id === targetId);
-    if (fromIdx === -1 || toIdx === -1) return;
-    const [moved] = current.splice(fromIdx, 1);
-    current.splice(toIdx, 0, moved);
-    setDimensions(current);
-    setDragOrder(current.map(d => d.id));
+
+    setDimensions((prev) => {
+      const current = [...prev];
+      const fromIdx = current.findIndex((d) => d.id === draggedId);
+      const toIdx = current.findIndex((d) => d.id === targetId);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+
+      const [moved] = current.splice(fromIdx, 1);
+      current.splice(toIdx, 0, moved);
+      
+      // Update drag order for auto-save
+      setDragOrder(current.map(d => d.id));
+      return current;
+    });
   };
 
   const onDrop = (e: React.DragEvent) => {
@@ -264,44 +281,49 @@ export default function AdminSettings() {
   };
 
   const moveUp = (id: string) => {
-    const current = [...dimensions];
-    const idx = current.findIndex(d => d.id === id);
-    if (idx <= 0) return;
-    const [item] = current.splice(idx, 1);
-    current.splice(idx - 1, 0, item);
-    setDimensions(current);
-    setDragOrder(current.map(d => d.id));
+    setDimensions((prev) => {
+      const current = [...prev];
+      const idx = current.findIndex((d) => d.id === id);
+      if (idx <= 0) return prev;
+      const [item] = current.splice(idx, 1);
+      current.splice(idx - 1, 0, item);
+      setDragOrder(current.map(d => d.id));
+      return current;
+    });
   };
 
   const moveDown = (id: string) => {
-    const current = [...dimensions];
-    const idx = current.findIndex(d => d.id === id);
-    if (idx === -1 || idx >= current.length - 1) return;
-    const [item] = current.splice(idx, 1);
-    current.splice(idx + 1, 0, item);
-    setDimensions(current);
-    setDragOrder(current.map(d => d.id));
+    setDimensions((prev) => {
+      const current = [...prev];
+      const idx = current.findIndex((d) => d.id === id);
+      if (idx === -1 || idx >= current.length - 1) return prev;
+      const [item] = current.splice(idx, 1);
+      current.splice(idx + 1, 0, item);
+      setDragOrder(current.map(d => d.id));
+      return current;
+    });
   };
 
-  // Auto-save reorder with debounce (800ms)
+  // Auto-save reorder with debounce (400ms for more instant feel)
   useEffect(() => {
     if (!dragOrder || dragOrder.length === 0) return;
     const t = setTimeout(() => {
       handleSaveOrder();
-    }, 800);
+    }, 400);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dragOrder]);
 
   const handleSaveOrder = async () => {
-    if (!dragOrder || dragOrder.length === 0) return toast.error('Aucun changement d\'ordre détecté');
+    if (!dragOrder || dragOrder.length === 0) return;
     try {
       await api.post('/dimensions/reorder', { ids: dragOrder });
       toast.success('Ordre des dimensions enregistré');
       setDragOrder(null);
-      load();
+      // Removed load() to prevent "revert" flicker. The local state is already correct.
     } catch (err: any) {
       toast.error('Erreur lors de l\'enregistrement de l\'ordre');
+      load(); // Revert to server state only on error
     }
   };
 
@@ -371,6 +393,11 @@ export default function AdminSettings() {
       formData.append("product_ids[]", id);
     });
 
+    // Ajouter les dimensions sélectionnées
+    selectedGiftIds.forEach((id) => {
+      formData.append("dimension_ids[]", id);
+    });
+
     if (giftForm.image_file) {
       formData.append("image", giftForm.image_file);
     } else if (giftForm.image_preview) {
@@ -392,11 +419,13 @@ export default function AdminSettings() {
       setGiftOpen(false);
       setGiftForm({ titre: "", description: "", image_file: null, image_preview: "", poids: 0 });
       setSelectedProductIds([]);
+      setSelectedGiftIds([]);
       setGiftEditing(null);
 
-      // Laisser un petit délai pour que la DB respire et forcer le rafraîchissement
+      // Rafraîchir les listes (offres et dimensions car elles sont liées)
       setTimeout(() => {
         loadGifts();
+        load();
       }, 300);
     } catch (err: any) {
       toast.error(err.message || "Erreur d'enregistrement");
@@ -479,11 +508,11 @@ export default function AdminSettings() {
                     <DialogTrigger asChild>
                       <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Ajouter une dimension</Button>
                     </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
+                    <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0 overflow-hidden">
+                      <DialogHeader className="p-6 pb-2">
                         <DialogTitle>{editing ? "Modifier la dimension" : "Ajouter une dimension"}</DialogTitle>
                       </DialogHeader>
-                      <div className="space-y-4 pt-4">
+                      <div className="flex-1 overflow-y-auto p-6 space-y-6">
                         <div className="space-y-2">
                           <label className="text-sm font-medium">Dimension (Largeur × Longueur)</label>
                           <div className="flex items-center gap-3">
@@ -509,6 +538,28 @@ export default function AdminSettings() {
                           />
                           <label className="text-sm font-medium">Dimension standard (affichée par défaut)</label>
                         </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Offres gratuites pour cette dimension</label>
+                          <div className="bg-background rounded-lg border border-border p-3 max-h-40 overflow-y-auto space-y-1">
+                            {freeGifts.map(gift => (
+                              <label key={gift.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted p-1.5 rounded transition-colors">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedGiftIds.includes(gift.id.toString())}
+                                  onChange={(e) => {
+                                    if (e.target.checked) setSelectedGiftIds([...selectedGiftIds, gift.id.toString()]);
+                                    else setSelectedGiftIds(selectedGiftIds.filter(id => id !== gift.id.toString()));
+                                  }}
+                                  className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+                                />
+                                <span className="text-sm">{gift.titre}</span>
+                              </label>
+                            ))}
+                            {freeGifts.length === 0 && <p className="text-xs text-muted-foreground italic">Aucune offre configurée</p>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-6 pt-2 border-t bg-muted/20">
                         <Button onClick={handleSave} className="w-full">
                           {editing ? "Mettre à jour" : "Ajouter"}
                         </Button>
@@ -574,6 +625,7 @@ export default function AdminSettings() {
                                     setWidth(w || "");
                                     setLength(l || "");
                                     setIsStandard(d.is_standard);
+                                    setSelectedGiftIds(d.free_gifts?.map(g => g.id.toString()) || []);
                                     setOpen(true);
                                   }}
                                 >
@@ -832,16 +884,16 @@ export default function AdminSettings() {
                   </div>
                   <Dialog open={giftOpen} onOpenChange={(v) => {
                     setGiftOpen(v);
-                    if (!v) { setGiftEditing(null); setGiftForm({ titre: "", description: "", image_file: null, image_preview: "", poids: 0 }); setSelectedProductIds([]); }
+                    if (!v) { setGiftEditing(null); setGiftForm({ titre: "", description: "", image_file: null, image_preview: "", poids: 0 }); setSelectedProductIds([]); setSelectedGiftIds([]); }
                   }}>
                     <DialogTrigger asChild>
                       <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Ajouter une offre</Button>
                     </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
+                    <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+                      <DialogHeader className="p-6 pb-2">
                         <DialogTitle>{giftEditing ? "Modifier" : "Ajouter"} une offre gratuite</DialogTitle>
                       </DialogHeader>
-                      <div className="space-y-4 pt-4">
+                      <div className="flex-1 overflow-y-auto p-6 space-y-6">
                         <div className="space-y-2">
                           <label className="text-sm font-medium">Titre (ex: Oreiller gratuit)</label>
                           <Input value={giftForm.titre} onChange={(e) => setGiftForm({ ...giftForm, titre: e.target.value })} />
@@ -862,33 +914,35 @@ export default function AdminSettings() {
                           placeholder="Cliquez pour uploader"
                         />
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Produits associés (sélectionnez les produits pour lesquels cette offre s'applique)</label>
+                          <label className="text-sm font-medium">Dimensions associées (sélectionnez les dimensions pour lesquelles cette offre s'applique)</label>
                           <div className="bg-background rounded-lg border border-border p-3 max-h-48 overflow-y-auto">
-                            {products.length === 0 ? (
-                              <p className="text-sm text-muted-foreground">Aucun produit disponible</p>
+                            {dimensions.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">Aucune dimension disponible</p>
                             ) : (
-                              <div className="space-y-2">
-                                {products.map((prod) => (
-                                  <label key={prod.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted p-2 rounded">
+                              <div className="grid grid-cols-2 gap-2">
+                                {dimensions.map((dim) => (
+                                  <label key={dim.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted p-2 rounded border border-transparent hover:border-border transition-all">
                                     <input
                                       type="checkbox"
-                                      checked={selectedProductIds.includes(prod.id.toString())}
+                                      checked={selectedGiftIds.includes(dim.id)}
                                       onChange={(e) => {
                                         if (e.target.checked) {
-                                          setSelectedProductIds([...selectedProductIds, prod.id.toString()]);
+                                          setSelectedGiftIds([...selectedGiftIds, dim.id]);
                                         } else {
-                                          setSelectedProductIds(selectedProductIds.filter(id => id !== prod.id.toString()));
+                                          setSelectedGiftIds(selectedGiftIds.filter(id => id !== dim.id));
                                         }
                                       }}
-                                      className="cursor-pointer"
+                                      className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
                                     />
-                                    <span className="text-sm">{prod.name}</span>
+                                    <span className="text-xs font-bold">{dim.label}</span>
                                   </label>
                                 ))}
                               </div>
                             )}
                           </div>
                         </div>
+                      </div>
+                      <div className="p-6 pt-2 border-t bg-muted/20">
                         <Button onClick={handleGiftSave} className="w-full">Enregistrer</Button>
                       </div>
                     </DialogContent>
@@ -902,7 +956,7 @@ export default function AdminSettings() {
                         <TableHead>Titre</TableHead>
                         <TableHead>Description</TableHead>
                         <TableHead>Poids (g)</TableHead>
-                        <TableHead>Produits</TableHead>
+                        <TableHead>Dimensions</TableHead>
                         <TableHead className="w-24">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -915,16 +969,16 @@ export default function AdminSettings() {
                             <span className="bg-primary/10 text-primary px-2 py-1 rounded-full text-sm font-bold">{gift.poids}g</span>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {gift.products && gift.products.length > 0 ? (
+                            {gift.dimensions && gift.dimensions.length > 0 ? (
                               <div className="flex flex-wrap gap-1.5 max-w-[300px] max-h-[120px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border">
-                                {gift.products.map((p: any) => (
-                                  <Badge key={p.id} variant="secondary" className="text-[10px] font-medium leading-tight truncate max-w-[280px]" title={p.name}>
-                                    {p.name}
+                                {gift.dimensions.map((d: any) => (
+                                  <Badge key={d.id} variant="secondary" className="text-[10px] font-bold">
+                                    {d.label}
                                   </Badge>
                                 ))}
                               </div>
                             ) : (
-                              <span className="text-xs text-muted-foreground opacity-50">Aucun produit</span>
+                              <span className="text-xs text-muted-foreground opacity-50">Aucune dimension</span>
                             )}
                           </TableCell>
                           <TableCell>
@@ -938,11 +992,11 @@ export default function AdminSettings() {
                                   image_preview: gift.image || "",
                                   poids: gift.poids
                                 });
-                                // Charger les produits associés (convertir les IDs en string pour la comparaison)
-                                if (gift.products && Array.isArray(gift.products)) {
-                                  setSelectedProductIds(gift.products.map((p: any) => (p.id || p).toString()));
+                                // Charger les dimensions associées
+                                if (gift.dimensions && Array.isArray(gift.dimensions)) {
+                                  setSelectedGiftIds(gift.dimensions.map((d: any) => (d.id || d).toString()));
                                 } else {
-                                  setSelectedProductIds([]);
+                                  setSelectedGiftIds([]);
                                 }
                                 setGiftOpen(true);
                               }}><Pencil className="w-4 h-4" /></Button>

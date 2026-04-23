@@ -39,4 +39,12 @@ class FreeGift extends Model
     {
         return $this->belongsToMany(Product::class, 'free_gift_product');
     }
+
+    /**
+     * Les dimensions associées à cette offre gratuite
+     */
+    public function dimensions(): BelongsToMany
+    {
+        return $this->belongsToMany(Dimension::class, 'dimension_free_gift');
+    }
 }

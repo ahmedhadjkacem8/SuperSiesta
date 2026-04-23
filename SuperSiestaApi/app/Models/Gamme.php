@@ -22,11 +22,13 @@ class Gamme extends Model
         'photos',
         'images_3d',
         'sort_order',
+        'warranty',
     ];
 
     protected $casts = [
         'photos'    => 'array',
         'images_3d' => 'array',
+        'warranty'  => 'integer',
     ];
 
     protected static function booted(): void

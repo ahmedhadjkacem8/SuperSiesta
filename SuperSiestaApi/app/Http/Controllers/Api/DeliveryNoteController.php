@@ -66,6 +66,7 @@ class DeliveryNoteController extends BaseController
             'items.*.size_label' => 'string',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.grammage' => 'nullable|string',
+            'items.*.product_id' => 'nullable|uuid|exists:products,id',
             'delivery_man_id' => 'nullable|uuid|exists:delivery_men,id',
             'delivery_man_name' => 'nullable|string',
         ]);
@@ -92,6 +93,7 @@ class DeliveryNoteController extends BaseController
                 'quantity' => $item['quantity'],
                 'delivered_quantity' => 0,
                 'grammage' => $item['grammage'] ?? null,
+                'product_id' => $item['product_id'] ?? null,
             ]);
         }
 

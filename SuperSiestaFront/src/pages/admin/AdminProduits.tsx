@@ -79,8 +79,8 @@ export default function AdminProduits() {
     try {
       const [pData, gData, dData, catData, fermData, giftData] = await Promise.all([
         api.get<Product[]>("/products"),
-        api.get<any[]>("/gammes"),
-        api.get<any[]>("/dimensions"),
+        api.get<any[]>(`/gammes?t=${Date.now()}`),
+        api.get<any[]>(`/dimensions?t=${Date.now()}`),
         api.get<any[]>("/categories"),
         api.get<any[]>("/fermetes"),
         api.get<any[]>("/free-gifts")
