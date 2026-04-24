@@ -30,6 +30,7 @@ export default function ThreeDShowcase({
   poster = "/images/tendresse.jpg",
   features = []
 }: ThreeDShowcaseProps) {
+
   const positions = [
     "top-[-5%] left-[10%]",
     "bottom-[10%] left-[-2%]",
@@ -83,6 +84,7 @@ export default function ThreeDShowcase({
         <div className="absolute -inset-2 bg-gradient-to-tr from-primary/5 via-transparent to-secondary/5 rounded-[3rem] blur-2xl opacity-40 pointer-events-none" />
         
         <div className="relative bg-white border border-slate-100 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.08)] overflow-hidden h-[400px] md:h-[500px]">
+
           <model-viewer
             src={modelPath}
             poster={poster}
@@ -90,7 +92,7 @@ export default function ThreeDShowcase({
             shadow-intensity="1.2"
             auto-rotate
             camera-controls
-            touch-action="pan-y"
+            touch-action="none"
             enable-pan
             style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}
             camera-orbit="45deg 75deg 105%"
@@ -104,14 +106,14 @@ export default function ThreeDShowcase({
             {/* AR Button */}
             <button 
               slot="ar-button" 
-              className="absolute bottom-6 right-6 bg-primary text-primary-foreground px-5 py-2.5 rounded-2xl font-black text-xs flex items-center gap-2 shadow-2xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all z-10"
+              className="absolute bottom-6 right-6 bg-primary text-primary-foreground px-5 py-2.5 rounded-2xl font-black text-xs flex items-center gap-2 shadow-2xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all z-30"
             >
               <Maximize2 className="w-4 h-4" /> Voir dans ma chambre
             </button>
             
             {/* Minimal interaction hint for mobile */}
-            <div className="absolute bottom-6 left-6 block md:hidden pointer-events-none">
-              <div className="bg-slate-900/10 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-2">
+            <div className="absolute bottom-6 left-6 block md:hidden pointer-events-none z-30">
+              <div className="bg-slate-900/60 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg">
                  <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
                  <span className="text-[10px] text-white font-bold">Touchez pour pivoter</span>
               </div>
@@ -134,3 +136,4 @@ export default function ThreeDShowcase({
     </motion.section>
   );
 }
+

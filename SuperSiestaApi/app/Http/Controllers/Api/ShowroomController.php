@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\Showroom;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Http;
 
 class ShowroomController extends BaseController
 {
@@ -53,6 +54,15 @@ class ShowroomController extends BaseController
         $days = $request->input('opening_days');
         $showroom->opening_days = is_string($days) ? json_decode($days, true) : $days;
 
+        // Auto-resolve coordinates from Google Maps URL if lat/lng are not provided
+        if (empty($showroom->lat) || empty($showroom->lng)) {
+            $coords = $this->resolveGoogleMapsCoords($showroom->google_maps_url);
+            if ($coords) {
+                $showroom->lat = $coords['lat'];
+                $showroom->lng = $coords['lng'];
+            }
+        }
+
         if ($request->hasFile('image_url')) {
             $showroom->image_url = $showroom->saveUploadedImage($request->file('image_url'));
         }
@@ -100,6 +110,15 @@ class ShowroomController extends BaseController
         if ($request->has('opening_days')) {
             $days = $request->input('opening_days');
             $showroom->opening_days = is_string($days) ? json_decode($days, true) : $days;
+        }
+
+        // Auto-resolve coordinates from Google Maps URL if lat/lng are not set
+        if ($request->has('google_maps_url') && (empty($showroom->lat) || empty($showroom->lng))) {
+            $coords = $this->resolveGoogleMapsCoords($showroom->google_maps_url);
+            if ($coords) {
+                $showroom->lat = $coords['lat'];
+                $showroom->lng = $coords['lng'];
+            }
         }
 
         if ($request->hasFile('image_url')) {
@@ -164,5 +183,84 @@ class ShowroomController extends BaseController
         $showroom->delete();
 
         return $this->sendResponse(null, 'Showroom deleted successfully');
+    }
+
+    /**
+     * Resolve a Google Maps URL (including short URLs like maps.app.goo.gl)
+     * to extract latitude and longitude coordinates.
+     */
+    private function resolveGoogleMapsCoords(?string $url): ?array
+    {
+        if (empty($url)) return null;
+
+        $resolvedUrl = $url;
+
+        // If it's a short URL, follow redirects to get the full URL
+        if (preg_match('/goo\\.gl|maps\\.app\\.goo\\.gl/', $url)) {
+            try {
+                $ch = curl_init($url);
+                curl_setopt_array($ch, [
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_MAXREDIRS      => 10,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT        => 15,
+                    CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    CURLOPT_SSL_VERIFYPEER => false,
+                ]);
+                $body = curl_exec($ch);
+                $finalUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+                curl_close($ch);
+
+                if ($finalUrl && $finalUrl !== $url) {
+                    $resolvedUrl = $finalUrl;
+                }
+
+                // Also try to extract coords from the response body (Google sometimes embeds them in scripts/tags)
+                if ($body && is_string($body)) {
+                    $coordsFromBody = $this->extractCoordsFromUrl($body);
+                    if ($coordsFromBody) {
+                        return $coordsFromBody;
+                    }
+                }
+            } catch (\Exception $e) {
+                // Fallback to original URL if resolution fails
+                $resolvedUrl = $url;
+            }
+        }
+
+        return $this->extractCoordsFromUrl($resolvedUrl);
+    }
+
+    /**
+     * Extract lat/lng from a full Google Maps URL.
+     */
+    private function extractCoordsFromUrl(string $url): ?array
+    {
+        // Priority 1: !3dlat!4dlng — exact pin coordinates
+        if (preg_match('/!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/', $url, $m)) {
+            return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
+        }
+
+        // Priority 2: q=lat,lng
+        if (preg_match('/[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/', $url, $m)) {
+            return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
+        }
+
+        // Priority 3: ll=lat,lng
+        if (preg_match('/[?&]ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/', $url, $m)) {
+            return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
+        }
+
+        // Priority 4: /place/.../@lat,lng
+        if (preg_match('/\/place\/[^\/]+\/@(-?\d+\.?\d*),(-?\d+\.?\d*)/', $url, $m)) {
+            return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
+        }
+
+        // Priority 5: @lat,lng (viewport center)
+        if (preg_match('/@(-?\d+\.?\d*),(-?\d+\.?\d*)/', $url, $m)) {
+            return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
+        }
+
+        return null;
     }
 }

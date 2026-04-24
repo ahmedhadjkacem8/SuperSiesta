@@ -88,7 +88,7 @@ class GammeController extends BaseController
             'photos'      => 'nullable|array',
             'photos.*'    => 'nullable', // Allow both strings (URLs) and Files
             'images_3d'   => 'nullable|array',
-            'images_3d.*' => 'nullable|file|max:204800', // Allow both strings (URLs) and Files — extension check done manually
+            'images_3d.*' => 'nullable', // Allow both strings (URLs) and Files — extension check done manually
             'sort_order'  => 'integer',
             'warranty'    => 'nullable|integer|min:0',
         ]);
@@ -110,15 +110,38 @@ class GammeController extends BaseController
             );
         }
 
-        if ($request->hasFile('photos')) {
-            $validated['photos'] = $gamme->saveUploadedImages(
-                $request->file('photos'),
-                $gamme->photos ?? []
-            );
+        // --- Handle Photos ---
+        $existingPhotosKept = $request->input('photos', []);
+        if (!is_array($existingPhotosKept)) $existingPhotosKept = [];
+        
+        // Find which photos were removed to delete them from disk
+        $oldPhotos = $gamme->photos ?? [];
+        $removedPhotos = array_diff($oldPhotos, $existingPhotosKept);
+        foreach ($removedPhotos as $removedUrl) {
+            $gamme->deleteLocalImage($removedUrl);
         }
 
+        $newPhotosUrls = [];
+        if ($request->hasFile('photos')) {
+            $newPhotosUrls = $gamme->saveUploadedImages($request->file('photos'));
+        }
+        $validated['photos'] = array_values(array_merge($existingPhotosKept, $newPhotosUrls));
+
+
+        // --- Handle 3D Images ---
+        $existing3dKept = $request->input('images_3d', []);
+        if (!is_array($existing3dKept)) $existing3dKept = [];
+
+        // Find which 3d images were removed to delete them from disk
+        $old3d = $gamme->images_3d ?? [];
+        $removed3d = array_diff($old3d, $existing3dKept);
+        foreach ($removed3d as $removedUrl) {
+            $gamme->deleteLocalImage($removedUrl);
+        }
+
+        $new3dUrls = [];
         if ($request->hasFile('images_3d')) {
-            // Validate extensions explicitly for updates as well
+            // Validate extensions explicitly for updates
             $allowedExt = ['jpeg','jpg','png','gif','webp','glb','gltf'];
             $files = is_array($request->file('images_3d')) ? $request->file('images_3d') : [$request->file('images_3d')];
             foreach ($files as $f) {
@@ -130,11 +153,9 @@ class GammeController extends BaseController
                 }
             }
 
-            $validated['images_3d'] = $gamme->saveUploadedImages(
-                $request->file('images_3d'),
-                $gamme->images_3d ?? []
-            );
+            $new3dUrls = $gamme->saveUploadedImages($request->file('images_3d'));
         }
+        $validated['images_3d'] = array_values(array_merge($existing3dKept, $new3dUrls));
 
         $gamme->fill($validated);
         $gamme->save();

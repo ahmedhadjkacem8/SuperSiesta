@@ -37,7 +37,7 @@ interface ShowroomCardProps {
   onViewOnMap?: (id: string) => void;
 }
 
-export function ShowroomCard({ showroom, viewMode = 'grid', isActive = false }: ShowroomCardProps) {
+export function ShowroomCard({ showroom, viewMode = 'grid', isActive = false, onViewOnMap }: ShowroomCardProps) {
   const isList = viewMode === 'list';
   const isCompact = viewMode === 'compact';
 
@@ -61,63 +61,64 @@ export function ShowroomCard({ showroom, viewMode = 'grid', isActive = false }: 
   if (isCompact) {
     return (
       <div 
-        className={`group bg-card rounded-2xl overflow-hidden w-full flex flex-col transition-all duration-500 will-change-transform ${
+        className={`group bg-card rounded-2xl overflow-hidden w-full flex flex-row transition-all duration-500 will-change-transform ${
           isActive 
-            ? 'shadow-2xl shadow-primary/20 scale-[1.03] ring-2 ring-primary border-transparent' 
+            ? 'shadow-2xl shadow-primary/20 scale-[1.02] ring-2 ring-primary border-transparent' 
             : 'border border-border/50 shadow-md hover:shadow-xl hover:border-primary/30'
         }`}
       >
-        <div className="h-36 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10 transition-opacity duration-300" />
+        {/* Image - Left side */}
+        <div className="w-28 min-h-[120px] relative overflow-hidden shrink-0">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/30 z-10" />
           <img
             src={showroom.image_url || ''}
             alt={showroom.name}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute top-3 left-3 bg-white/20 backdrop-blur-md px-2.5 py-1 rounded-full text-[9px] font-black text-white uppercase tracking-widest shadow-lg border border-white/20 z-20">
-            {showroom.city}
-          </div>
-          <div className="absolute bottom-3 left-3 right-3 z-20">
-            <h3 className="font-black text-white text-base leading-tight drop-shadow-md line-clamp-1">{showroom.name}</h3>
-          </div>
           {isActive && (
-            <div className="absolute top-3 right-3 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white shadow-[0_0_10px_rgba(34,197,94,0.8)] z-20 animate-pulse"></div>
+            <div className="absolute top-2 left-2 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white shadow-[0_0_10px_rgba(34,197,94,0.8)] z-20 animate-pulse"></div>
           )}
         </div>
-        
-        <div className="p-4 flex flex-col gap-3.5 bg-gradient-to-b from-card to-background relative z-0">
-          <div className="space-y-2.5">
-            <div className="flex items-start gap-2.5 text-muted-foreground group-hover:text-foreground transition-colors duration-300">
-              <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary" />
-              <span className="text-[11px] leading-snug line-clamp-2 font-medium">{showroom.address}</span>
+
+        {/* Info - Right side */}
+        <div className="flex-1 p-3 flex flex-col justify-center gap-1.5 bg-gradient-to-b from-card to-background relative z-0 min-w-0">
+          {/* Google Maps icon - top right corner */}
+          {showroom.google_maps_url && (
+            <a
+              href={showroom.google_maps_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              title="Ouvrir dans Google Maps"
+              className="absolute top-2 right-2 z-10 w-7 h-7 rounded-lg bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary/20"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
+
+          <div className="flex flex-col gap-1 mb-0.5 pr-8">
+            <h3 className="font-black text-sm leading-tight text-foreground">{showroom.name}</h3>
+            <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest w-fit">
+              {showroom.city}
+            </span>
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-start gap-1.5 text-muted-foreground">
+              <MapPin className="w-3 h-3 shrink-0 mt-0.5 text-primary" />
+              <span className="text-[10px] leading-snug line-clamp-2 font-medium">{showroom.address}</span>
             </div>
             {showroom.phone && (
-              <div className="flex items-center gap-2.5 text-muted-foreground group-hover:text-foreground transition-colors duration-300">
-                <Phone className="w-3.5 h-3.5 shrink-0 text-primary" />
-                <a href={`tel:${showroom.phone}`} className="hover:text-primary transition-colors text-[11px] font-bold">{showroom.phone}</a>
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <Phone className="w-3 h-3 shrink-0 text-primary" />
+                <a href={`tel:${showroom.phone}`} className="hover:text-primary transition-colors text-[10px] font-bold">{showroom.phone}</a>
               </div>
             )}
-            <div className="flex items-center gap-2.5 text-muted-foreground group-hover:text-foreground transition-colors duration-300">
-              <Clock className="w-3.5 h-3.5 shrink-0 text-primary" />
-              <span className="text-[11px] font-bold">{showroom.opening_hours_from || '09:00'} - {showroom.opening_hours_until || '19:00'}</span>
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Clock className="w-3 h-3 shrink-0 text-primary" />
+              <span className="text-[10px] font-bold">{showroom.opening_hours_from || '09:00'} - {showroom.opening_hours_until || '19:00'}</span>
             </div>
           </div>
-
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onViewOnMap?.(showroom.id);
-            }}
-            className={`mt-1 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
-              isActive 
-                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:bg-primary/90 hover:scale-[1.02]' 
-                : 'bg-muted text-foreground hover:bg-primary hover:text-primary-foreground'
-            }`}
-          >
-            <MapPin className="w-3.5 h-3.5" />
-            {isActive ? 'Position Actuelle' : 'Voir sur la carte'}
-          </button>
         </div>
       </div>
     );
@@ -218,16 +219,29 @@ export function ShowroomCard({ showroom, viewMode = 'grid', isActive = false }: 
             </div>
           )}
 
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onViewOnMap?.(showroom.id);
-            }}
-            className={`flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3.5 px-6 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg hover:shadow-primary/20 shrink-0 hover:scale-105 active:scale-95 ${isList ? 'w-full sm:w-auto' : 'w-full'} ${(!showroom.contact_person_name && !showroom.contact_person_phone && !isList) ? 'mt-auto' : ''}`}
-          >
-            <MapPin className="w-4 h-4" />
-            Voir sur la carte
-          </button>
+          {showroom.google_maps_url ? (
+            <a
+              href={showroom.google_maps_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className={`flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3.5 px-6 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg hover:shadow-primary/20 shrink-0 hover:scale-105 active:scale-95 ${isList ? 'w-full sm:w-auto' : 'w-full'} ${(!showroom.contact_person_name && !showroom.contact_person_phone && !isList) ? 'mt-auto' : ''}`}
+            >
+              <ExternalLink className="w-4 h-4" />
+              Ouvrir dans Google Maps
+            </a>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewOnMap?.(showroom.id);
+              }}
+              className={`flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3.5 px-6 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg hover:shadow-primary/20 shrink-0 hover:scale-105 active:scale-95 ${isList ? 'w-full sm:w-auto' : 'w-full'} ${(!showroom.contact_person_name && !showroom.contact_person_phone && !isList) ? 'mt-auto' : ''}`}
+            >
+              <MapPin className="w-4 h-4" />
+              Voir sur la carte
+            </button>
+          )}
         </div>
       </div>
     </div>

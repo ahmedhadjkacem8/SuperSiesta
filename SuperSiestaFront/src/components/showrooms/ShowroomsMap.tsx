@@ -1,5 +1,5 @@
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -50,7 +50,7 @@ const createIcon = (isActive: boolean, showroomName: string) => L.divIcon({
     </div>
   `,
   iconSize: [26, 26],
-  iconAnchor: [13, 13], 
+  iconAnchor: [13, 13],
 });
 
 interface ShowroomsMapProps {
@@ -59,38 +59,44 @@ interface ShowroomsMapProps {
   onActiveItemChange?: (id: string | null) => void;
 }
 
+const toNum = (v: number | string | undefined): number | null => {
+  if (v === undefined || v === null) return null;
+  const n = typeof v === 'string' ? parseFloat(v) : v;
+  return isFinite(n) ? n : null;
+};
+
 function MapUpdater({ showrooms, activeId }: { showrooms: Showroom[], activeId?: string | null }) {
   const map = useMap();
-  const tunisiaCenter: [number, number] = [33.8869, 9.5375];
 
   useEffect(() => {
-    if (activeId) {
-      const activeShowroom = showrooms.find(s => s.id === activeId);
-      if (activeShowroom) {
-        const lat = typeof activeShowroom.lat === 'string' ? parseFloat(activeShowroom.lat) : activeShowroom.lat;
-        const lng = typeof activeShowroom.lng === 'string' ? parseFloat(activeShowroom.lng) : activeShowroom.lng;
-        
-        if (lat && lng) {
-          map.flyTo([lat, lng], 14, {
-            duration: 1.5,
-            easeLinearity: 0.25
-          });
+    if (!activeId) return; // Map is already at northCenter via center prop — no flyTo needed
+
+    const t = setTimeout(() => {
+      const size = map.getSize();
+      // Guard: only fly if the container has real dimensions
+      if (!size || size.x === 0 || size.y === 0) return;
+
+      const s = showrooms.find(s => s.id === activeId);
+      if (s) {
+        const lat = toNum(s.lat);
+        const lng = toNum(s.lng);
+        if (lat !== null && lng !== null) {
+          map.flyTo([lat, lng], 14, { duration: 1.5, easeLinearity: 0.25 });
         }
       }
-    } else {
-      map.flyTo(tunisiaCenter, 6.4, {
-        duration: 2
-      });
-    }
+    }, 150);
+
+    return () => clearTimeout(t);
   }, [activeId, showrooms, map]);
 
   return null;
 }
 
 export function ShowroomsMap({ showrooms, activeShowroomId, onActiveItemChange }: ShowroomsMapProps) {
-  // Center of Tunisia approximately
+  // Default center focused on North Tunisia (Tunis area)
+  const northTunisiaCenter: [number, number] = [36.7, 10.2];
   const tunisiaCenter: [number, number] = [33.8869, 9.5375];
-  
+
   // Bounding box for Tunisia [SouthWest, NorthEast]
   const tunisiaBounds: L.LatLngBoundsLiteral = [
     [30.2, 7.5], // South West corner
@@ -98,10 +104,10 @@ export function ShowroomsMap({ showrooms, activeShowroomId, onActiveItemChange }
   ];
 
   return (
-    <div className="w-full h-full rounded-3xl overflow-hidden border border-border shadow-2xl relative z-0 bg-muted/20">
-      <MapView 
-        center={tunisiaCenter} 
-        zoom={6.4} 
+    <div className="w-full h-full rounded-3xl overflow-hidden border border-border shadow-2xl relative z-0 bg-muted/20 box-border" style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
+      <MapView
+        center={northTunisiaCenter}
+        zoom={8}
         minZoom={6}
         maxBounds={tunisiaBounds}
         maxBoundsViscosity={1.0}
@@ -110,21 +116,21 @@ export function ShowroomsMap({ showrooms, activeShowroomId, onActiveItemChange }
         className="w-full h-full"
       >
         <TileLayer
-          url="https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
-          subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          subdomains={['a', 'b', 'c', 'd']}
         />
-        
-        <MapUpdater showrooms={showrooms} activeId={activeShowroomId} />
-        
-        {showrooms.map((showroom) => {
-          const lat = typeof showroom.lat === 'string' ? parseFloat(showroom.lat) : showroom.lat;
-          const lng = typeof showroom.lng === 'string' ? parseFloat(showroom.lng) : showroom.lng;
 
-          if (!lat || !lng) return null;
+        <MapUpdater showrooms={showrooms} activeId={activeShowroomId} />
+
+        {showrooms.map((showroom) => {
+          const lat = toNum(showroom.lat);
+          const lng = toNum(showroom.lng);
+
+          if (lat === null || lng === null) return null;
 
           return (
-            <MarkerView 
-              key={showroom.id} 
+            <MarkerView
+              key={showroom.id}
               position={[lat, lng]}
               icon={createIcon(activeShowroomId === showroom.id, showroom.name)}
               zIndexOffset={activeShowroomId === showroom.id ? 1000 : 0}
@@ -135,7 +141,7 @@ export function ShowroomsMap({ showrooms, activeShowroomId, onActiveItemChange }
           );
         })}
       </MapView>
-      
+
       {/* Overlay to stylize map labels or give a premium feel */}
       <div className="absolute inset-0 pointer-events-none ring-1 ring-inset ring-white/20 rounded-3xl z-10" />
     </div>

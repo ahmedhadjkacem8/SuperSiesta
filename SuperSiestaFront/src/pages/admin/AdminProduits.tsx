@@ -62,11 +62,10 @@ export default function AdminProduits() {
   const [dimensions, setDimensions] = useState<{ id: string; label: string }[]>([]);
   const [categories, setCategories] = useState<{ id: string; label: string }[]>([]);
   const [fermetes, setFermetes] = useState<{ id: string; label: string }[]>([]);
-  const [freeGifts, setFreeGifts] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [deletedSizeIds, setDeletedSizeIds] = useState<string[]>([]);
-  const [selectedGiftIds, setSelectedGiftIds] = useState<string[]>([]);
+
   const [form, setForm] = useState<FormState>({
     name: "", slug: "", categorie: "", fermete: "",
     image_file: null, image_preview: "", description: "", badge: "", in_promo: false, specs: "", gamme: "", grammage: ""
@@ -77,20 +76,18 @@ export default function AdminProduits() {
 
   const load = async () => {
     try {
-      const [pData, gData, dData, catData, fermData, giftData] = await Promise.all([
+      const [pData, gData, dData, catData, fermData] = await Promise.all([
         api.get<Product[]>("/products"),
         api.get<any[]>(`/gammes?t=${Date.now()}`),
         api.get<any[]>(`/dimensions?t=${Date.now()}`),
         api.get<any[]>("/categories"),
-        api.get<any[]>("/fermetes"),
-        api.get<any[]>("/free-gifts")
+        api.get<any[]>("/fermetes")
       ]);
       setProducts(pData || []);
       setGammes(gData || []);
       setDimensions(dData || []);
       setCategories(catData || []);
       setFermetes(fermData || []);
-      setFreeGifts(giftData || []);
     } catch (err: any) {
       toast.error("Erreur lors du chargement des données");
     }
@@ -101,7 +98,7 @@ export default function AdminProduits() {
   const resetForm = () => {
     setForm({ name: "", slug: "", categorie: "", fermete: "", image_file: null, image_preview: "", description: "", badge: "", in_promo: false, specs: "", gamme: "", grammage: "" });
     setSizes([{ label: "80×190", price: 0, reseller_price: null, original_price: null }]);
-    setSelectedGiftIds([]);
+
     setEditing(null);
     setDeletedSizeIds([]);
   };
@@ -161,18 +158,6 @@ export default function AdminProduits() {
             return api.post(`/products/${productId}/sizes`, size);
           }
         }));
-
-        // Sync Free Gifts
-        if (selectedGiftIds.length > 0 || editing) {
-          try {
-            await api.put(`/products/${productId}/free-gifts`, {
-              free_gift_ids: selectedGiftIds
-            });
-          } catch (err) {
-            console.error('Error syncing free gifts:', err);
-            // Don't fail the entire operation if gift sync fails
-          }
-        }
       }
 
       setOpen(false); resetForm(); load();
@@ -198,10 +183,9 @@ export default function AdminProduits() {
       image_file: null, image_preview: p.image, description: p.description, badge: p.badge || "",
       in_promo: p.in_promo, specs: (p.specs || []).join("\n"), gamme: p.gamme || "", grammage: p.grammage || ""
     });
-    const [productData, sizesData, giftsData] = await Promise.all([
+    const [productData, sizesData] = await Promise.all([
       api.get<Product>(`/products/${p.id}`),
-      api.get<any[]>(`/products/${p.id}/sizes`).catch(() => []),
-      api.get<any[]>(`/products/${p.id}/free-gifts`).catch(() => [])
+      api.get<any[]>(`/products/${p.id}/sizes`).catch(() => [])
     ]);
     
     if (sizesData && sizesData.length > 0) {
@@ -212,12 +196,6 @@ export default function AdminProduits() {
       })));
     } else {
       setSizes([{ label: "80×190", price: 0, reseller_price: null, original_price: null }]);
-    }
-
-    if (giftsData && giftsData.length > 0) {
-      setSelectedGiftIds(giftsData.map((g: any) => g.id.toString()));
-    } else {
-      setSelectedGiftIds([]);
     }
 
     setDeletedSizeIds([]);
@@ -326,39 +304,6 @@ export default function AdminProduits() {
                 </div>
               </div>
 
-              {/* Free Gifts */}
-              <div>
-                <p className="text-sm font-semibold flex items-center gap-1 mb-2"><Gift className="w-4 h-4" /> Offres gratuites associées</p>
-                <div className="bg-background rounded-lg border border-border p-3 max-h-48 overflow-y-auto">
-                  {freeGifts.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">Aucune offre disponible de l'administration</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {freeGifts.map((gift) => (
-                        <label key={gift.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted p-2 rounded">
-                          <input
-                            type="checkbox"
-                            checked={selectedGiftIds.includes(gift.id.toString())}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedGiftIds([...selectedGiftIds, gift.id.toString()]);
-                              } else {
-                                setSelectedGiftIds(selectedGiftIds.filter(id => id !== gift.id.toString()));
-                              }
-                            }}
-                            className="cursor-pointer"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{gift.titre}</p>
-                            {gift.description && <p className="text-xs text-muted-foreground truncate">{gift.description}</p>}
-                          </div>
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{gift.poids}g</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
 
               <Button onClick={handleSave} className="w-full">{editing ? "Mettre à jour" : "Créer"}</Button>
             </div>
