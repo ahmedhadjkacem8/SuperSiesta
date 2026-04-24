@@ -39,8 +39,11 @@ export default function Navbar() {
 
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
         <button onClick={() => navigate("/")} className="flex items-center gap-2">
-          <img src="/images/logo.png" alt="Siesta Officiel" className="h-12 w-auto" />
-        </button>
+<img 
+  src="/images/logo.png" 
+  alt="Siesta Officiel" 
+  className="h-12 w-auto animate-float" 
+/>        </button>
 
         <nav className="hidden md:flex items-center gap-6">
           {links.map((l) => (
@@ -56,11 +59,11 @@ export default function Navbar() {
 
           <div className="hidden sm:flex items-center gap-2">
             {socials.filter(s => s.is_active).map((s) => (
-              <a 
-                key={s.id} 
-                href={s.url} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                key={s.id}
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
                 title={s.name}
                 className="w-8 h-8 flex items-center justify-center bg-accent rounded-full transition-all hover:scale-110"
                 style={{ color: s.icon.hex_color || 'currentColor' }}
