@@ -1,41 +1,12 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { Loader2, ChevronLeft, Calendar, Tag, Share2, Facebook, Twitter } from "lucide-react";
-import { api } from "@/lib/apiClient";
+import { useParams, useNavigate } from "react-router-dom";
+import { Loader2, ChevronLeft, Calendar, Tag, Share2 } from "lucide-react";
 import { getImageUrl } from "@/utils/imageUtils";
-
-interface Post {
-  id: string;
-  title: string;
-  slug: string;
-  content: string | null;
-  excerpt: string | null;
-  image_url: string | null;
-  category: string;
-  tags: string[];
-  published_at: string | null;
-}
+import { useBlogPost } from "@/hooks/useBlog";
 
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [post, setPost] = useState<Post | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchPost = async () => {
-      if (!slug) return;
-      try {
-        const data = await api.getBlogPost(slug) as Post;
-        setPost(data);
-      } catch (err) {
-        console.error("Erreur lors du chargement de l'article:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPost();
-  }, [slug]);
+  const { data: post, isLoading } = useBlogPost(slug);
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const shareText = post ? `${post.title} - Super Siesta` : "";
@@ -47,7 +18,7 @@ export default function BlogPost() {
     { name: "LinkedIn", url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, icon: "💼" },
   ];
 
-  if (loading) return <main className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></main>;
+  if (isLoading) return <main className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></main>;
 
   if (!post) {
     return (

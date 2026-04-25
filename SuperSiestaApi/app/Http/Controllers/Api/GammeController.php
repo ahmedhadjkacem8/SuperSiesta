@@ -30,10 +30,10 @@ class GammeController extends BaseController
             'description' => 'nullable|string',
             'video_url'   => 'nullable', // Can be a file or a string URL
             'photos'      => 'nullable|array',
-                'photos.*'    => 'image|mimes:jpeg,png,jpg,gif,webp|max:204800',
+            'photos.*'    => 'image|mimes:jpeg,png,jpg,gif,webp',
             'images_3d'   => 'nullable|array',
-                    // Accept files but validate extensions below to avoid strict MIME false-negatives
-                    'images_3d.*' => 'nullable|file|max:204800',
+            // Accept files but validate extensions below to avoid strict MIME false-negatives
+            'images_3d.*' => 'nullable|file',
             'sort_order'  => 'integer',
             'warranty'    => 'nullable|integer|min:0',
         ]);

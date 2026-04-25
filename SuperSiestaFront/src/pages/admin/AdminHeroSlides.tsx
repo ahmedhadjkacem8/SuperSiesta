@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
-import CachedImage from "@/components/CachedImage";
+import { getImageUrl } from "@/utils/imageUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,7 +45,7 @@ export default function AdminHeroSlides() {
 
   const { data: products } = useProducts();
   const { data: gammes } = useGammes();
-  const { posts } = useBlogPosts();
+  const { data: posts = [] } = useBlogPosts();
 
   const staticPages = [
     { label: "Accueil", value: "/" },
@@ -187,13 +187,13 @@ export default function AdminHeroSlides() {
       <div className="space-y-3">
         {slides.map((s, i) => (
           <div key={s.id} className="flex items-center gap-4 bg-card border border-border rounded-xl p-4">
-            {s.image_url && <CachedImage src={s.image_url} alt="" className="w-24 h-16 object-cover rounded-lg flex-shrink-0" noCache />}
+            {s.image_url && <img src={`${getImageUrl(s.image_url)}${s.image_url.includes('?') ? '&' : '?'}_=${Date.now()}`} alt="" className="w-24 h-16 object-cover rounded-lg flex-shrink-0" />}
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm truncate">{s.title || "(Sans titre)"}</p>
-              <p className="text-xs text-muted-foreground truncate">{s.subtitle}</p>
+              <p className="font-semibold text-sm line-clamp-1">{s.title || "(Sans titre)"}</p>
+              <p className="text-xs text-muted-foreground line-clamp-2 whitespace-normal">{s.subtitle}</p>
               {!s.active && <span className="text-xs text-destructive font-medium">Inactive</span>}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
               <Button variant="ghost" size="icon" onClick={() => move(s.id, -1)} disabled={i === 0}><ArrowUp className="w-4 h-4" /></Button>
               <Button variant="ghost" size="icon" onClick={() => move(s.id, 1)} disabled={i === slides.length - 1}><ArrowDown className="w-4 h-4" /></Button>
               <Button variant="ghost" size="icon" onClick={() => openEdit(s)}><Pencil className="w-4 h-4" /></Button>

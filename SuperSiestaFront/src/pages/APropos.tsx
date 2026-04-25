@@ -116,7 +116,7 @@ export default function APropos() {
                    className={`relative ${idx % 2 === 0 ? 'md:order-2' : ''}`}
                 >
                   <div className="absolute -inset-4 bg-primary/5 rounded-[3rem] blur-2xl rotate-3" />
-                  <div className="relative bg-muted rounded-[3rem] overflow-hidden aspect-[4/3] shadow-2xl border-8 border-white">
+                  <div className="relative bg-muted rounded-[3rem] overflow-hidden aspect-square shadow-2xl border-8 border-white">
                     <img src={section.image_url ? getImageUrl(section.image_url) : "/images/tendresse.jpg"} alt={section.title || ""} className="w-full h-full object-cover" />
                   </div>
                 </motion.div>

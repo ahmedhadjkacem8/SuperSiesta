@@ -24,7 +24,9 @@ class BlogPostController extends BaseController
             $query->where('is_favorite', $request->is_favorite);
         }
 
-        $posts = $query->orderBy('published_at', 'desc')->paginate($request->get('per_page', 10));
+        $posts = $query->orderBy('sort_order', 'asc')
+                       ->orderBy('published_at', 'desc')
+                       ->paginate($request->get('per_page', 10));
 
         return $this->sendResponse($posts, 'Blog posts retrieved successfully');
     }
@@ -52,6 +54,7 @@ class BlogPostController extends BaseController
             'tags'      => 'nullable|array',
             'published' => 'boolean',
             'is_favorite' => 'boolean',
+            'sort_order' => 'nullable|integer',
         ]);
 
         $validated['published_at'] = isset($validated['published']) && $validated['published'] ? now() : null;
@@ -82,6 +85,7 @@ class BlogPostController extends BaseController
             'published' => 'boolean',
             'is_favorite' => 'boolean',
             'published_at' => 'nullable|date',
+            'sort_order' => 'nullable|integer',
         ]);
 
         if (array_key_exists('published', $validated)) {

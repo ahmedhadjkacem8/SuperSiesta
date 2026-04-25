@@ -24,6 +24,7 @@ class BlogPost extends Model
         'published',
         'is_favorite',
         'published_at',
+        'sort_order',
     ];
 
     protected $casts = [
@@ -31,6 +32,7 @@ class BlogPost extends Model
         'published'    => 'boolean',
         'is_favorite'   => 'boolean',
         'published_at' => 'datetime',
+        'sort_order'    => 'integer',
     ];
 
     protected static function booted(): void

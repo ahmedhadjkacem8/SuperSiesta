@@ -1,45 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Loader2, Calendar, Tag, ArrowRight } from "lucide-react";
-import { api } from "@/lib/apiClient";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 import { getImageUrl } from "@/utils/imageUtils";
-
-interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string | null;
-  image_url: string | null;
-  category: string;
-  tags: string[];
-  published_at: string | null;
-}
+import { useBlogPosts } from "@/hooks/useBlog";
 
 export default function Blog() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "blog" | "conseil">("all");
+  const { data: posts = [], isLoading } = useBlogPosts();
   
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
 
   const scrollPrev = () => emblaApi && emblaApi.scrollPrev();
   const scrollNext = () => emblaApi && emblaApi.scrollNext();
-
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const data = await api.getBlogPosts() as BlogPost[];
-        setPosts(data || []);
-      } catch (err) {
-        console.error("Erreur lors du chargement des articles:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPosts();
-  }, []);
 
   const filtered = filter === "all" ? posts : posts.filter((p) => p.category === filter);
 
@@ -54,14 +28,14 @@ export default function Blog() {
       </section>
 
       {/* Slider des articles à la une */}
-      {posts.filter(p => (p as any).is_favorite).length > 0 && (
+      {posts.filter(p => p.is_favorite).length > 0 && (
         <section className="bg-muted/30 py-10 border-b border-border">
           <div className="max-w-7xl mx-auto px-4">
             <h2 className="text-2xl font-black mb-6 text-center">À la une</h2>
             <div className="relative">
               <div className="overflow-hidden" ref={emblaRef}>
                 <div className="flex">
-                  {posts.filter(p => (p as any).is_favorite).map(post => (
+                  {posts.filter(p => p.is_favorite).map(post => (
                     <div key={post.id} className="flex-[0_0_100%] md:flex-[0_0_50%] lg:flex-[0_0_33.33%] min-w-0 pl-4">
                       <Link to={`/blog/${post.slug}`} className="group block h-full bg-card border border-border rounded-2xl overflow-hidden hover:shadow-xl transition-all">
                         <div className="aspect-square bg-muted overflow-hidden relative">
@@ -114,7 +88,7 @@ export default function Blog() {
           ))}
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
         ) : filtered.length === 0 ? (
           <p className="text-center text-muted-foreground py-10">Aucun article pour le moment.</p>

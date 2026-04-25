@@ -172,6 +172,11 @@ export default function ProduitDetail() {
             <span className="text-xs font-bold text-primary uppercase tracking-widest">{product.categorie}</span>
             {product.badge && <span className="ml-2 bg-secondary text-secondary-foreground text-xs font-bold px-2.5 py-0.5 rounded-full">{product.badge}</span>}
             <h1 className="text-3xl md:text-4xl font-black mt-2">{product.name}</h1>
+            {product.grammage && (
+              <p className="text-lg font-black text-orange-600 mt-2 flex items-center gap-2">
+                Supporte jusqu'à {product.grammage} kg
+              </p>
+            )}
             <div className="flex items-center gap-2 mt-2">
               <div className="flex items-center gap-0.5">
                 {(() => {

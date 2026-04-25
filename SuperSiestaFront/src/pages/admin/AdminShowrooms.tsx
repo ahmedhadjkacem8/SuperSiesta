@@ -607,12 +607,12 @@ export default function AdminShowrooms() {
                           <MapPin className="w-7 h-7 text-primary" />
                         )}
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <p className="font-black text-xl leading-tight text-foreground">{s.name}</p>
+                          <p className="font-black text-xl leading-tight text-foreground line-clamp-1">{s.name}</p>
                           <span className="bg-muted text-[10px] font-black px-2 py-0.5 rounded-full text-muted-foreground tracking-tighter uppercase">ID: {s.id.split('-')[0]}</span>
                         </div>
-                        <p className="text-sm text-foreground/70 flex items-center gap-1.5 focus:outline-none"><MapPin className="w-3.5 h-3.5 text-primary/60" /> {s.address}, {s.city}</p>
+                        <p className="text-sm text-foreground/70 flex items-center gap-1.5 focus:outline-none line-clamp-2 whitespace-normal"><MapPin className="w-3.5 h-3.5 text-primary/60 flex-shrink-0" /> {s.address}, {s.city}</p>
                       </div>
                     </div>
                     <div className="flex gap-2 flex-shrink-0">

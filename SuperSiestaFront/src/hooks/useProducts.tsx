@@ -23,6 +23,7 @@ export interface Product {
   badge?: string
   inPromo?: boolean
   gamme?: string
+  grammage?: number
   freeGifts?: Array<{
     id: string | number
     titre: string
@@ -60,6 +61,7 @@ interface ApiProduct {
   badge?: string
   in_promo?: boolean
   gamme?: string
+  grammage?: number | string
   free_gifts?: Array<{
     id: string | number
     titre: string
@@ -93,6 +95,7 @@ export const mapApiProductToProduct = (apiProduct: ApiProduct): Product => {
     badge: apiProduct.badge || undefined,
     inPromo: Boolean(apiProduct.in_promo),
     gamme: apiProduct.gamme || undefined,
+    grammage: apiProduct.grammage ? Number(apiProduct.grammage) : undefined,
     freeGifts: Array.isArray(apiProduct.free_gifts)
       ? apiProduct.free_gifts.map((g) => ({
           id: g.id || '',

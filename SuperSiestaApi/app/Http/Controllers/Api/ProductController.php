@@ -70,6 +70,7 @@ class ProductController extends BaseController
             'specs'       => 'nullable|array',
             'badge'       => 'nullable|string',
             'in_promo'    => 'boolean',
+            'grammage'    => 'nullable|integer',
         ]);
 
         $product = new Product($validated);
@@ -97,13 +98,14 @@ class ProductController extends BaseController
             'categorie'   => 'string',
             'fermete'     => 'string',
             'gamme'       => 'nullable|string',
-            'image'       => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:204800',
+            'image'       => 'nullable|image|mimes:jpeg,png,jpg,gif,webp',
             'images'      => 'nullable|array',
-            'images.*'    => 'image|mimes:jpeg,png,jpg,gif,webp|max:204800',
+            'images.*'    => 'image|mimes:jpeg,png,jpg,gif,webp',
             'description' => 'nullable|string',
             'specs'       => 'nullable|array',
             'badge'       => 'nullable|string',
             'in_promo'    => 'boolean',
+            'grammage'    => 'nullable|integer',
         ]);
 
         if ($request->hasFile('image')) {

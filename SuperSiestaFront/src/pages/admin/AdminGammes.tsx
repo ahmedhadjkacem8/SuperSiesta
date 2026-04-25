@@ -220,8 +220,8 @@ export default function AdminGammes() {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-lg">{g.name}</h3>
-              {g.description && <p className="text-sm text-muted-foreground truncate">{g.description}</p>}
+              <h3 className="font-bold text-lg line-clamp-1">{g.name}</h3>
+              {g.description && <p className="text-sm text-muted-foreground line-clamp-2 whitespace-normal">{g.description}</p>}
               <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
                 {g.video_url && <span className="inline-flex items-center gap-1"><Video className="w-3 h-3" /> Vidéo</span>}
                 <span className="inline-flex items-center gap-1"><Image className="w-3 h-3" /> {g.photos?.length || 0} photos</span>
@@ -229,7 +229,7 @@ export default function AdminGammes() {
                 {g.warranty && <span className="inline-flex items-center gap-1 font-bold text-primary"><Shield className="w-3 h-3" /> {g.warranty} ans</span>}
               </div>
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-shrink-0">
               <Button variant="ghost" size="icon" onClick={() => move(g.id, -1)}><ArrowUp className="w-4 h-4" /></Button>
               <Button variant="ghost" size="icon" onClick={() => move(g.id, 1)}><ArrowDown className="w-4 h-4" /></Button>
               <Button variant="ghost" size="icon" onClick={() => openEdit(g)}><Pencil className="w-4 h-4" /></Button>

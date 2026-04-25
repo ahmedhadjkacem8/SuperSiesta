@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import CachedImage from "@/components/CachedImage";
+import { getImageUrl } from "@/utils/imageUtils";
 
 interface HeroSlide {
   id: string;
@@ -99,13 +99,12 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
           exit="exit"
           className="absolute inset-0 w-full h-full"
         >
-          <CachedImage 
-            src={slide.image_url} 
+          <img 
+            src={`${getImageUrl(slide.image_url)}${slide.image_url.includes('?') ? '&' : '?'}_=${Date.now()}`} 
             alt={slide.title || ""} 
             className="w-full h-full object-cover" 
             loading="eager"
-            fetchPriority="high"
-            noCache
+            {...({ fetchpriority: "high" } as any)}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent md:from-black/70 md:via-black/30 md:to-transparent" />
           

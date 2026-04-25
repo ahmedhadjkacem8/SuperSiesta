@@ -27,7 +27,7 @@ interface Product {
   badge: string | null;
   in_promo: boolean;
   gamme: string | null;
-  grammage: string | null;
+  grammage: number | null;
   sizes?: ProductSize[];
   created_at: string;
 }
@@ -262,7 +262,7 @@ export default function AdminProduits() {
               <Textarea placeholder="Spécifications (une par ligne)" value={form.specs} onChange={(e) => setForm({ ...form, specs: e.target.value })} rows={4} />
               <div className="flex gap-4 items-center">
                 <Input placeholder="Badge (ex: Best Seller)" value={form.badge} onChange={(e) => setForm({ ...form, badge: e.target.value })} className="flex-1" />
-                <Input placeholder="Grammage (ex: 300g/m²)" value={form.grammage} onChange={(e) => setForm({ ...form, grammage: e.target.value })} className="flex-1" />
+                <Input type="number" placeholder="Charge supportée (kg)" value={form.grammage} onChange={(e) => setForm({ ...form, grammage: e.target.value })} className="flex-1" />
                 <div className="flex items-center gap-2">
                   <Switch checked={form.in_promo} onCheckedChange={(v) => setForm({ ...form, in_promo: v })} />
                   <span className="text-sm">En promo</span>
@@ -322,7 +322,7 @@ export default function AdminProduits() {
               <TableHead>Gamme</TableHead>
               <TableHead>Tailles</TableHead>
               <TableHead>Badge</TableHead>
-              <TableHead className="w-20">Actions</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -345,10 +345,10 @@ export default function AdminProduits() {
                   {p.badge && <Badge>{p.badge}</Badge>}
                   {p.in_promo && <Badge variant="destructive" className="ml-1">Promo</Badge>}
                 </TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(p)}><Pencil className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(p)}><Pencil className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(p.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                   </div>
                 </TableCell>
               </TableRow>

@@ -18,6 +18,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useNewsletters } from "@/hooks/useNewsletters";
 import { useSocialNetworks } from "@/hooks/useSocialNetworks";
 import LucideIcon from "@/components/common/LucideIcon";
+import { useBlogPosts } from "@/hooks/useBlog";
 
 interface BlogPreview {
   id: string;
@@ -35,8 +36,6 @@ export default function Index() {
   const { allDimensions } = useCategories(products);
   const allProducts = (products || []).filter(p => p.sizes && p.sizes.length > 0).slice(0, 6);
 
-  const [blogPosts, setBlogPosts] = useState<BlogPreview[]>([]);
-  const [favoritePosts, setFavoritePosts] = useState<BlogPreview[]>([]);
   const [showAllDimensions, setShowAllDimensions] = useState(false);
   const { settings } = useSettings();
 
@@ -54,24 +53,11 @@ export default function Index() {
   const { subscribe, isSubscribing } = useNewsletters();
   const { socials } = useSocialNetworks();
 
+  const { data: blogPosts = [] } = useBlogPosts({ per_page: 3 });
+  const { data: favoritePosts = [] } = useBlogPosts({ is_favorite: true, per_page: 5 });
+
   // CHARGEMENT DES AUTRES DONNÉES
   useEffect(() => {
-    const fetchBlog = async () => {
-      try {
-        const data = await api.getBlogPosts({ per_page: 3 }) as BlogPreview[];
-        setBlogPosts(data || []);
-      } catch (err) {
-        console.error("Erreur blog:", err);
-      }
-    };
-    const fetchFavorites = async () => {
-      try {
-        const data = await api.getBlogPosts({ is_favorite: true, per_page: 5 }) as BlogPreview[];
-        setFavoritePosts(data || []);
-      } catch (err) {
-        console.error("Erreur blogs favoris:", err);
-      }
-    };
     const fetchGammes = async () => {
       try {
         const data = await api.get<any[]>("/gammes");
@@ -109,8 +95,6 @@ export default function Index() {
       }
     };
 
-    fetchBlog();
-    fetchFavorites();
     fetchGammes();
     fetchDimensions();
     fetchCategories();

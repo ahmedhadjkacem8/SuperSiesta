@@ -1,26 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { motion } from "framer-motion";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ImageUpload from "@/components/ImageUpload";
-import { Plus, Trash2, Edit, Eye, EyeOff, Loader2, X, Star } from "lucide-react";
+import { Plus, Trash2, Edit, Eye, EyeOff, Loader2, X, Star, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
-import { api } from "@/lib/apiClient";
 import { confirmDelete } from "@/lib/swal";
 import { Badge } from "@/components/ui/badge";
-
-interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string | null;
-  content: string | null;
-  image_url: string | null;
-  category: string;
-  tags: string[];
-  published: boolean;
-  is_favorite: boolean;
-  published_at: string | null;
-  created_at: string;
-}
+import { useBlogPosts, useBlogActions, BlogPost } from "@/hooks/useBlog";
 
 interface BlogFormState {
   title: string;
@@ -33,11 +19,13 @@ interface BlogFormState {
   tags: string[];
   published: boolean;
   is_favorite: boolean;
+  sort_order: number;
 }
 
 export default function AdminBlog() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: posts = [], isLoading } = useBlogPosts();
+  const blogActions = useBlogActions();
+
   const [editing, setEditing] = useState<BlogPost | null>(null);
   const [form, setForm] = useState<BlogFormState>({
     title: "",
@@ -50,21 +38,9 @@ export default function AdminBlog() {
     tags: [],
     published: false,
     is_favorite: false,
+    sort_order: 0,
   });
   const [tagInput, setTagInput] = useState("");
-
-  const fetchPosts = async () => {
-    try {
-      const data = await api.get<BlogPost[]>("/blog-posts");
-      setPosts(data || []);
-      setLoading(false);
-    } catch (err: any) {
-      toast.error("Erreur lors du chargement des articles");
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchPosts(); }, []);
 
   const resetForm = () => {
     setForm({
@@ -78,6 +54,7 @@ export default function AdminBlog() {
       tags: [],
       published: false,
       is_favorite: false,
+      sort_order: 0,
     });
     setTagInput("");
     setEditing(null);
@@ -96,6 +73,7 @@ export default function AdminBlog() {
       tags: p.tags || [],
       published: p.published,
       is_favorite: p.is_favorite || false,
+      sort_order: p.sort_order || 0,
     });
   };
 
@@ -114,35 +92,57 @@ export default function AdminBlog() {
     (form.tags || []).forEach(t => formData.append("tags[]", t));
     formData.append("published", form.published ? "1" : "0");
     formData.append("is_favorite", form.is_favorite ? "1" : "0");
+    formData.append("sort_order", form.sort_order.toString());
 
-    if (editing) {
-      try {
-        formData.append("_method", "PUT");
-        await api.post(`/blog-posts/${editing.id}`, formData);
-        toast.success("Article mis à jour");
-        resetForm();
-        fetchPosts();
-      } catch (err: any) {
-        toast.error(err.message || "Erreur lors de la mise à jour");
+    try {
+      await blogActions.mutateAsync({
+        id: editing?.id,
+        data: formData
+      });
+      toast.success(editing ? "Article mis à jour" : "Article créé");
+      resetForm();
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors de l'enregistrement");
+    }
+  };
+
+  const move = async (id: string, dir: -1 | 1) => {
+    if (blogActions.isPending) return;
+    
+    const idx = posts.findIndex(p => p.id === id);
+    const swapIdx = idx + dir;
+    if (swapIdx < 0 || swapIdx >= posts.length) return;
+    
+    const a = posts[idx];
+    const b = posts[swapIdx];
+
+    try {
+      // Swapping sort_orders
+      // If they have the same order or 0, we assign them sequential orders based on index
+      let orderA = b.sort_order;
+      let orderB = a.sort_order;
+
+      if (orderA === orderB) {
+        orderA = idx + dir;
+        orderB = idx;
       }
-    } else {
-      try {
-        await api.post("/blog-posts", formData);
-        toast.success("Article créé");
-        resetForm();
-        fetchPosts();
-      } catch (err: any) {
-        toast.error(err.message || "Erreur lors de la création");
-      }
+
+      await Promise.all([
+        blogActions.mutateAsync({ id: a.id, data: { sort_order: orderA } }),
+        blogActions.mutateAsync({ id: b.id, data: { sort_order: orderB } })
+      ]);
+      
+      toast.success("Position mise à jour");
+    } catch (err: any) {
+      toast.error("Erreur lors du déplacement");
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!(await confirmDelete("Supprimer cet article ?", "L'article sera définitivement retiré du blog."))) return;
     try {
-      await api.delete(`/blog-posts/${id}`);
+      await blogActions.mutateAsync({ id, method: 'DELETE' });
       toast.success("Supprimé");
-      fetchPosts();
     } catch (err: any) {
       toast.error("Erreur lors de la suppression");
     }
@@ -150,46 +150,30 @@ export default function AdminBlog() {
 
   const togglePublish = async (p: BlogPost) => {
     const newPublished = !p.published;
-    
-    // Optimistic update
-    setPosts(posts.map(post => 
-      post.id === p.id ? { ...post, published: newPublished } : post
-    ));
-
     try {
-      await api.put(`/blog-posts/${p.id}`, { 
-        published: newPublished, 
-        published_at: newPublished ? new Date().toISOString() : null 
+      await blogActions.mutateAsync({
+        id: p.id,
+        data: { 
+          published: newPublished, 
+          published_at: newPublished ? new Date().toISOString() : null 
+        }
       });
       toast.success(newPublished ? "Article publié" : "Article dépublié");
     } catch (err: any) {
-      // Rollback on error
-      setPosts(posts.map(post => 
-        post.id === p.id ? { ...post, published: p.published } : post
-      ));
       toast.error("Erreur lors de la modification");
-      fetchPosts();
     }
   };
 
   const toggleFavorite = async (p: BlogPost) => {
     const newFavorite = !p.is_favorite;
-    
-    // Optimistic update
-    setPosts(posts.map(post => 
-      post.id === p.id ? { ...post, is_favorite: newFavorite } : post
-    ));
-
     try {
-      await api.put(`/blog-posts/${p.id}`, { is_favorite: newFavorite });
+      await blogActions.mutateAsync({
+        id: p.id,
+        data: { is_favorite: newFavorite }
+      });
       toast.success(newFavorite ? "Ajouté aux favoris" : "Retiré des favoris");
     } catch (err: any) {
-      // Rollback on error
-      setPosts(posts.map(post => 
-        post.id === p.id ? { ...post, is_favorite: p.is_favorite } : post
-      ));
       toast.error("Erreur lors de la modification");
-      fetchPosts();
     }
   };
 
@@ -278,42 +262,82 @@ export default function AdminBlog() {
             <input type="checkbox" checked={form.is_favorite} onChange={(e) => setForm({ ...form, is_favorite: e.target.checked })} /> 
             Favori (Mettre en avant)
           </label>
-          <button onClick={handleSave} className="bg-primary text-primary-foreground font-bold px-6 py-2 rounded-xl text-sm hover:bg-primary/90"><Plus className="w-4 h-4 inline mr-1" />{editing ? "Mettre à jour" : "Créer"}</button>
+          <div className="flex items-center gap-2">
+            <span className="text-sm">Ordre :</span>
+            <input 
+              type="number" 
+              value={form.sort_order} 
+              onChange={(e) => setForm({ ...form, sort_order: parseInt(e.target.value) || 0 })} 
+              className="w-20 px-3 py-1 border border-border rounded-lg bg-background text-sm" 
+            />
+          </div>
+          <button 
+            onClick={handleSave} 
+            disabled={blogActions.isPending}
+            className="bg-primary text-primary-foreground font-bold px-6 py-2 rounded-xl text-sm hover:bg-primary/90 disabled:opacity-50"
+          >
+            {blogActions.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (editing ? "Mettre à jour" : "Créer")}
+          </button>
           {editing && <button onClick={resetForm} className="text-sm text-muted-foreground hover:underline">Annuler</button>}
         </div>
       </div>
 
       {/* List */}
-      {loading ? (
+      {isLoading ? (
         <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
       ) : (
         <div className="space-y-3">
-          {posts.map((p) => (
-            <div key={p.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
-              <div>
+          {posts.map((p, i) => (
+            <motion.div 
+              layout
+              key={p.id} 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 500, damping: 50, mass: 1 }}
+              className="bg-card border border-border rounded-xl p-4 flex items-center gap-4 justify-between shadow-sm"
+            >
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${p.category === "conseil" ? "bg-accent text-accent-foreground" : "bg-secondary/10 text-secondary"}`}>{p.category}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${p.published ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>{p.published ? "Publié" : "Brouillon"}</span>
                   {p.is_favorite && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-yellow-500 text-white flex items-center gap-1">★ Favori</span>}
                 </div>
-                <p className="font-bold">{p.title}</p>
-                <p className="text-xs text-muted-foreground">{p.slug}</p>
+                <p className="font-bold line-clamp-1">{p.title}</p>
+                <p className="text-xs text-muted-foreground line-clamp-1">{p.slug} • Ordre: {p.sort_order}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button 
+                  onClick={() => move(p.id, -1)} 
+                  disabled={i === 0 || blogActions.isPending} 
+                  className="p-2 rounded-lg hover:bg-muted disabled:opacity-30"
+                  title="Monter"
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => move(p.id, 1)} 
+                  disabled={i === posts.length - 1 || blogActions.isPending} 
+                  className="p-2 rounded-lg hover:bg-muted disabled:opacity-30"
+                  title="Descendre"
+                >
+                  <ArrowDown className="w-4 h-4" />
+                </button>
                 <button 
                   onClick={() => toggleFavorite(p)} 
+                  disabled={blogActions.isPending}
                   className={`p-2 rounded-lg hover:bg-muted ${p.is_favorite ? "text-yellow-500" : "text-muted-foreground"}`}
                   title={p.is_favorite ? "Retirer des favoris" : "Marquer comme favori"}
                 >
                   <Star className={`w-4 h-4 ${p.is_favorite ? "fill-yellow-500" : ""}`} />
                 </button>
-                <button onClick={() => togglePublish(p)} className="p-2 rounded-lg hover:bg-muted" title={p.published ? "Dépublier" : "Publier"}>
+                <button onClick={() => togglePublish(p)} disabled={blogActions.isPending} className="p-2 rounded-lg hover:bg-muted" title={p.published ? "Dépublier" : "Publier"}>
                   {p.published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-                <button onClick={() => handleEdit(p)} className="p-2 rounded-lg hover:bg-muted"><Edit className="w-4 h-4" /></button>
-                <button onClick={() => handleDelete(p.id)} className="p-2 rounded-lg hover:bg-destructive/10 text-destructive"><Trash2 className="w-4 h-4" /></button>
+                <button onClick={() => handleEdit(p)} disabled={blogActions.isPending} className="p-2 rounded-lg hover:bg-muted"><Edit className="w-4 h-4" /></button>
+                <button onClick={() => handleDelete(p.id)} disabled={blogActions.isPending} className="p-2 rounded-lg hover:bg-destructive/10 text-destructive"><Trash2 className="w-4 h-4" /></button>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
