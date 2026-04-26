@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       api.setToken(token);
 
       // Get current user from API
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/user`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/user`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       setError(null);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -146,7 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       setError(null);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -182,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const token = localStorage.getItem(TOKEN_KEY);
       if (token) {
-        await fetch(`${import.meta.env.VITE_API_URL}/api/auth/logout`, {
+        await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,

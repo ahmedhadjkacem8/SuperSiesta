@@ -33,8 +33,9 @@ export function getImageUrl(imagePath: string | null | undefined): string {
     return imagePath
   }
 
-  // Par défaut, considère que c'est un chemin relatif
-  return `${API_URL}/storage/${imagePath}`
+  // Par défaut, considère que c'est un chemin relatif vers le stockage
+  const base = API_URL.replace(/\/api\/?$/, '')
+  return `${base}/storage/${imagePath}`
 }
 
 /**
