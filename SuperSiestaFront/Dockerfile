@@ -25,16 +25,16 @@ ENV VITE_API_URL=${VITE_API_URL}
 RUN npm run build
 
 # --------------- Stage 2: Runtime (Nginx) --------------------
-FROM jonasal/nginx-certbot:latest AS production
+FROM nginx:alpine AS production
 
 LABEL maintainer="SuperSiesta Team"
 LABEL description="SuperSiesta Frontend — static assets served by Nginx"
 
-# Remove default Nginx config if it exists
-RUN rm -f /etc/nginx/conf.d/default.conf
+# Remove default Nginx config
+RUN rm /etc/nginx/conf.d/default.conf
 
 # Copy custom Nginx config
-COPY docker/nginx/frontend.conf /etc/nginx/user.conf.d/frontend.conf
+COPY docker/nginx/frontend.conf /etc/nginx/conf.d/default.conf
 
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
@@ -44,3 +44,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD wget -qO- http://localhost/health || exit 1
 
 EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
