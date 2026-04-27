@@ -11,6 +11,7 @@ import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Video, Image, Box, Shield } f
 import { api } from "@/lib/apiClient";
 import VideoUpload from "@/components/VideoUpload";
 import { confirmDelete } from "@/lib/swal";
+import { getImageUrl } from "@/utils/imageUtils";
 
 interface Gamme {
   id: string;
@@ -97,13 +98,13 @@ export default function AdminGammes() {
       name: g.name,
       description: g.description || "",
       cover_image_file: null,
-      cover_image_preview: g.cover_image || "",
+      cover_image_preview: g.cover_image ? getImageUrl(g.cover_image) : "",
       video_file: null,
-      video_preview: g.video_url || "",
+      video_preview: g.video_url ? getImageUrl(g.video_url) : "",
       photos_files: [],
-      photos_preview: g.photos || [],
+      photos_preview: (g.photos || []).map(p => getImageUrl(p)),
       images_3d_files: [],
-      images_3d_preview: g.images_3d || [],
+      images_3d_preview: (g.images_3d || []).map(p => getImageUrl(p)),
       warranty: g.warranty?.toString() || "",
     });
     setOpen(true);
@@ -214,7 +215,7 @@ export default function AdminGammes() {
           <div key={g.id} className="bg-card border border-border rounded-xl p-5 flex items-center justify-between gap-4">
             <div className="w-16 h-16 shrink-0 rounded-lg border border-border overflow-hidden bg-muted flex items-center justify-center">
               {g.cover_image ? (
-                <img src={g.cover_image} alt={g.name} className="w-full h-full object-cover" />
+                <img src={getImageUrl(g.cover_image)} alt={g.name} className="w-full h-full object-cover" />
               ) : (
                 <span className="text-[10px] text-muted-foreground text-center px-1">Sans image</span>
               )}
