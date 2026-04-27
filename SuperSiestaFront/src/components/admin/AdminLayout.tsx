@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuthSecure";
-import { LayoutDashboard, Package, Users, FileText, Receipt, Wallet, LogOut, PenSquare, Image, Newspaper, MapPin, ShoppingCart, SlidersHorizontal, Layers, Truck, Settings, Bell, Info, Mail } from "lucide-react";
+import { LayoutDashboard, Package, Users, FileText, Receipt, Wallet, LogOut, PenSquare, Image, Newspaper, MapPin, ShoppingCart, SlidersHorizontal, Layers, Truck, Settings, Bell, Info, Mail, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/apiClient";
 import { toast } from "sonner";
@@ -43,6 +43,7 @@ const navGroups = [
       { label: "Showrooms", path: "/admin/showrooms", icon: MapPin },
       { label: "À Propos", path: "/admin/a-propos", icon: Info },
       { label: "Paramétrages", path: "/admin/settings", icon: Settings },
+      { label: "Administrateurs", path: "/admin/administrateurs", icon: Shield },
     ]
   }
 ];

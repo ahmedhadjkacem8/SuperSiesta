@@ -9,10 +9,8 @@ import { toast } from "sonner";
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [fullName, setFullName] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { user, isAdmin, isLoading, login, register } = useAuth();
+  const { user, isAdmin, isLoading, login } = useAuth();
   const navigate = useNavigate();
 
   // Redirect when authenticated admin
@@ -26,19 +24,11 @@ export default function AdminLogin() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      if (isSignUp) {
-        const result = await register(email, password, fullName, "", "btoc");
-        if (!result.success) {
-          throw new Error(result.error?.message || "Erreur d'inscription");
-        }
-        toast.success("Compte créé ! Contactez l'admin pour obtenir l'accès.");
-      } else {
-        const result = await login(email, password);
-        if (!result.success) {
-          throw new Error(result.error?.message || "Erreur de connexion");
-        }
-        toast.success("Connexion réussie !");
+      const result = await login(email, password);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Erreur de connexion");
       }
+      toast.success("Connexion réussie !");
     } catch (err: any) {
       toast.error(err.message || "Erreur de connexion");
     } finally {
@@ -51,22 +41,14 @@ export default function AdminLogin() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">
-            {isSignUp ? "Créer un compte" : "Administration"}
+            Administration
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            {isSignUp ? "Inscrivez-vous pour demander l'accès" : "Connectez-vous au back-office"}
+            Connectez-vous au back-office
           </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignUp && (
-              <Input
-                placeholder="Nom complet"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-              />
-            )}
             <Input
               type="email"
               placeholder="Email"
@@ -83,15 +65,9 @@ export default function AdminLogin() {
               minLength={6}
             />
             <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "..." : isSignUp ? "S'inscrire" : "Se connecter"}
+              {submitting ? "..." : "Se connecter"}
             </Button>
           </form>
-          <button
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="mt-4 text-sm text-primary hover:underline w-full text-center block"
-          >
-            {isSignUp ? "Déjà un compte ? Se connecter" : "Pas de compte ? S'inscrire"}
-          </button>
         </CardContent>
       </Card>
     </div>

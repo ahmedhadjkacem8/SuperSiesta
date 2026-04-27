@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\SocialNetworkController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\NewsletterController;
+use App\Http\Controllers\Api\AdminUserController;
 
 // Public routes (no authentication required)
 Route::middleware('api')->group(function () {
@@ -326,6 +327,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/newsletters', [NewsletterController::class, 'index']);
     Route::get('/newsletters/export', [NewsletterController::class, 'export']);
     Route::delete('/newsletters/{id}', [NewsletterController::class, 'destroy']);
+
+    // Admin Users Management
+    Route::get('/admins', [AdminUserController::class, 'index']);
+    Route::post('/admins', [AdminUserController::class, 'store']);
+    Route::put('/admins/{id}', [AdminUserController::class, 'update']);
+    Route::delete('/admins/{id}', [AdminUserController::class, 'destroy']);
 
     // Get signed temporary URLs for files (1 hour validity)
     Route::post('/files/signed-url', [FileController::class, 'getSignedUrl']);
