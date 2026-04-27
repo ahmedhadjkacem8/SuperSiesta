@@ -14,6 +14,9 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 export function getImageUrl(imagePath: string | null | undefined): string {
   if (!imagePath) return ''
 
+  // Nettoyer les anciennes URLs avec IP hardcodées en DB
+  imagePath = imagePath.replace(/^http:\/\/135\.125\.202\.39:8000/, '')
+
   // Si c'est déjà une URL complète
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath
