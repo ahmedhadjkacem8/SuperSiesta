@@ -171,4 +171,26 @@ class GammeController extends BaseController
 
         return $this->sendResponse(null, 'Gamme deleted successfully');
     }
+
+    public function reorder(Request $request): JsonResponse
+    {
+        $this->authorize('reorder', Gamme::class);
+
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|uuid|exists:gammes,id'
+        ]);
+
+        $ids = $validated['ids'];
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($ids) {
+            foreach ($ids as $index => $id) {
+                \Illuminate\Support\Facades\DB::table('gammes')
+                    ->where('id', $id)
+                    ->update(['sort_order' => $index]);
+            }
+        });
+
+        return $this->sendResponse(null, 'Gammes reordered successfully');
+    }
 }

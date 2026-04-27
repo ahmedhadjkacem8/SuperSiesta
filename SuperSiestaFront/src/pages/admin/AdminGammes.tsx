@@ -189,14 +189,26 @@ export default function AdminGammes() {
     const idx = gammes.findIndex((g) => g.id === id);
     const swapIdx = idx + dir;
     if (swapIdx < 0 || swapIdx >= gammes.length) return;
+    
+    // Optimistic update
+    const newGammes = [...gammes];
+    const [movedItem] = newGammes.splice(idx, 1);
+    newGammes.splice(swapIdx, 0, movedItem);
+    
+    // Immediately update local state for "synchronised" feeling
+    setGammes(newGammes);
+
     try {
-      await Promise.all([
-        api.put(`/gammes/${gammes[idx].id}`, { sort_order: gammes[swapIdx].sort_order }),
-        api.put(`/gammes/${gammes[swapIdx].id}`, { sort_order: gammes[idx].sort_order }),
-      ]);
+      // Send the entire new order of IDs to the server
+      await api.post("/gammes/reorder", {
+        ids: newGammes.map(g => g.id)
+      });
+      toast.success("Ordre mis à jour");
+      // Optionally reload to ensure sync with server state
       load();
     } catch (err: any) {
       toast.error("Erreur lors du déplacement");
+      load(); // Rollback if error
     }
   };
 

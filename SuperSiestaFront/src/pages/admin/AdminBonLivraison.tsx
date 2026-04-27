@@ -301,13 +301,13 @@ export default function AdminBonLivraison() {
       .bl-banner h1 { margin: 0; font-size: 48px; font-weight: 900; letter-spacing: -1.5px; line-height: 1; }
       .bl-banner p { margin: 5px 0 0; font-size: 18px; font-weight: 700; opacity: 0.9; }
 
-      .main-body { position: relative; z-index: 2; padding: 20px 45px; margin-top: 60px; }
+      .main-body { position: relative; z-index: 2; padding: 20px 45px; margin-top: 20px; }
 
       .info-grid {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 50px;
+        margin-bottom: 30px;
         gap: 40px;
       }
 
@@ -368,15 +368,15 @@ export default function AdminBonLivraison() {
       .delivery-info .info-label { text-align: left; }
 
       /* Tables */
-      .summary-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; border-radius: 12px; overflow: hidden; border: 2px solid #adc80a; }
-      .summary-table th { background: #fff; color: #000; text-align: left; padding: 10px 20px; font-size: 13px; font-weight: 900; text-transform: uppercase; border: 2px solid #adc80a; }
-      .summary-table td { background: #f7fee7; color: #000; padding: 10px 20px; font-size: 16px; font-weight: 700; border: 2px solid #adc80a; }
+      .summary-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border-radius: 12px; overflow: hidden; border: 2px solid #adc80a; }
+      .summary-table th { background: #fff; color: #000; text-align: left; padding: 6px 15px; font-size: 12px; font-weight: 900; text-transform: uppercase; border: 2px solid #adc80a; }
+      .summary-table td { background: #f7fee7; color: #000; padding: 6px 15px; font-size: 14px; font-weight: 700; border: 2px solid #adc80a; }
 
-      .items-table { width: 100%; border-collapse: collapse; border: 2px solid #adc80a; margin-bottom: 30px; }
-      .items-table th { background: #fff; color: #000; text-align: left; padding: 15px 20px; font-size: 14px; font-weight: 900; text-transform: uppercase; border: 2px solid #adc80a; }
-      .items-table td { padding: 15px 20px; font-size: 16px; font-weight: 600; border: 2px solid #adc80a; vertical-align: middle; }
+      .items-table { width: 100%; border-collapse: collapse; border: 2px solid #adc80a; margin-bottom: 20px; }
+      .items-table th { background: #fff; color: #000; text-align: left; padding: 10px 15px; font-size: 12px; font-weight: 900; text-transform: uppercase; border: 2px solid #adc80a; }
+      .items-table td { padding: 10px 15px; font-size: 14px; font-weight: 600; border: 2px solid #adc80a; vertical-align: middle; }
       
-      .product-row td { padding: 12px 20px !important; }
+      .product-row td { padding: 8px 15px !important; }
       .items-table tr.product-row:nth-child(even) { background: #f9fafb; }
       
       .gift-row td { 
@@ -409,10 +409,45 @@ export default function AdminBonLivraison() {
         letter-spacing: 0.5px;
       }
 
-      /* Footer Note */
-      .note-section { margin-top: 30px; }
-      .note-section h3 { font-size: 18px; font-weight: 900; margin-bottom: 10px; color: #1e293b; }
-      .note-box { border: 2px solid #adc80a; border-radius: 25px; min-height: 80px; padding: 15px 25px; background: #fff; font-size: 15px; color: #475569; }
+      /* Footer Note & Signature */
+      .footer-layout {
+        margin-top: 30px;
+        position: relative;
+        padding-bottom: 50px;
+      }
+      .note-section { 
+        width: 100%;
+      }
+      .note-section h3 { font-size: 16px; font-weight: 900; margin-bottom: 8px; color: #1e293b; text-transform: uppercase; }
+      .note-box { 
+        border: 2px solid #adc80a; 
+        border-radius: 20px; 
+        min-height: 100px; 
+        min-width: 350px;
+        max-width: 75%;
+        padding: 10px 20px; 
+        background: #fff; 
+        font-size: 14px; 
+        color: #475569;
+        position: relative;
+        z-index: 1;
+        display: inline-block;
+      }
+
+      .signature-section {
+        position: absolute;
+        bottom: -20px;
+        right: -10px;
+        width: 400px;
+        text-align: center;
+        z-index: 10;
+        transform: rotate(-3deg);
+      }
+      .signature-container img {
+        width: 100%;
+        max-height: 200px;
+        object-fit: contain;
+      }
 
       @media print {
         body { margin: 0; padding: 0; }
@@ -843,10 +878,18 @@ export default function AdminBonLivraison() {
                       )}
                     </table>
 
-                    <div className="note-section">
-                      <h3>Note Client</h3>
-                      <div className="note-box">
-                        {detail.notes || "Aucune note particulière."}
+                    <div className="footer-layout">
+                      <div className="note-section">
+                        <h3>Note Client</h3>
+                        <div className="note-box">
+                          {detail.notes || "Aucune note particulière."}
+                        </div>
+                      </div>
+
+                      <div className="signature-section">
+                        <div className="signature-container">
+                          <img src="/images/signature.png" alt="Signature" />
+                        </div>
                       </div>
                     </div>
                   </div>

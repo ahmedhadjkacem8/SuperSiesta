@@ -21,4 +21,9 @@ class GammePolicy
     {
         return $user->roles()->where('role', 'admin')->exists();
     }
+
+    public function reorder(User $user): bool
+    {
+        return $user->roles()->where('role', 'admin')->exists();
+    }
 }
