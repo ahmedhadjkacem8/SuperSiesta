@@ -361,6 +361,27 @@ export default function AdminSettings() {
     try { await api.delete(`/categories/${id}`); toast.success("Supprimée"); loadCat(); } catch { toast.error("Erreur"); }
   };
 
+  const moveCategory = async (id: string, dir: -1 | 1) => {
+    const idx = categories.findIndex((c) => c.id === id);
+    const swapIdx = idx + dir;
+    if (swapIdx < 0 || swapIdx >= categories.length) return;
+
+    const newCats = [...categories];
+    const [moved] = newCats.splice(idx, 1);
+    newCats.splice(swapIdx, 0, moved);
+
+    setCategories(newCats);
+
+    try {
+      await api.post('/categories/reorder', { ids: newCats.map(c => c.id) });
+      toast.success('Ordre mis à jour');
+      loadCat();
+    } catch (err: any) {
+      toast.error('Erreur lors du déplacement');
+      loadCat();
+    }
+  };
+
   const handleFermSave = async () => {
     if (!fermLabel.trim()) return toast.error("Label requis");
     try {
@@ -840,7 +861,7 @@ export default function AdminSettings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {categories.map((c) => (
+                      {categories.map((c, index) => (
                         <TableRow key={c.id}>
                           <TableCell className="font-medium capitalize">{c.label}</TableCell>
                           <TableCell>
@@ -856,7 +877,9 @@ export default function AdminSettings() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex gap-1">
+                            <div className="flex gap-1 items-center">
+                              <Button variant="ghost" size="icon" onClick={() => moveCategory(c.id, -1)}><ArrowUp className="w-4 h-4" /></Button>
+                              <Button variant="ghost" size="icon" onClick={() => moveCategory(c.id, 1)}><ArrowDown className="w-4 h-4" /></Button>
                               <Button variant="ghost" size="icon" onClick={() => { setCatEditing(c); setCatForm({ label: c.label, image_file: null, image_preview: c.image || "", description: c.description || "", color: c.color || "#f5f0eb", text_color: c.text_color || "#1a1a2e" }); setCatOpen(true); }}><Pencil className="w-4 h-4" /></Button>
                               <Button variant="ghost" size="icon" onClick={() => handleCatDelete(c.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                             </div>

@@ -83,6 +83,7 @@ Route::middleware('api')->group(function () {
     // Categories
     Route::get('/categories', [CategorieController::class, 'index']);
     Route::get('/categories/{categorie}', [CategorieController::class, 'show']);
+    Route::post('/categories/reorder', [CategorieController::class, 'reorder']);
 
     // Fermetes
     Route::get('/fermetes', [FermeteController::class, 'index']);

@@ -10,7 +10,7 @@ class CategorieController extends BaseController
 {
     public function index(): JsonResponse
     {
-        $categories = Categorie::orderBy('label', 'asc')->get();
+        $categories = Categorie::orderBy('sort_order', 'asc')->get();
         return $this->sendResponse($categories, 'Categories retrieved successfully');
     }
 
@@ -76,5 +76,30 @@ class CategorieController extends BaseController
 
         $categorie->delete();
         return $this->sendResponse(null, 'Category deleted successfully');
+    }
+
+    /**
+     * Reorder categories (admin)
+     */
+    public function reorder(Request $request): JsonResponse
+    {
+        $this->authorize('reorder', Categorie::class);
+
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|uuid|exists:categories,id'
+        ]);
+
+        $ids = $validated['ids'];
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($ids) {
+            foreach ($ids as $index => $id) {
+                \Illuminate\Support\Facades\DB::table('categories')
+                    ->where('id', $id)
+                    ->update(['sort_order' => $index]);
+            }
+        });
+
+        return $this->sendResponse(null, 'Categories reordered successfully');
     }
 }

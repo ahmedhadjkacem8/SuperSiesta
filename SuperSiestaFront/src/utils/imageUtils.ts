@@ -17,9 +17,6 @@ export function getImageUrl(imagePath: string | null | undefined): string {
   // Nettoyer les anciennes URLs avec IP hardcodées en DB
   imagePath = imagePath.replace(/^http:\/\/135\.125\.202\.39:8000/, '')
 
-  // Normaliser les slashes multiples en un seul
-  imagePath = imagePath.replace(/\/+/g, '/')
-
   // Si c'est déjà une URL complète
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath
@@ -40,9 +37,7 @@ export function getImageUrl(imagePath: string | null | undefined): string {
   }
 
   // Par défaut, considère que c'est un chemin relatif
-  // Strip /api from API_URL to avoid double /api/storage in the URL
-  const base = API_URL.startsWith('http') ? API_URL.replace(/\/api\/?$/, '') : API_URL
-  return `${base}/storage/${imagePath}`
+  return `${API_URL}/storage/${imagePath}`
 }
 
 /**

@@ -11,5 +11,9 @@ class Categorie extends Model
 {
     use HasUuids, HasImageUpload;
 
-    protected $fillable = ['label', 'image', 'description', 'color', 'text_color'];
+    protected $fillable = ['label', 'image', 'description', 'color', 'text_color', 'sort_order'];
+
+    protected $casts = [
+        'sort_order' => 'integer',
+    ];
 }

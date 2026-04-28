@@ -260,9 +260,21 @@ export default function Boutique() {
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                {products.map((p) => (
-                  <ProductCard key={p.id} product={p} selectedDimension={dimension} />
-                ))}
+                {
+                  // Sort products according to gammes order (if available)
+                  (() => {
+                    const order = (gammesData || []).map(g => g.name);
+                    const idx = (g: string | undefined) => {
+                      if (!g) return Number.MAX_SAFE_INTEGER;
+                      const i = order.indexOf(g);
+                      return i === -1 ? Number.MAX_SAFE_INTEGER : i;
+                    }
+                    const sorted = [...products].sort((a, b) => idx(a.gamme) - idx(b.gamme));
+                    return sorted.map((p) => (
+                      <ProductCard key={p.id} product={p} selectedDimension={dimension} />
+                    ));
+                  })()
+                }
               </div>
               <LoadMore hasMore={hasMore} isLoading={loading} onLoadMore={loadMore} className="mt-10" />
             </>

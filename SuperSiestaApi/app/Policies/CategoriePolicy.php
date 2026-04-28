@@ -12,4 +12,6 @@ class CategoriePolicy
     public function create(User $user): bool { return $user->isAdmin(); }
     public function update(User $user, Categorie $categorie): bool { return $user->isAdmin(); }
     public function delete(User $user, Categorie $categorie): bool { return $user->isAdmin(); }
+
+    public function reorder(User $user): bool { return $user->isAdmin(); }
 }
