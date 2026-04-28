@@ -17,6 +17,9 @@ export function getImageUrl(imagePath: string | null | undefined): string {
   // Nettoyer les anciennes URLs avec IP hardcodées en DB
   imagePath = imagePath.replace(/^http:\/\/135\.125\.202\.39:8000/, '')
 
+  // Normaliser les slashes multiples en un seul
+  imagePath = imagePath.replace(/\/+/g, '/')
+
   // Si c'est déjà une URL complète
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath
