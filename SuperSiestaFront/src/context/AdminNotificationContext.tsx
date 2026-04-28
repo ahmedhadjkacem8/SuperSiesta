@@ -100,6 +100,13 @@ export const AdminNotificationProvider = ({ children }: { children: ReactNode })
 
       fetched = fetched
         .filter(n => n.status !== 'expired')
+        .map(n => {
+          // Fix incorrect review redirect paths from backend
+          if ((n.type === 'review' || n.type === 'avis') && (!n.path || !n.path.startsWith('/admin'))) {
+            return { ...n, path: '/admin/reviews' };
+          }
+          return n;
+        })
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       if (!isInitialLoad.current && !silent) {

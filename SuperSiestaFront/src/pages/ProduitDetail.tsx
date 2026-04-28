@@ -17,6 +17,8 @@ import { Star, Shield, Truck, CreditCard, ChevronLeft, Plus, Minus, Check, Loade
 import { formatPrice } from "@/lib/utils";
 import { getImageUrl } from "@/utils/imageUtils";
 import { api } from '@/lib/apiClient'
+import { useSettings } from "@/hooks/useSettings";
+import LucideIcon from "@/components/common/LucideIcon";
 
 export default function ProduitDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -26,6 +28,7 @@ export default function ProduitDetail() {
 
   const { product, isLoading } = useProduct(slug);
   const { data: gammes } = useGammes();
+  const { settings } = useSettings();
   const [selectedSize, setSelectedSize] = useState<any>(null);
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
@@ -173,8 +176,8 @@ export default function ProduitDetail() {
             {product.badge && <span className="ml-2 bg-secondary text-secondary-foreground text-xs font-bold px-2.5 py-0.5 rounded-full">{product.badge}</span>}
             <h1 className="text-3xl md:text-4xl font-black mt-2">{product.name}</h1>
             {product.grammage && (
-              <p className="text-lg font-black text-orange-600 mt-2 flex items-center gap-2">
-                Supporte jusqu'à {product.grammage} kg
+              <p className="text-lg font-black  mt-2 flex items-center gap-2">
+                Supporte jusqu'à <span className="text-red-600">{product.grammage} kg</span> par personne
               </p>
             )}
             <div className="flex items-center gap-2 mt-2">
@@ -234,13 +237,30 @@ export default function ProduitDetail() {
             <button onClick={() => { addItem(product as any, selectedSize, qty); navigate("/commander"); }} className="flex-1 bg-secondary text-secondary-foreground font-bold py-4 rounded-2xl hover:bg-secondary/90 transition-colors text-sm">Commander →</button>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            {[{ icon: Truck, text: "Livraison gratuite" }, { icon: CreditCard, text: "Paiement à la livraison" }, { icon: Shield, text: "Garantie 10 ans" }].map(({ icon: Icon, text }) => (
-              <div key={text} className="bg-muted rounded-xl p-3 text-center">
-                <Icon className="w-5 h-5 mx-auto mb-1 text-primary" />
-                <p className="text-xs font-medium">{text}</p>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {(() => {
+              let trustBadges = [];
+              try {
+                trustBadges = JSON.parse(settings.trust_badges || "[]");
+              } catch (e) {
+                trustBadges = [];
+              }
+              if (!Array.isArray(trustBadges) || trustBadges.length === 0) {
+                trustBadges = [
+                  { icon: "Truck", title: "Livraison gratuite", sub: "Partout en Tunisie" },
+                  { icon: "CreditCard", title: "Paiement à la livraison", sub: "Sans frais cachés" },
+                  { icon: "ShieldCheck", title: "Garantie 10 ans", sub: "Sur tous nos matelas" },
+                  { icon: "Clock", title: "Service client 24/7", sub: "+216 71 000 000" },
+                ];
+              }
+              return trustBadges.slice(0, 4).map(({ icon, title, sub }, i) => (
+                <div key={i} className="bg-muted rounded-xl p-3 text-center flex flex-col items-center justify-center">
+                  <LucideIcon name={icon} className="w-5 h-5 mb-1 text-primary" />
+                  <p className="text-[10px] font-bold leading-tight">{title}</p>
+                  <p className="text-[9px] opacity-70 line-clamp-1">{sub}</p>
+                </div>
+              ));
+            })()}
           </div>
 
           {(() => {

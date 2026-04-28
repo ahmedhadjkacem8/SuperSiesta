@@ -44,6 +44,7 @@ export default function Index() {
 
   // ÉTATS POUR LES GAMMES ET DIMENSIONS
   const [blogPageIndex, setBlogPageIndex] = useState(0);
+  const [reviewsPageIndex, setReviewsPageIndex] = useState(0);
   const [gammes, setGammes] = useState<any[]>([]);
   const [dbDimensions, setDbDimensions] = useState<{ id: string, label: string, is_standard: boolean }[]>([]);
   const [categories, setCategories] = useState<{ id: string, label: string, image: string | null, description: string | null, color: string | null, text_color: string | null }[]>([]);
@@ -55,6 +56,16 @@ export default function Index() {
 
   const { data: blogPosts = [] } = useBlogPosts({ per_page: 3 });
   const { data: favoritePosts = [] } = useBlogPosts({ is_favorite: true, per_page: 5 });
+
+  const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const itemsPerPage = windowWidth < 768 ? 1 : 3;
 
   // CHARGEMENT DES AUTRES DONNÉES
   useEffect(() => {
@@ -101,14 +112,25 @@ export default function Index() {
     fetchReviews();
   }, []);
 
-  // Autoplay pour le carrousel des blogs favoris (3 par 3)
+  const reviewsList = dynamicReviews;
+
+  // Autoplay pour le carrousel des blogs favoris
   useEffect(() => {
-    if (favoritePosts.length <= 3) return;
+    if (favoritePosts.length <= itemsPerPage) return;
     const interval = setInterval(() => {
-      setBlogPageIndex((prev) => (prev + 1) % Math.ceil(favoritePosts.length / 3));
-    }, 8000); // Change toutes les 8 secondes
+      setBlogPageIndex((prev) => (prev + 1) % Math.ceil(favoritePosts.length / itemsPerPage));
+    }, 8000); 
     return () => clearInterval(interval);
-  }, [favoritePosts.length]);
+  }, [favoritePosts.length, itemsPerPage]);
+
+  // Autoplay pour le carrousel des avis
+  useEffect(() => {
+    if (reviewsList.length <= itemsPerPage) return;
+    const interval = setInterval(() => {
+      setReviewsPageIndex((prev) => (prev + 1) % Math.ceil(reviewsList.length / itemsPerPage));
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [reviewsList.length, itemsPerPage]);
 
   // Précharger les images quand les slides arrivent
   useEffect(() => {
@@ -119,8 +141,6 @@ export default function Index() {
       });
     }
   }, [heroSlides]);
-
-  const reviewsList = dynamicReviews;
 
   const standardDimensionLabels = dbDimensions.filter(d => d.is_standard).map(d => d.label);
   const allApiDimensions = dbDimensions.map(d => d.label);
@@ -253,7 +273,7 @@ export default function Index() {
                     transition={{ duration: 0.4 }}
                     className="space-y-6"
                   >
-                    {favoritePosts.slice(blogPageIndex * 3, (blogPageIndex + 1) * 3).map((post, i) => (
+                    {favoritePosts.slice(blogPageIndex * itemsPerPage, (blogPageIndex + 1) * itemsPerPage).map((post, i) => (
                       <motion.div
                         key={post.id}
                         initial={{ opacity: 0, y: 10 }}
@@ -287,9 +307,9 @@ export default function Index() {
                 </AnimatePresence>
               </div>
 
-              {favoritePosts.length > 3 && (
+              {favoritePosts.length > itemsPerPage && (
                 <div className="flex justify-center gap-2">
-                  {Array.from({ length: Math.ceil(favoritePosts.length / 3) }).map((_, idx) => (
+                  {Array.from({ length: Math.ceil(favoritePosts.length / itemsPerPage) }).map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => setBlogPageIndex(idx)}
@@ -640,41 +660,59 @@ export default function Index() {
               <span className="text-lg font-black text-primary ml-3">{averageRating}/5</span>
             </div>
           </motion.div>
-          <motion.div
-            variants={staggerContainer}
-            initial="initial"
-            whileInView="whileInView"
-            viewport={{ once: true }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-          >
-            {reviewsList.map((r, i) => (
+          <div className="relative">
+            <AnimatePresence mode="wait">
               <motion.div
-                key={i}
-                variants={fadeInUp}
-                whileHover={{ y: -8 }}
-                className="bg-card rounded-[2rem] p-8 border border-border shadow-sm flex flex-col hover:shadow-xl transition-all"
+                key={reviewsPageIndex}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.5 }}
+                className="grid grid-cols-1 md:grid-cols-3 gap-8"
               >
-                <div className="flex items-center gap-1 mb-5">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className={`w-4 h-4 ${s <= r.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}`} />
-                  ))}
-                </div>
-                <p className="text-base text-foreground/80 mb-6 italic flex-1 leading-relaxed">"{r.message}"</p>
-                <div className="flex items-center gap-3 pt-4 border-t border-border/50">
-                  <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center text-lg font-black shadow-inner">{r.name[0]}</div>
-                  <div>
-                    <p className="text-base font-black truncate">{r.name}</p>
-                    <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">{r.city}</p>
-                  </div>
-                </div>
+                {reviewsList.slice(reviewsPageIndex * itemsPerPage, (reviewsPageIndex + 1) * itemsPerPage).map((r, i) => (
+                  <motion.div
+                    key={i}
+                    variants={fadeInUp}
+                    whileHover={{ y: -8 }}
+                    className="bg-card rounded-[2rem] p-8 border border-border shadow-sm flex flex-col hover:shadow-xl transition-all"
+                  >
+                    <div className="flex items-center gap-1 mb-5">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star key={s} className={`w-4 h-4 ${s <= r.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}`} />
+                      ))}
+                    </div>
+                    <p className="text-base text-foreground/80 mb-6 italic flex-1 leading-relaxed line-clamp-4">"{r.message}"</p>
+                    <div className="flex items-center gap-3 pt-4 border-t border-border/50">
+                      <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center text-lg font-black shadow-inner">{r.name?.[0] || 'U'}</div>
+                      <div>
+                        <p className="text-base font-black truncate">{r.name || 'Utilisateur'}</p>
+                        <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">{r.city || ''}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
               </motion.div>
-            ))}
+            </AnimatePresence>
+
+            {reviewsList.length > itemsPerPage && (
+              <div className="flex justify-center gap-3 mt-12">
+                {Array.from({ length: Math.ceil(reviewsList.length / itemsPerPage) }).map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setReviewsPageIndex(idx)}
+                    className={`h-2 rounded-full transition-all duration-500 ${reviewsPageIndex === idx ? "w-12 bg-primary shadow-[0_0_15px_rgba(var(--primary),0.4)]" : "w-2 bg-primary/20 hover:bg-primary/40"}`}
+                  />
+                ))}
+              </div>
+            )}
+
             {reviewsList.length === 0 && (
-              <div className="col-span-full py-12 text-center text-muted-foreground italic">
+              <div className="py-12 text-center text-muted-foreground italic">
                 Aucun témoignage disponible pour le moment.
               </div>
             )}
-          </motion.div>
+          </div>
         </div>
       </section>
 
