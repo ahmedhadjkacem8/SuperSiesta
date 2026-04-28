@@ -83,7 +83,6 @@ Route::middleware('api')->group(function () {
     // Categories
     Route::get('/categories', [CategorieController::class, 'index']);
     Route::get('/categories/{categorie}', [CategorieController::class, 'show']);
-    Route::post('/categories/reorder', [CategorieController::class, 'reorder']);
 
     // Fermetes
     Route::get('/fermetes', [FermeteController::class, 'index']);
@@ -266,6 +265,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/dimensions/{dimension}', [DimensionController::class, 'destroy']);
 
     // Categories - Admin only
+    Route::post('/categories/reorder', [CategorieController::class, 'reorder']);
     Route::post('/categories', [CategorieController::class, 'store']);
     Route::put('/categories/{categorie}', [CategorieController::class, 'update']);
     Route::delete('/categories/{categorie}', [CategorieController::class, 'destroy']);

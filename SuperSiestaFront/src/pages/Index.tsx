@@ -88,8 +88,9 @@ export default function Index() {
     };
     const fetchCategories = async () => {
       try {
-        const data = await api.get<{ id: string, label: string, image: string | null, description: string | null, color: string | null, text_color: string | null }[]>("/categories");
-        setCategories(data || []);
+        const data = await api.get<any[]>("/categories");
+        const sorted = (data || []).sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
+        setCategories(sorted);
       } catch (err) {
         console.error("Erreur categories:", err);
       }

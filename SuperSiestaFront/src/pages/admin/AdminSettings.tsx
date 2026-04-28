@@ -375,10 +375,9 @@ export default function AdminSettings() {
     try {
       await api.post('/categories/reorder', { ids: newCats.map(c => c.id) });
       toast.success('Ordre mis à jour');
-      loadCat();
     } catch (err: any) {
       toast.error('Erreur lors du déplacement');
-      loadCat();
+        loadCat();
     }
   };
 
