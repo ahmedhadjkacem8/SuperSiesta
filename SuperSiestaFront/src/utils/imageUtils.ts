@@ -25,27 +25,24 @@ export function getImageUrl(imagePath: string | null | undefined): string {
     return imagePath
   }
 
-  // Si c'est un chemin relatif vers stockage (images, vidéos, etc.)
-  // Always bypass /api proxy for static files - they go directly to /storage
+  // Si c'est un chemin relatif vers API
   if (imagePath.startsWith('/uploads') || imagePath.startsWith('/storage')) {
+    // If API_URL is an absolute origin (http...), prefix it.
+    // If API_URL includes a proxy prefix like '/api' (e.g. 'http://host:8000/api'),
+    // strip the trailing '/api' when building public storage URLs so we don't request '/api/storage/...'.
     if (API_URL.startsWith('http://') || API_URL.startsWith('https://')) {
-      // Absolute URL: strip /api and use base domain
       const base = API_URL.replace(/\/api\/?$/, '')
       return `${base}${imagePath}`
     }
-    // Relative path (like /api): return storage path as-is to bypass proxy
-    // Browser will request /storage/... directly on current origin
+    // If VITE_API_URL is a relative path (e.g. '/api'), return the storage path as-is so
+    // the browser requests '/storage/...' on the current origin.
     return imagePath
   }
 
-  // Par défaut, considère que c'est un chemin relatif sans /storage prefix
-  // Always use /storage directly, never /api/storage (Nginx doesn't have that route)
-  if (API_URL.startsWith('http://') || API_URL.startsWith('https://')) {
-    const base = API_URL.replace(/\/api\/?$/, '')
-    return `${base}/storage/${imagePath}`
-  }
-  // Relative API_URL: return /storage directly (bypasses /api proxy)
-  return `/storage/${imagePath}`
+  // Par défaut, considère que c'est un chemin relatif
+  // Strip /api from API_URL to avoid double /api/storage in the URL
+  const base = API_URL.startsWith('http') ? API_URL.replace(/\/api\/?$/, '') : API_URL
+  return `${base}/storage/${imagePath}`
 }
 
 /**
