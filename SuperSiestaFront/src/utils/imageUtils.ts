@@ -17,27 +17,35 @@ export function getImageUrl(imagePath: string | null | undefined): string {
   // Nettoyer les anciennes URLs avec IP hardcodées en DB
   imagePath = imagePath.replace(/^http:\/\/135\.125\.202\.39:8000/, '')
 
+  // Normaliser les slashes multiples en un seul
+  imagePath = imagePath.replace(/\/+/g, '/')
+
   // Si c'est déjà une URL complète
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath
   }
 
-  // Si c'est un chemin relatif vers API
+  // Si c'est un chemin relatif vers stockage (images, vidéos, etc.)
+  // Always bypass /api proxy for static files - they go directly to /storage
   if (imagePath.startsWith('/uploads') || imagePath.startsWith('/storage')) {
-    // If API_URL is an absolute origin (http...), prefix it.
-    // If API_URL includes a proxy prefix like '/api' (e.g. 'http://host:8000/api'),
-    // strip the trailing '/api' when building public storage URLs so we don't request '/api/storage/...'.
     if (API_URL.startsWith('http://') || API_URL.startsWith('https://')) {
+      // Absolute URL: strip /api and use base domain
       const base = API_URL.replace(/\/api\/?$/, '')
       return `${base}${imagePath}`
     }
-    // If VITE_API_URL is a relative path (e.g. '/api'), return the storage path as-is so
-    // the browser requests '/storage/...' on the current origin.
+    // Relative path (like /api): return storage path as-is to bypass proxy
+    // Browser will request /storage/... directly on current origin
     return imagePath
   }
 
-  // Par défaut, considère que c'est un chemin relatif
-  return `${API_URL}/storage/${imagePath}`
+  // Par défaut, considère que c'est un chemin relatif sans /storage prefix
+  // Always use /storage directly, never /api/storage (Nginx doesn't have that route)
+  if (API_URL.startsWith('http://') || API_URL.startsWith('https://')) {
+    const base = API_URL.replace(/\/api\/?$/, '')
+    return `${base}/storage/${imagePath}`
+  }
+  // Relative API_URL: return /storage directly (bypasses /api proxy)
+  return `/storage/${imagePath}`
 }
 
 /**
