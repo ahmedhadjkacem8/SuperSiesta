@@ -44,9 +44,6 @@ class UploadController extends Controller
 
             $folder = $request->input('folder', '');
             
-            // Clean folder path: remove leading/trailing slashes
-            $folder = trim($folder ?? '', '/');
-            
             // Build the upload path under storage/app/public so Nginx can serve via /storage
             $uploadPath = 'storage' . DIRECTORY_SEPARATOR . ($folder ?: '');
             $storageFolder = $folder ?: '';
