@@ -46,9 +46,10 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
   const fetchOrderData = async () => {
     try {
       setLoading(true);
+      const timestamp = Date.now();
       const [orderData, itemsData] = await Promise.all([
-        api.get<Order>(`/orders/${orderId}`),
-        api.get<OrderItem[]>(`/orders/${orderId}/items`),
+        api.get<Order>(`/orders/${orderId}?t=${timestamp}`),
+        api.get<OrderItem[]>(`/orders/${orderId}/items?t=${timestamp}`),
       ]);
 
       setOrder(orderData!);
@@ -158,167 +159,6 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
   };
 
   const printRef = useRef<HTMLDivElement>(null);
-
-  const printDeliveryNote = async () => {
-    if (!order?.delivery_note_id) return;
-    try {
-      toast.loading("Préparation de l'impression...");
-      const [dn, items, orderItems] = await Promise.all([
-        api.get<any>(`/delivery-notes/${order.delivery_note_id}`),
-        api.get<any[]>(`/delivery-notes/${order.delivery_note_id}/items`),
-        api.get<any[]>(`/orders/${order.id}/items`)
-      ]);
-
-      if (!dn) throw new Error("BL non trouvé");
-
-      // Match prices
-      const enrichedItems = items.map(di => {
-        const oi = orderItems.find(o => o.product_name === di.product_name && o.size_label === di.size_label);
-        return { ...di, unit_price: oi ? (oi.unit_price || oi.price) : undefined };
-      });
-
-      // Prepare print
-      const win = window.open("", "_blank");
-      if (!win) return;
-
-      const styleStr = `
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-        @page { size: A4; margin: 0mm; }
-        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; color: #1e293b; line-height: 1.5; font-size: 13px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .doc-wrapper { width: 210mm; min-height: 297mm; padding: 0; margin: 0 auto; background: #fff; position: relative; overflow: hidden; }
-        
-        .header-container { position: relative; padding: 40px 45px 20px; display: flex; justify-content: space-between; align-items: flex-start; }
-        .logo-section { z-index: 10; margin-top: -30px; flex: 1; }
-        .logo-section img { height: 95px; object-fit: contain; }
-        .logo-subtitle { font-size: 14px; font-weight: 500; color: #1d2972; margin-left: 30px; letter-spacing: 1px; }
-        
-        .green-stripe {
-          position: absolute; top: 150px; left: -45px; width: 80%; height: 70px;
-          background: #adc80a; z-index: 1; border-radius: 27px; transform: skewX(25deg); overflow: hidden;
-        }
-        .green-stripe-body { position: absolute; width: 100%; height: 100%; background: inherit; z-index: 1; }
-        .coin-top-right, .coin-bottom-right { position: absolute; right: 0; width: 40px; height: 40px; background: #adc80a; z-index: 2; }
-        .coin-top-right { top: 0; border-top-right-radius: 20px; }
-        .coin-bottom-right { bottom: 0; border-bottom-right-radius: 20px; }
-
-        .bl-banner { 
-          position: relative; background: #1d2972; color: #fff; padding: 25px 50px; margin-right: -100px;
-          text-align: center; box-shadow: -20px 15px 0px rgba(0, 0, 0, 0.20); z-index: 10;
-          min-width: 440px; border-radius: 30px; transform: skewX(25deg);
-        }
-        .bl-banner-content { transform: skewX(-25deg); }
-        .bl-banner h1 { margin: 0; font-size: 48px; font-weight: 900; text-transform: uppercase; letter-spacing: -1.5px; line-height: 1; }
-        .bl-banner p { margin: 5px 0 0; font-size: 18px; font-weight: 700; opacity: 0.9; }
-
-        .main-body { position: relative; z-index: 2; padding: 20px 45px; margin-top: 60px; }
-        .info-grid { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 50px; gap: 40px; }
-        .info-column { flex: 1; }
-        .section-title-box { background: #1d2972; color: #fff; padding: 15px 40px; text-align: center; z-index: 10; border-radius: 20px; transform: skewX(25deg); display: inline-block; margin-bottom: 25px; }
-        .title-livreur { margin-left: -75px; box-shadow: 15px 15px 0px rgba(0, 0, 0, 0.15); }
-        .title-client { margin-right: -75px; box-shadow: -15px 15px 0px rgba(0, 0, 0, 0.15); }
-        .section-title-box h2 { margin: 0; font-size: 22px; font-weight: 800; transform: skewX(-25deg); }
-        
-        .info-row { display: flex; gap: 15px; margin: 8px 0; align-items: baseline; }
-        .delivery-info .info-row { justify-content: flex-start; text-align: left; }
-        .client-info .info-row { justify-content: flex-end; text-align: right; }
-        .client-info p, .delivery-info p { margin: 0; font-weight: 500; color: #334155; }
-        .client-info span, .delivery-info span { font-weight: 800; color: #000; }
-        .info-label { font-size: 11px; color: #64748b; font-weight: 900; text-transform: uppercase; min-width: 80px; }
-
-        .summary-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; border: 2px solid #adc80a; }
-        .summary-table th { background: #fff; padding: 10px 20px; font-size: 13px; font-weight: 900; border: 2px solid #adc80a; }
-        .summary-table td { background: #f7fee7; padding: 10px 20px; font-size: 16px; font-weight: 700; border: 2px solid #adc80a; }
-        
-        .items-table { width: 100%; border-collapse: collapse; border: 2px solid #adc80a; margin-bottom: 30px; }
-        .items-table th { padding: 15px 20px; font-size: 14px; font-weight: 900; border: 2px solid #adc80a; text-transform: uppercase; }
-        .items-table td { padding: 15px 20px; font-size: 16px; font-weight: 600; border: 2px solid #adc80a; }
-        .gift-row td { padding: 0 20px 12px 60px; border: 2px solid #adc80a; border-top: none; }
-        .gift-text { color: #15803d; font-weight: 700; font-size: 12px; background: #f0fdf4; padding: 5px 15px; border-radius: 10px; border: 1.5px dashed #86efac; display: inline-flex; align-items: center; gap: 8px; }
-        .gift-text::before { content: "OFFERT"; background: #16a34a; color: #fff; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px; }
-        
-        .note-box { border: 2px solid #adc80a; border-radius: 25px; min-height: 80px; padding: 15px 25px; font-size: 15px; }
-      `;
-
-      const contentHtml = `
-        <div class="doc-wrapper">
-          <div class="green-stripe">
-            <div class="green-stripe-body"></div>
-            <div class="coin-top-right"></div>
-            <div class="coin-bottom-right"></div>
-          </div>
-          <div class="header-container">
-            <div class="logo-section">
-              <img src="/images/logo.png" alt="Logo" />
-              <div class="logo-subtitle">service en ligne</div>
-            </div>
-            <div class="bl-banner">
-              <div class="bl-banner-content">
-                <h1>BL en ligne</h1>
-                <p>Numéro ${dn.delivery_number}</p>
-              </div>
-            </div>
-          </div>
-          <div class="main-body">
-            <div class="info-grid">
-              <div class="info-column">
-                <div class="section-title-box title-livreur"><h2>Livreur</h2></div>
-                <div class="delivery-info">
-                  <div class="info-row"><span class="info-label">Livreur :</span><p><span>${dn.delivery_man?.name || dn.delivery_man_name || "Non assigné"}</span></p></div>
-                  ${dn.delivery_man?.phone ? `<div class="info-row"><span class="info-label">Tél :</span><p><span>${dn.delivery_man.phone}</span></p></div>` : ""}
-                </div>
-              </div>
-              <div class="info-column">
-                <div style="text-align: right"><div class="section-title-box title-client"><h2>Coordonnées Client</h2></div></div>
-                <div class="client-info">
-                  <div class="info-row"><span class="info-label">Client :</span><p><span>${dn.full_name}</span></p></div>
-                  <div class="info-row"><span class="info-label">Tél :</span><p><span>${dn.phone} ${dn.phone2 ? ` / ${dn.phone2}` : ""}</span></p></div>
-                  <div class="info-row"><span class="info-label">Adresse :</span><p><span>${dn.delivery_address} ${dn.delivery_city || ""}</span></p></div>
-                </div>
-              </div>
-            </div>
-            <table class="summary-table">
-              <tr><th>Date</th><td>${new Date(dn.created_at).toLocaleDateString("fr-FR")}</td></tr>
-              <tr><th>Commande</th><td>#${order.order_number}</td></tr>
-            </table>
-            <table class="items-table">
-              <thead><tr><th>Produit</th><th style="text-align:center">P.U x Qté</th><th style="text-align:center">Qté</th><th style="text-align:right">Total</th></tr></thead>
-              <tbody>
-                ${enrichedItems.map(it => `
-                  <tr>
-                    <td>${it.product_name}<br/><span style="font-size:11px;opacity:0.7">${it.size_label} ${it.grammage ? `— ${it.grammage}g` : ""}</span></td>
-                    <td style="text-align:center; font-size:12px">${it.unit_price ? `${Number(it.unit_price).toFixed(3)} x ${it.delivered_quantity}` : "—"}</td>
-                    <td style="text-align:center">${it.delivered_quantity}</td>
-                    <td style="text-align:right">${it.unit_price ? (it.unit_price * it.delivered_quantity).toFixed(3) : "—"}</td>
-                  </tr>
-                  ${(it.product?.free_gifts || []).map(g => `
-                    <tr class="gift-row"><td colspan="4"><div class="gift-text">${g.titre} ${it.gifts_grammage?.[g.id] ? `— ${it.gifts_grammage[g.id]}g` : ""}</div></td></tr>
-                  `).join("")}
-                `).join("")}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colspan="3" style="text-align:right; padding:15px 20px; font-weight:900; background:#f8fafc; text-transform:uppercase; font-size:14px; border: 2px solid #adc80a;">Total de la commande</td>
-                  <td style="text-align:right; padding:15px 20px; font-weight:900; background:#f7fee7; color:#1d2972; font-size:20px; border: 2px solid #adc80a;">${Number(order.total).toFixed(3)} <span style="font-size:12px">TND</span></td>
-                </tr>
-              </tfoot>
-            </table>
-            <div style="margin-top:30px"><h3>Note Client</h3><div class="note-box">${dn.notes || "Aucune note."}</div></div>
-          </div>
-        </div>
-      `;
-
-      win.document.head.innerHTML = `<title>BL ${dn.delivery_number}</title><style>${styleStr}</style>`;
-      win.document.body.innerHTML = contentHtml;
-      
-      setTimeout(() => {
-        win.print();
-        toast.dismiss();
-      }, 500);
-
-    } catch (err) {
-      toast.error("Erreur d'impression");
-    }
-  };
 
   if (loading) {
 // ... existing code ...
@@ -581,15 +421,13 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
                 </div>
                 
                 {hasDeliveryNoteReady() ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={printDeliveryNote}
-                    className="w-full h-10 text-[11px] font-bold border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300 gap-2"
-                  >
-                    <Printer className="w-4 h-4" />
-                    IMPRIMER LE BON DE LIVRAISON
-                  </Button>
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700">
+                    <CheckCircle2 className="w-5 h-5" />
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-bold uppercase">BL Généré avec succès</span>
+                      <span className="text-[10px] opacity-80">À imprimer depuis la section Bons de Livraison</span>
+                    </div>
+                  </div>
                   ) : (
                   <Button
                     size="sm"

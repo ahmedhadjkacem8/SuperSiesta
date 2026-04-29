@@ -39,7 +39,7 @@ class OrderController extends BaseController
             $query->where('status', $request->status);
         }
 
-        $orders = $query->with(['items', 'invoice', 'user.profile'])->orderBy('created_at', 'desc')->paginate($request->get('per_page', 15));
+        $orders = $query->with(['items', 'invoice', 'user.profile', 'deliveryNotes'])->orderBy('created_at', 'desc')->paginate($request->get('per_page', 15));
 
         return $this->sendResponse($orders, 'Orders retrieved successfully');
     }
@@ -57,7 +57,7 @@ class OrderController extends BaseController
             $query->where('status', $request->status);
         }
 
-        $orders = $query->with(['items', 'invoice', 'user.profile'])->orderBy('created_at', 'desc')->paginate($request->get('per_page', 15));
+        $orders = $query->with(['items', 'invoice', 'user.profile', 'deliveryNotes'])->orderBy('created_at', 'desc')->paginate($request->get('per_page', 15));
 
         return $this->sendResponse($orders, 'All orders retrieved successfully');
     }
@@ -83,7 +83,7 @@ class OrderController extends BaseController
     {
         $this->authorize('view', $order);
 
-        $order->load('items', 'invoice', 'quote');
+        $order->load('items', 'invoice', 'quote', 'deliveryNotes');
 
         return $this->sendResponse($order, 'Order retrieved successfully');
     }
@@ -282,7 +282,7 @@ class OrderController extends BaseController
             'status' => 'en_attente',
             'subtotal' => $quote->total,
             'total' => $quote->total,
-            'notes' => 'Générée depuis le devis #' . $quote->quote_number . ($quote->notes ? "\n\n" . $quote->notes : ''),
+            'notes' => $quote->notes,
         ]);
 
         foreach ($quote->items as $item) {

@@ -112,10 +112,11 @@ export default function AdminBonLivraison() {
     setCustomLivreurPhone("");
     setCustomLivreurVehicle("");
     try {
+      const timestamp = Date.now();
       const [data, orderItems, orderData] = await Promise.all([
-        api.get<DeliveryItem[]>(`/delivery-notes/${dn.id}/items`),
-        dn.order_id ? api.get<any[]>(`/orders/${dn.order_id}/items`) : Promise.resolve([]),
-        dn.order_id ? api.get<any>(`/orders/${dn.order_id}`) : Promise.resolve(null)
+        api.get<DeliveryItem[]>(`/delivery-notes/${dn.id}/items?t=${timestamp}`),
+        dn.order_id ? api.get<any[]>(`/orders/${dn.order_id}/items?t=${timestamp}`) : Promise.resolve([]),
+        dn.order_id ? api.get<any>(`/orders/${dn.order_id}?t=${timestamp}`) : Promise.resolve(null)
       ]);
       
       // Store order total for printing
@@ -157,6 +158,15 @@ export default function AdminBonLivraison() {
     }
   };
 
+  const updateItemGrammage = async (itemId: string, grammage: string) => {
+    try {
+      await api.put(`/delivery-note-items/${itemId}`, { grammage });
+      setDetailItems(prev => prev.map(it => it.id === itemId ? { ...it, grammage } : it));
+    } catch (err: any) {
+      toast.error("Erreur lors de la mise à jour du grammage");
+    }
+  };
+
   const updateGiftGrammage = async (itemId: string, giftId: string, grammage: string) => {
     try {
       const item = detailItems.find(it => it.id === itemId);
@@ -165,8 +175,6 @@ export default function AdminBonLivraison() {
       await api.put(`/delivery-note-items/${itemId}`, { gifts_grammage: newGiftsGrammage });
       setDetailItems(prev => prev.map(it => it.id === itemId ? { ...it, gifts_grammage: newGiftsGrammage } : it));
     } catch (err: any) {
-      // Don't show toast for every character typed, maybe debounce? But user said "enregistré"
-      // For now let's just do it on blur or just do it and hope it's fast enough
     }
   };
 
@@ -659,44 +667,60 @@ export default function AdminBonLivraison() {
                         const gamme = gammes.find(g => g.name === productGammeName || g.slug === productGammeName || g.id === productGammeName);
                         if (gamme && gamme.warranty) {
                           return (
-                            <div className="mx-2 mb-2 p-2 rounded-lg bg-primary/5 border border-primary/10 flex items-center gap-2">
-                               <div className="bg-primary text-white text-[9px] font-black px-1.5 py-0.5 rounded">GARANTIE</div>
-                               <span className="text-xs font-bold">Garantie {gamme.warranty} ans</span>
+                            <div className="mx-2 mb-1 flex items-center gap-1.5 opacity-70">
+                               <div className="bg-primary/20 text-primary text-[8px] font-black px-1 rounded">GARANTIE</div>
+                               <span className="text-[10px] font-bold">{gamme.warranty} ans</span>
                             </div>
                           );
                         }
                         return null;
                       })()}
-                      {item.product?.free_gifts && item.product.free_gifts.length > 0 && (
-                        <div className="border-t border-green-100 bg-green-50/40 px-3 py-2 space-y-2">
-                          {item.product.free_gifts.map(gift => (
-                            <div key={gift.id} className="flex items-center gap-4 text-xs">
-                              <div className="flex-1 flex items-center gap-3">
-                                {gift.image && <img src={gift.image} alt="" className="w-10 h-10 rounded-md border border-green-200 shadow-sm object-cover" />}
-                                <div className="flex flex-col">
-                                  <span className="font-bold text-green-900">{gift.titre}</span>
-                                  <span className="text-[10px] text-green-600/70 font-medium tracking-wide uppercase">Cadeau Offert</span>
+                      {(() => {
+                        const productGifts = item.product?.free_gifts || [];
+                        const currentDim = dimensions.find(d => d.label === item.size_label);
+                        const sizeGifts = currentDim?.free_gifts || [];
+                        
+                        // Combine both product-level and dimension-level gifts, uniquely by ID
+                        const allGifts = [...productGifts];
+                        sizeGifts.forEach((sg: any) => {
+                          if (!allGifts.find(pg => pg.id === sg.id)) {
+                            allGifts.push(sg);
+                          }
+                        });
+
+                        if (allGifts.length === 0) return null;
+
+                        return (
+                          <div className="border-t border-green-100 bg-green-50/40 px-3 py-2 space-y-2">
+                            {allGifts.map(gift => (
+                              <div key={gift.id} className="flex items-center gap-4 text-xs">
+                                <div className="flex-1 flex items-center gap-3">
+                                  {gift.image && <img src={gift.image} alt="" className="w-10 h-10 rounded-md border border-green-200 shadow-sm object-cover" />}
+                                  <div className="flex flex-col">
+                                    <span className="font-bold text-green-900">{gift.titre}</span>
+                                    <span className="text-[10px] text-green-600/70 font-medium tracking-wide uppercase">Cadeau Offert</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="relative">
+                                    <Input
+                                      placeholder="0"
+                                      value={item.gifts_grammage?.[gift.id] || gift.poids || ""}
+                                      onChange={e => {
+                                        const val = e.target.value;
+                                        setDetailItems(prev => prev.map(it => it.id === item.id ? { ...it, gifts_grammage: { ...(it.gifts_grammage || {}), [gift.id]: val } } : it));
+                                      }}
+                                      onBlur={e => updateGiftGrammage(item.id, gift.id, e.target.value)}
+                                      className="w-24 h-8 pr-6 text-xs font-bold bg-white border-green-200 focus-visible:ring-green-400 text-right"
+                                    />
+                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-green-600 font-bold pointer-events-none">g</span>
+                                  </div>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <div className="relative">
-                                  <Input
-                                    placeholder="0"
-                                    value={item.gifts_grammage?.[gift.id] || gift.poids || ""}
-                                    onChange={e => {
-                                      const val = e.target.value;
-                                      setDetailItems(prev => prev.map(it => it.id === item.id ? { ...it, gifts_grammage: { ...(it.gifts_grammage || {}), [gift.id]: val } } : it));
-                                    }}
-                                    onBlur={e => updateGiftGrammage(item.id, gift.id, e.target.value)}
-                                    className="w-24 h-8 pr-6 text-xs font-bold bg-white border-green-200 focus-visible:ring-green-400 text-right"
-                                  />
-                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-green-600 font-bold pointer-events-none">g</span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                   ))}
                 </div>
@@ -835,10 +859,17 @@ export default function AdminBonLivraison() {
                               const gamme = gammes.find(g => g.name === productGammeName || g.slug === productGammeName || g.id === productGammeName);
                               const hasWarranty = gamme && gamme.warranty;
                               
-                              // New logic: find gifts from dimensions
+                              const productGifts = (it as any).product?.free_gifts || [];
                               const currentDim = dimensions.find(d => d.label === it.size_label);
                               const sizeGifts = currentDim?.free_gifts || [];
-                              const hasGifts = sizeGifts.length > 0;
+                              
+                              const allGifts = [...productGifts];
+                              sizeGifts.forEach((sg: any) => {
+                                if (!allGifts.find((pg: any) => pg.id === sg.id)) {
+                                  allGifts.push(sg);
+                                }
+                              });
+                              const hasGifts = allGifts.length > 0;
 
                               if (hasWarranty || hasGifts) {
                                 return (
@@ -851,7 +882,7 @@ export default function AdminBonLivraison() {
                                             Garantie {gamme.warranty} ans
                                           </div>
                                         )}
-                                        {sizeGifts.map((gift: any, gi: number) => (
+                                        {allGifts.map((gift: any, gi: number) => (
                                           <div key={`gift-${it.id}-${gi}`} className="gift-text">
                                             {gift.titre} {(it.gifts_grammage?.[gift.id] || gift.poids) && `— ${(it.gifts_grammage?.[gift.id] || gift.poids)} g`}
                                           </div>

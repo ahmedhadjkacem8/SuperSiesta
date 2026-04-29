@@ -31,6 +31,8 @@ class Order extends Model
         'total',
     ];
 
+    protected $appends = ['delivery_note_id'];
+
     protected $casts = [
         'subtotal' => 'decimal:2',
         'total' => 'decimal:2',
@@ -64,5 +66,11 @@ class Order extends Model
     public function deliveryNotes(): HasMany
     {
         return $this->hasMany(DeliveryNote::class);
+    }
+
+    public function getDeliveryNoteIdAttribute()
+    {
+        // Try to get the first delivery note ID if the relationship is loaded or exists
+        return $this->deliveryNotes->first()?->id;
     }
 }

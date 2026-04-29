@@ -212,6 +212,7 @@ class DeliveryNoteController extends BaseController
         
         $validated = $request->validate([
             'delivered_quantity' => 'nullable|integer|min:0',
+            'grammage' => 'nullable|string',
             'gifts_grammage' => 'nullable|array',
         ]);
         
