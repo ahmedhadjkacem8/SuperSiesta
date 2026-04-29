@@ -7,9 +7,23 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 /**
- * Convertit une image URL en URL publique Si elle vient de la DB
- * @param imagePath Chemin relatif ou URL complète de l'image
- * @returns URL complète ou chemin relatif pour direct access
+ * Normalise un chemin URL : si c'est une URL absolue, extrait seulement le path.
+ * Permet de rendre les URLs DNS-indépendantes.
+ */
+function toRelativePath(url: string): string {
+  try {
+    const parsed = new URL(url)
+    return parsed.pathname
+  } catch {
+    return url // déjà relatif
+  }
+}
+
+/**
+ * Convertit une image/vidéo URL en URL publique utilisable dans le navigateur.
+ * Toujours domain-independent : fonctionne sur localhost, demo, prod, etc.
+ * @param imagePath Chemin relatif ou URL complète de l'image/vidéo
+ * @returns URL utilisable dans src={}
  */
 export function getImageUrl(imagePath: string | null | undefined): string {
   if (!imagePath) return ''
@@ -17,26 +31,33 @@ export function getImageUrl(imagePath: string | null | undefined): string {
   // Nettoyer les anciennes URLs avec IP hardcodées en DB
   imagePath = imagePath.replace(/^http:\/\/135\.125\.202\.39:8000/, '')
 
-  // Si c'est déjà une URL complète
+  // Si c'est une URL absolue (http/https), extraire uniquement le chemin
+  // pour le rendre indépendant du domaine
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    return imagePath
+    imagePath = toRelativePath(imagePath)
   }
 
-  // Si c'est un chemin relatif vers API
-  if (imagePath.startsWith('/uploads') || imagePath.startsWith('/storage')) {
-    // If API_URL is an absolute origin (http...), prefix it.
-    // If API_URL includes a proxy prefix like '/api' (e.g. 'http://host:8000/api'),
-    // strip the trailing '/api' when building public storage URLs so we don't request '/api/storage/...'.
+  // Chemin relatif vers /storage/ ou /uploads/ → servi directement par Nginx
+  if (imagePath.startsWith('/storage/') || imagePath.startsWith('/uploads/')) {
     if (API_URL.startsWith('http://') || API_URL.startsWith('https://')) {
       const base = API_URL.replace(/\/api\/?$/, '')
       return `${base}${imagePath}`
     }
-    // If VITE_API_URL is a relative path (e.g. '/api'), return the storage path as-is so
-    // the browser requests '/storage/...' on the current origin.
+    // VITE_API_URL est un proxy relatif (ex: '/api') → le chemin est servi sur l'origine courante
     return imagePath
   }
 
-  // Par défaut, considère que c'est un chemin relatif
+  // Ancien format /videos/... (données de seeder)
+  // → redirige vers /storage/... via le proxy API pour correspondre à l'alias Nginx
+  if (imagePath.startsWith('/videos/') || imagePath.startsWith('/images/')) {
+    if (API_URL.startsWith('http://') || API_URL.startsWith('https://')) {
+      const base = API_URL.replace(/\/api\/?$/, '')
+      return `${base}${imagePath}`
+    }
+    return imagePath
+  }
+
+  // Par défaut, considère que c'est un nom de fichier seul
   return `${API_URL}/storage/${imagePath}`
 }
 

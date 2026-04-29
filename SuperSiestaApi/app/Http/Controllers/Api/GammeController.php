@@ -49,6 +49,9 @@ class GammeController extends BaseController
 
         if ($request->hasFile('video_url')) {
             $gamme->video_url = $gamme->saveUploadedImage($request->file('video_url'));
+        } elseif ($request->has('video_url')) {
+            $val = $request->get('video_url');
+            $gamme->video_url = ($val === '' || $val === 'null') ? null : $this->normalizeVideoUrl($val);
         }
 
         if ($request->hasFile('photos')) {
@@ -108,6 +111,9 @@ class GammeController extends BaseController
                 $request->file('video_url'),
                 $gamme->video_url
             );
+        } elseif ($request->has('video_url')) {
+            $val = $request->get('video_url');
+            $validated['video_url'] = ($val === '' || $val === 'null') ? null : $this->normalizeVideoUrl($val);
         }
 
         // --- Handle Photos ---
@@ -192,5 +198,26 @@ class GammeController extends BaseController
         });
 
         return $this->sendResponse(null, 'Gammes reordered successfully');
+    }
+
+    /**
+     * Strip any absolute origin from a stored video/image URL so only the relative
+     * path is persisted in the database (e.g. /storage/gammes/foo.mp4).
+     * This keeps URLs domain-independent across environments.
+     */
+    private function normalizeVideoUrl(string $url): string
+    {
+        // Already a relative path — keep it as-is
+        if (str_starts_with($url, '/')) {
+            return $url;
+        }
+
+        // Strip the origin (scheme + host + optional port) from an absolute URL
+        $parsed = parse_url($url);
+        if (!empty($parsed['path'])) {
+            return $parsed['path'];
+        }
+
+        return $url;
     }
 }

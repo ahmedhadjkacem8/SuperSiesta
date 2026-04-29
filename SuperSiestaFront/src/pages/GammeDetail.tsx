@@ -5,6 +5,7 @@ import ProductCard from "@/components/ProductCard";
 import CachedImage from "@/components/CachedImage";
 import { Loader2, ArrowLeft, Play } from "lucide-react";
 import { useState } from "react";
+import { getImageUrl } from "@/utils/imageUtils";
 
 export default function GammeDetail() {
   const { slug } = useParams();
@@ -79,7 +80,7 @@ export default function GammeDetail() {
             <div className="max-w-md mx-auto">
               <div className="relative rounded-2xl overflow-hidden bg-foreground/5 aspect-[9/16]">
                 <video
-                  src={gamme.video_url}
+                  src={getImageUrl(gamme.video_url)}
                   controls
                   className="w-full h-full object-cover"
                   poster=""

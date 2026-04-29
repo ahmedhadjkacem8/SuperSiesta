@@ -134,7 +134,16 @@ export default function AdminGammes() {
     if (form.video_file) {
       formData.append("video_url", form.video_file);
     } else if (form.video_preview) {
-      formData.append("video_url", form.video_preview);
+      // Normalise : ne soumettre que le chemin relatif (pas l'URL absolue)
+      // pour éviter de stocker un domaine hardcodé en base de données
+      let relativePath = form.video_preview;
+      try {
+        const parsed = new URL(form.video_preview);
+        relativePath = parsed.pathname;
+      } catch {
+        // déjà un chemin relatif, on le garde tel quel
+      }
+      formData.append("video_url", relativePath);
     }
 
     // Append existing photo previews
