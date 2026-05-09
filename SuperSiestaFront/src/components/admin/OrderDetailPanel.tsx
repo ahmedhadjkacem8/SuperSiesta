@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 // Progress bar moved to Delivery Note UI
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { api } from '@/lib/apiClient';
@@ -59,6 +60,23 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const hasSurCommande = useMemo(() => items.some(item => Number(item.unit_price || (item as any).price || 0) === 0), [items]);
+
+  const updateItemPrice = async (itemId: string, newPrice: number) => {
+    if (!order || newPrice < 0) {
+      toast.error('Veuillez entrer un prix valide');
+      return;
+    }
+    try {
+      await api.put(`/orders/${order.id}/items/${itemId}`, { unit_price: newPrice });
+      toast.success('Prix mis à jour');
+      fetchOrderData();
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      toast.error(err.message || 'Erreur lors de la mise à jour du prix');
     }
   };
 
@@ -161,13 +179,12 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
   const printRef = useRef<HTMLDivElement>(null);
 
   if (loading) {
-// ... existing code ...
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
   }
-
-  // ... (keeping everything else same, just updating the return JSX for the printer button)
-
-  // In the return statement, find the Printer button and update it:
-  // <Button size="sm" variant="outline" onClick={printDeliveryNote}> ...
 
   if (!order) {
     return (
@@ -248,7 +265,15 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
                   <div className="flex items-center gap-2">
                     {order.status === 'en_attente' && (
                       <>
-                        <Button size="sm" variant="default" onClick={() => updateStatus('accepté')}>Accepter</Button>
+                        <Button 
+                          size="sm" 
+                          variant="default" 
+                          onClick={() => updateStatus('accepté')}
+                          disabled={hasSurCommande}
+                          title={hasSurCommande ? "Veuillez définir les prix 'sur commande' avant d'accepter" : ""}
+                        >
+                          Accepter
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => updateStatus('annulée')}>Annuler</Button>
                       </>
                     )}
@@ -270,6 +295,14 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
               </CardTitle>
             </CardHeader>
             <CardContent>
+              {hasSurCommande && (
+                <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-center gap-3 text-amber-800">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <p className="text-[10px] font-black uppercase">
+                    Attention : Certains articles sont "sur commande". Vous devez définir leur prix avant d'accepter la commande.
+                  </p>
+                </div>
+              )}
               <div className="space-y-3">
                 {items.map((item) => (
                   <div key={item.id} className="flex gap-4 p-3 rounded-lg border border-border bg-card hover:shadow-sm transition-all group">
@@ -292,9 +325,50 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
                         </Badge>
                         <span className="text-xs text-muted-foreground">× {item.quantity}</span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground mt-1">
-                        Unité: {formatPrice(item.unit_price)}
-                      </p>
+                      <div className="text-[11px] text-muted-foreground mt-1">
+                        {(() => {
+                          const currentPrice = Number(item.unit_price ?? (item as any).price ?? 0);
+                          return currentPrice === 0 ? (
+                            <div className="flex flex-col gap-1.5 py-1">
+                              <span className="text-[9px] font-black text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded uppercase w-fit">
+                                Prix à définir (Sur commande)
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <Input 
+                                  type="number" 
+                                  placeholder="Entrez le prix" 
+                                  className="w-32 h-8 text-xs font-bold border-amber-200 focus:border-amber-500 bg-amber-50/30"
+                                  autoFocus
+                                  onBlur={(e) => {
+                                    if (e.target.value) updateItemPrice(item.id, Number(e.target.value));
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      updateItemPrice(item.id, Number((e.target as HTMLInputElement).value));
+                                    }
+                                  }}
+                                />
+                                <span className="text-[10px] font-medium text-muted-foreground italic">
+                                  ↵ Entrée pour valider
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span>Unité: {formatPrice(item.unit_price)}</span>
+                              {order.status === 'en_attente' && (
+                                <button 
+                                  onClick={() => updateItemPrice(item.id, 0)}
+                                  className="text-[10px] text-primary hover:underline font-bold bg-primary/5 px-1.5 py-0.5 rounded"
+                                  title="Réinitialiser le prix pour le modifier"
+                                >
+                                  Modifier le prix
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
                     </div>
                     <div className="text-right flex-shrink-0 flex flex-col justify-center">
                       <p className="font-black text-sm text-primary">{formatPrice(item.total)}</p>
@@ -434,7 +508,7 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
                     variant="secondary"
                     onClick={generateDeliveryNote}
                     disabled={
-                      generating === 'delivery' || !canGenerateDeliveryNote() || !!order.delivery_note_id
+                      generating === 'delivery' || !canGenerateDeliveryNote() || !!order.delivery_note_id || hasSurCommande
                     }
                     className="w-full h-8 text-[11px] font-bold"
                   >
@@ -472,5 +546,3 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
     </div>
   );
 }
-
-// End of file

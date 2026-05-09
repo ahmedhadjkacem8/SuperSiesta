@@ -155,6 +155,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders/{order}', [OrderController::class, 'show']);
     Route::get('/orders/{order}/items', [OrderController::class, 'items']);
     Route::put('/orders/{order}', [OrderController::class, 'update']);
+    Route::put('/orders/{order}/items/{item}', [OrderController::class, 'updateItem']);
     Route::delete('/orders/{order}', [OrderController::class, 'destroy']);
 
     // Admin Orders - Route spécifique pour afficher TOUTES les commandes

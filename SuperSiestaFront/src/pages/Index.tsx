@@ -65,7 +65,8 @@ export default function Index() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const itemsPerPage = windowWidth < 768 ? 1 : 3;
+  const blogItemsPerPage = 3;
+  const reviewsItemsPerPage = windowWidth < 768 ? 1 : 3;
 
   // CHARGEMENT DES AUTRES DONNÉES
   useEffect(() => {
@@ -117,21 +118,21 @@ export default function Index() {
 
   // Autoplay pour le carrousel des blogs favoris
   useEffect(() => {
-    if (favoritePosts.length <= itemsPerPage) return;
+    if (favoritePosts.length <= blogItemsPerPage) return;
     const interval = setInterval(() => {
-      setBlogPageIndex((prev) => (prev + 1) % Math.ceil(favoritePosts.length / itemsPerPage));
+      setBlogPageIndex((prev) => (prev + 1) % Math.ceil(favoritePosts.length / blogItemsPerPage));
     }, 8000); 
     return () => clearInterval(interval);
-  }, [favoritePosts.length, itemsPerPage]);
+  }, [favoritePosts.length, blogItemsPerPage]);
 
   // Autoplay pour le carrousel des avis
   useEffect(() => {
-    if (reviewsList.length <= itemsPerPage) return;
+    if (reviewsList.length <= reviewsItemsPerPage) return;
     const interval = setInterval(() => {
-      setReviewsPageIndex((prev) => (prev + 1) % Math.ceil(reviewsList.length / itemsPerPage));
+      setReviewsPageIndex((prev) => (prev + 1) % Math.ceil(reviewsList.length / reviewsItemsPerPage));
     }, 10000);
     return () => clearInterval(interval);
-  }, [reviewsList.length, itemsPerPage]);
+  }, [reviewsList.length, reviewsItemsPerPage]);
 
   // Précharger les images quand les slides arrivent
   useEffect(() => {
@@ -274,7 +275,7 @@ export default function Index() {
                     transition={{ duration: 0.4 }}
                     className="space-y-6"
                   >
-                    {favoritePosts.slice(blogPageIndex * itemsPerPage, (blogPageIndex + 1) * itemsPerPage).map((post, i) => (
+                    {favoritePosts.slice(blogPageIndex * blogItemsPerPage, (blogPageIndex + 1) * blogItemsPerPage).map((post, i) => (
                       <motion.div
                         key={post.id}
                         initial={{ opacity: 0, y: 10 }}
@@ -308,9 +309,9 @@ export default function Index() {
                 </AnimatePresence>
               </div>
 
-              {favoritePosts.length > itemsPerPage && (
+              {favoritePosts.length > blogItemsPerPage && (
                 <div className="flex justify-center gap-2">
-                  {Array.from({ length: Math.ceil(favoritePosts.length / itemsPerPage) }).map((_, idx) => (
+                  {Array.from({ length: Math.ceil(favoritePosts.length / blogItemsPerPage) }).map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => setBlogPageIndex(idx)}
@@ -671,7 +672,7 @@ export default function Index() {
                 transition={{ duration: 0.5 }}
                 className="grid grid-cols-1 md:grid-cols-3 gap-8"
               >
-                {reviewsList.slice(reviewsPageIndex * itemsPerPage, (reviewsPageIndex + 1) * itemsPerPage).map((r, i) => (
+                {reviewsList.slice(reviewsPageIndex * reviewsItemsPerPage, (reviewsPageIndex + 1) * reviewsItemsPerPage).map((r, i) => (
                   <motion.div
                     key={i}
                     variants={fadeInUp}
@@ -696,9 +697,9 @@ export default function Index() {
               </motion.div>
             </AnimatePresence>
 
-            {reviewsList.length > itemsPerPage && (
+            {reviewsList.length > reviewsItemsPerPage && (
               <div className="flex justify-center gap-3 mt-12">
-                {Array.from({ length: Math.ceil(reviewsList.length / itemsPerPage) }).map((_, idx) => (
+                {Array.from({ length: Math.ceil(reviewsList.length / reviewsItemsPerPage) }).map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => setReviewsPageIndex(idx)}

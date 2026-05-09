@@ -16,16 +16,18 @@ export default function ProductCard({ product, selectedDimension }: ProductCardP
   const navigate = useNavigate();
 
   // Find the right size to display
-  let displaySize = null;
+  let displaySize: any = null;
   const isSpecificDimension = selectedDimension && selectedDimension !== "Tous";
 
   if (isSpecificDimension) {
     displaySize = product.sizes?.find(s => s.label === selectedDimension);
   }
 
-  // If no specific dimension or not found, use minimal price size
+  // If no specific dimension or not found, prefer the first non-zero price size,
+  // otherwise fall back to the minimal price size
   if (!displaySize && product.sizes && product.sizes.length > 0) {
-    displaySize = [...product.sizes].sort((a, b) => a.price - b.price)[0];
+    const nonZero = [...product.sizes].filter(s => s.price > 0).sort((a, b) => a.price - b.price)[0];
+    displaySize = nonZero || [...product.sizes].sort((a, b) => a.price - b.price)[0];
   }
 
   const handleQuickAdd = (e: React.MouseEvent) => {
@@ -40,7 +42,13 @@ export default function ProductCard({ product, selectedDimension }: ProductCardP
       whileHover={{ y: -10 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
       className="group bg-card rounded-[2rem] overflow-hidden border border-border shadow-sm hover:shadow-2xl transition-all duration-500 cursor-pointer h-full flex flex-col"
-      onClick={() => navigate(`/produit/${product.slug}`)}
+      onClick={() => {
+        let url = `/produit/${product.slug}`;
+        if (selectedDimension && selectedDimension !== "Tous") {
+          url += `?dimension=${encodeURIComponent(selectedDimension)}`;
+        }
+        navigate(url);
+      }}
     >
       <div className="relative overflow-hidden aspect-[4/3] bg-muted">
         <img src={getImageUrl(product.image)} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
@@ -58,10 +66,14 @@ export default function ProductCard({ product, selectedDimension }: ProductCardP
           <div>
             {displaySize ? (
               <>
-                <span className="text-xl font-black text-primary">
-                  {!isSpecificDimension && "à partir de "}{formatPrice(displaySize.price)}
-                </span>
-                {displaySize.originalPrice && <span className="text-sm text-muted-foreground line-through ml-2">{formatPrice(displaySize.originalPrice)}</span>}
+                {!(isSpecificDimension && displaySize.price === 0) ? (
+                  <span className="text-xl font-black text-primary">
+                    {!isSpecificDimension && "à partir de "}{formatPrice(displaySize.price)}
+                  </span>
+                ) : (
+                  <span className="text-sm font-medium text-muted-foreground italic">&nbsp;</span>
+                )}
+                {Number(displaySize.originalPrice) > 0 && displaySize.price !== 0 && <span className="text-sm text-muted-foreground line-through ml-2">{formatPrice(displaySize.originalPrice)}</span>}
               </>
             ) : (
               <span className="text-sm font-medium text-muted-foreground italic">Prix sur demande</span>

@@ -377,4 +377,31 @@ class OrderController extends BaseController
 
         return $this->sendResponse(null, 'Order deleted successfully');
     }
+
+    /**
+     * Update an individual order item's price and recalculate order totals.
+     */
+    public function updateItem(Request $request, Order $order, \App\Models\OrderItem $item): JsonResponse
+    {
+        $this->authorize('update', $order);
+
+        $validated = $request->validate([
+            'unit_price' => 'required|numeric|min:0',
+        ]);
+
+        // Update item price and total
+        $item->update([
+            'unit_price' => $validated['unit_price'],
+            'total' => $validated['unit_price'] * $item->quantity,
+        ]);
+
+        // Recalculate order subtotal and total
+        $newSubtotal = $order->items()->sum('total');
+        $order->update([
+            'subtotal' => $newSubtotal,
+            'total' => $newSubtotal,
+        ]);
+
+        return $this->sendResponse($item, 'Order item updated successfully');
+    }
 }

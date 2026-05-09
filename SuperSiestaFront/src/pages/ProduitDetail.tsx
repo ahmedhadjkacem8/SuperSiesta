@@ -8,7 +8,7 @@ declare global {
     }
   }
 }
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useProduct } from "@/hooks/useProducts";
 import { useGammes } from "@/hooks/useGammes";
 import { useCart } from "@/context/CartContext";
@@ -43,12 +43,24 @@ export default function ProduitDetail() {
   const [reviewRating, setReviewRating] = useState<number>(5)
   const [dimensions, setDimensions] = useState<any[]>([])
 
+  const [searchParams] = useSearchParams();
+
   // Set default size when product loads
   useEffect(() => {
     if (product && product.sizes.length > 0 && !selectedSize) {
-      setSelectedSize(product.sizes[0]);
+      const dim = searchParams.get("dimension") || (typeof window !== 'undefined' ? sessionStorage.getItem("selectedDimension") : null);
+      if (dim) {
+        const found = product.sizes.find((s: any) => s.label === dim);
+        if (found) {
+          setSelectedSize(found);
+          return;
+        }
+      }
+      // Prefer first non-zero price size, otherwise fallback to first size
+      const firstNonZero = product.sizes.find((s: any) => s.price > 0);
+      setSelectedSize(firstNonZero || product.sizes[0]);
     }
-  }, [product, selectedSize]);
+  }, [product, selectedSize, searchParams]);
 
   // Fetch reviews when product changes
   useEffect(() => {
@@ -113,7 +125,7 @@ export default function ProduitDetail() {
   // Check if user is B2B
   const isB2B = false; // Will be set from profile context
   const displayPrice = isB2B && selectedSize.resellerPrice ? selectedSize.resellerPrice : selectedSize.price;
- 
+
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -150,7 +162,10 @@ export default function ProduitDetail() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 py-10">
-      <button onClick={() => navigate("/boutique")} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-6 transition-colors">
+      <button onClick={() => {
+        const dim = searchParams.get("dimension") || (typeof window !== 'undefined' ? sessionStorage.getItem("selectedDimension") : null);
+        navigate(`/boutique${dim ? `?dimension=${encodeURIComponent(dim)}` : ''}`);
+      }} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-6 transition-colors">
         <ChevronLeft className="w-4 h-4" /> Retour à la boutique
       </button>
 
@@ -185,7 +200,7 @@ export default function ProduitDetail() {
                 {(() => {
                   const avg = averageRating ?? (reviews.length > 0 ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length) : 0)
                   const rounded = Math.round((avg || 0) * 2) / 2
-                  return [1,2,3,4,5].map((i) => (
+                  return [1, 2, 3, 4, 5].map((i) => (
                     <Star key={i} className={`w-4 h-4 ${i <= Math.ceil(rounded) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}`} />
                   ))
                 })()}
@@ -200,8 +215,12 @@ export default function ProduitDetail() {
 
           <div className="bg-accent rounded-2xl p-4">
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-black text-primary">{formatPrice(displayPrice)}</span>
-              {selectedSize.originalPrice && <span className="text-lg text-muted-foreground line-through">{formatPrice(selectedSize.originalPrice)}</span>}
+              {displayPrice === 0 ? (
+                <span className="text-4xl font-black text-amber-600">sur commande</span>
+              ) : (
+                <span className="text-4xl font-black text-primary">{formatPrice(displayPrice)}</span>
+              )}
+              {Number(selectedSize.originalPrice) > 0 && selectedSize.price !== 0 && <span className="text-lg text-muted-foreground line-through">{formatPrice(selectedSize.originalPrice)}</span>}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Prix pour la taille {selectedSize.label}</p>
             {isB2B && selectedSize.resellerPrice && <p className="text-xs text-primary font-bold mt-1">💼 Prix revendeur appliqué</p>}
@@ -212,12 +231,31 @@ export default function ProduitDetail() {
           <div>
             <h3 className="text-sm font-bold mb-3">Choisir la taille</h3>
             <div className="flex flex-wrap gap-2">
-              {product.sizes.map((size) => (
-                <button key={size.label} onClick={() => setSelectedSize(size)} className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all ${selectedSize.label === size.label ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary"}`}>
-                  {size.label}
-                  <span className="block text-xs opacity-75">{formatPrice(size.price)}</span>
-                </button>
-              ))}
+              {product.sizes.map((size) => {
+                const isSurCommande = size.price === 0;
+                const isSelected = selectedSize.label === size.label;
+                const baseClass = `relative px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all`;
+                const selectedClass = "border-primary bg-primary text-primary-foreground";
+                const normalClass = "border-border hover:border-primary";
+                const surCommandeClass = "border-amber-300 bg-amber-50 text-amber-800";
+                const selectedSurCommandeClass =
+                  "border-amber-500 bg-amber-100 text-amber-900";
+
+                let cls = normalClass;
+                if (isSelected && isSurCommande) {
+                  cls = selectedSurCommandeClass;
+                } else if (isSelected) {
+                  cls = selectedClass;
+                } else if (isSurCommande) {
+                  cls = surCommandeClass;
+                }
+                return (
+                  <button key={size.label} onClick={() => setSelectedSize(size)} className={`${baseClass} ${cls}`}>
+                    {size.label}
+                    <span className="block text-xs mt-1 opacity-75">{formatPrice(size.price)}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -344,7 +382,7 @@ export default function ProduitDetail() {
                 <div className="flex items-center gap-2">
                   <label className="text-sm">Note :</label>
                   <select value={reviewRating} onChange={(e) => setReviewRating(Number(e.target.value))} className="px-3 py-2 rounded-lg border">
-                    {[5,4,3,2,1].map(r => <option key={r} value={r}>{r} étoiles</option>)}
+                    {[5, 4, 3, 2, 1].map(r => <option key={r} value={r}>{r} étoiles</option>)}
                   </select>
                 </div>
                 <textarea value={reviewMessage} onChange={(e) => setReviewMessage(e.target.value)} required placeholder="Votre avis..." className="w-full p-3 border rounded-lg" />
