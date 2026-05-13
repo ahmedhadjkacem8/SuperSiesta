@@ -233,6 +233,25 @@ class OrderController extends BaseController
             'total' => $subtotal,
         ]);
 
+        // Mark matching prospects as converted
+        try {
+            $phone = $validated['phone'];
+            $email = $validated['email'] ?? null;
+            
+            $prospectQuery = \App\Models\Prospect::where('status', '!=', 'converti');
+            
+            $prospectQuery->where(function($q) use ($phone, $email) {
+                $q->where('phone', $phone);
+                if ($email) {
+                    $q->orWhere('email', $email);
+                }
+            });
+
+            $prospectQuery->update(['status' => 'converti']);
+        } catch (\Throwable $e) {
+            // Silence prospect update errors
+        }
+
         // Notify admin about the new order
         try {
             app(NotificationService::class)->notifyOrderCreated($order, false);

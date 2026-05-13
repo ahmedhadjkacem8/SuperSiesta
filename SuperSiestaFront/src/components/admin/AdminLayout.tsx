@@ -24,6 +24,7 @@ const navGroups = [
       { label: "Commandes", path: "/admin/commandes", icon: ShoppingCart },
       { label: "Bons Livraison", path: "/admin/bon-livraison", icon: Truck },
       { label: "Devis", path: "/admin/devis", icon: FileText },
+      { label: "Prospects", path: "/admin/prospects", icon: Users },
     ]
   },
   {

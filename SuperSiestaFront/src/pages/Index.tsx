@@ -57,6 +57,33 @@ export default function Index() {
   const { data: blogPosts = [] } = useBlogPosts({ per_page: 3 });
   const { data: favoritePosts = [] } = useBlogPosts({ is_favorite: true, per_page: 5 });
 
+  const [promoIndex, setPromoIndex] = useState(0);
+
+  let promoCardsList: any[] = [];
+  try {
+    promoCardsList = JSON.parse(settings?.promo_cards || "[]");
+  } catch(e) {}
+  if (!Array.isArray(promoCardsList) || promoCardsList.length === 0) {
+    promoCardsList = [{
+      id: 'default',
+      badge: 'OFFRE LIMITÉE',
+      title: "Jusqu'à -20% sur les top modèles",
+      description: "Profitez de nos meilleures offres sur les matelas Top Relax et Tendresse pour des nuits inoubliables.",
+      link_text: "Profiter de l'offre",
+      link_url: "/boutique",
+      image: "/images/TopRelax-1.jpg"
+    }];
+  }
+
+  // Autoplay pour le carrousel promo
+  useEffect(() => {
+    if (promoCardsList.length <= 1) return;
+    const interval = setInterval(() => {
+      setPromoIndex((prev) => (prev + 1) % promoCardsList.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [promoCardsList.length]);
+
   const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
 
   useEffect(() => {
@@ -606,46 +633,68 @@ export default function Index() {
         </div>
       </section>
 
-      {/* PROMO BANNER */}
+      {/* PROMO BANNER CAROUSEL */}
       <motion.section
         {...fadeInUp}
         className="max-w-7xl mx-auto px-4 py-16"
       >
-        <motion.div
-          whileHover={{ scale: 1.01 }}
-          transition={{ type: "spring", stiffness: 300 }}
-          className="relative overflow-hidden rounded-[2rem] bg-secondary text-secondary-foreground p-10 md:p-16 flex flex-col md:flex-row items-center gap-10 shadow-2xl shadow-secondary/20"
-        >
-          <div className="absolute right-0 top-0 w-80 h-full opacity-10 pointer-events-none">
-            <img src="/images/TopRelax-1.jpg" alt="" className="w-full h-full object-cover" />
-          </div>
-          <div className="relative z-10 flex-1">
-            <motion.span
-              initial={{ x: -20, opacity: 0 }}
-              whileInView={{ x: 0, opacity: 1 }}
-              className="bg-primary text-primary-foreground text-[10px] sm:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-widest"
+        <div className="relative overflow-hidden rounded-[2rem] bg-secondary text-secondary-foreground shadow-2xl shadow-secondary/20 min-h-[400px]">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={promoIndex}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.5 }}
+              className="absolute inset-0 p-10 md:p-16 flex flex-col md:flex-row items-center gap-10"
             >
-              OFFRE LIMITÉE
-            </motion.span>
-            <h2 className="text-4xl md:text-5xl font-black mt-5 mb-4 leading-tight">Jusqu'à -20% sur les top modèles</h2>
-            <p className="text-secondary-foreground/80 mb-8 text-lg max-w-lg">Profitez de nos meilleures offres sur les matelas Top Relax et Tendresse pour des nuits inoubliables.</p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate("/boutique")}
-              className="bg-primary text-primary-foreground font-black px-10 py-5 rounded-2xl hover:opacity-90 transition-all shadow-xl shadow-primary/20 flex items-center gap-2"
-            >
-              Profiter de l'offre <ArrowRight className="w-5 h-5" />
-            </motion.button>
-          </div>
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0, rotate: 5 }}
-            whileInView={{ scale: 1, opacity: 1, rotate: 0 }}
-            className="relative z-10 hidden lg:block"
-          >
-            <img src="/images/TopRelax-1.jpg" alt="Top Relax" className="w-80 h-60 object-cover rounded-3xl shadow-2xl border-4 border-white/20" />
-          </motion.div>
-        </motion.div>
+              <div className="absolute right-0 top-0 w-80 h-full opacity-10 pointer-events-none">
+                <img src={getImageUrl(promoCardsList[promoIndex]?.image)} alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="relative z-10 flex-1">
+                <motion.span
+                  initial={{ x: -20, opacity: 0 }}
+                  whileInView={{ x: 0, opacity: 1 }}
+                  className="bg-primary text-primary-foreground text-[10px] sm:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-widest"
+                >
+                  {promoCardsList[promoIndex]?.badge || "OFFRE"}
+                </motion.span>
+                <h2 className="text-4xl md:text-5xl font-black mt-5 mb-4 leading-tight">{promoCardsList[promoIndex]?.title}</h2>
+                <p className="text-secondary-foreground/80 mb-8 text-lg max-w-lg">{promoCardsList[promoIndex]?.description}</p>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate(promoCardsList[promoIndex]?.link_url || "/boutique")}
+                  className="bg-primary text-primary-foreground font-black px-10 py-5 rounded-2xl hover:opacity-90 transition-all shadow-xl shadow-primary/20 flex items-center gap-2 w-fit"
+                >
+                  {promoCardsList[promoIndex]?.link_text || "Profiter de l'offre"} <ArrowRight className="w-5 h-5" />
+                </motion.button>
+              </div>
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0, rotate: 5 }}
+                whileInView={{ scale: 1, opacity: 1, rotate: 0 }}
+                className="relative z-10 hidden lg:block"
+              >
+                <img src={getImageUrl(promoCardsList[promoIndex]?.image)} alt={promoCardsList[promoIndex]?.title} className="w-80 h-60 object-cover rounded-3xl shadow-2xl border-4 border-white/20" />
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>
+
+          {promoCardsList.length > 1 && (
+            <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2 z-20">
+              {promoCardsList.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setPromoIndex(idx)}
+                  className={`h-2 rounded-full transition-all ${
+                    promoIndex === idx ? "w-8 bg-primary" : "w-2 bg-primary/30 hover:bg-primary/50"
+                  }`}
+                  aria-label={`Aller à l'offre ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </motion.section>
 
       {/* REVIEWS */}

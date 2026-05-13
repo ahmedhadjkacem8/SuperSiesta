@@ -271,7 +271,14 @@ export default function Boutique() {
                     }
                     const sorted = [...products].sort((a, b) => idx(a.gamme) - idx(b.gamme));
                     return sorted.map((p) => (
-                      <ProductCard key={p.id} product={p} selectedDimension={dimension} />
+                      <ProductCard 
+                  key={p.id} 
+                  product={p} 
+                  selectedDimension={dimension} 
+                  selectedCategorie={categorie}
+                  selectedGamme={gamme}
+                  selectedFermete={fermete}
+                />
                     ));
                   })()
                 }

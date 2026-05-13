@@ -40,6 +40,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminNewsletter from "./pages/admin/AdminNewsletter";
 import AdminAdministrateurs from "./pages/admin/AdminAdministrateurs";
+import AdminProspects from "./pages/admin/AdminProspects";
 import GammeDetail from "./pages/GammeDetail";
 import Register from "./pages/Register";
 import Showrooms from "./pages/Showrooms";
@@ -116,6 +117,7 @@ const App = () => (
                       <Route path="/settings" element={<AdminSettings />} />
                       <Route path="/newsletter" element={<AdminNewsletter />} />
                       <Route path="/administrateurs" element={<AdminAdministrateurs />} />
+                      <Route path="/prospects" element={<AdminProspects />} />
                     </Routes>
                   </AdminNotificationProvider>
                 </ProtectedRoute>

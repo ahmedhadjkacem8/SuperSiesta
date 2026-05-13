@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\NewsletterController;
 use App\Http\Controllers\Api\AdminUserController;
+use App\Http\Controllers\Api\ProspectController;
 
 // Public routes (no authentication required)
 Route::middleware('api')->group(function () {
@@ -113,6 +114,9 @@ Route::middleware('api')->group(function () {
 
     // Newsletter (Public)
     Route::post('/newsletters', [NewsletterController::class, 'store']);
+
+    // Prospects (Public store)
+    Route::post('/prospects', [ProspectController::class, 'store']);
 
     // Public file access (with proper MIME type validation)
     Route::get('/files/{path}', [FileController::class, 'serve'])
@@ -335,6 +339,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admins', [AdminUserController::class, 'store']);
     Route::put('/admins/{id}', [AdminUserController::class, 'update']);
     Route::delete('/admins/{id}', [AdminUserController::class, 'destroy']);
+
+    // Prospects (Admin)
+    Route::get('/prospects', [ProspectController::class, 'index']);
+    Route::get('/prospects/{prospect}', [ProspectController::class, 'show']);
+    Route::put('/prospects/{prospect}', [ProspectController::class, 'update']);
+    Route::delete('/prospects/{prospect}', [ProspectController::class, 'destroy']);
 
     // Get signed temporary URLs for files (1 hour validity)
     Route::post('/files/signed-url', [FileController::class, 'getSignedUrl']);

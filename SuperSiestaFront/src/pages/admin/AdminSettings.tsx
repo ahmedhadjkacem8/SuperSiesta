@@ -14,13 +14,25 @@ import { api } from "@/lib/apiClient";
 import { confirmDelete } from "@/lib/swal";
 import { useSocialNetworks, SocialNetwork, Icon } from "@/hooks/useSocialNetworks";
 import LucideIcon from "@/components/common/LucideIcon";
-import { Share2, Store } from "lucide-react";
+import { Share2, Store, Star } from "lucide-react";
+import { getImageUrl } from "@/utils/imageUtils";
+
 
 interface Dimension {
   id: string;
   label: string;
   is_standard: boolean;
   free_gifts?: FreeGift[];
+}
+
+interface PromoCard {
+  id: string;
+  badge: string;
+  title: string;
+  description: string;
+  link_text: string;
+  link_url: string;
+  image: string;
 }
 
 interface Categorie {
@@ -110,6 +122,19 @@ export default function AdminSettings() {
     { icon: "Clock", title: "Service client 24/7", sub: "+216 71 000 000" },
   ]);
 
+  const [promoCards, setPromoCards] = useState<PromoCard[]>([]);
+  const [promoOpen, setPromoOpen] = useState(false);
+  const [promoEditing, setPromoEditing] = useState<PromoCard | null>(null);
+  const [promoForm, setPromoForm] = useState<{
+    badge: string;
+    title: string;
+    description: string;
+    link_text: string;
+    link_url: string;
+    image_file: File | null;
+    image_preview: string;
+  }>({ badge: "OFFRE LIMITÉE", title: "", description: "", link_text: "Profiter de l'offre", link_url: "/boutique", image_file: null, image_preview: "" });
+
   const { socials, icons, refresh: loadSocials } = useSocialNetworks();
   const [socialOpen, setSocialOpen] = useState(false);
   const [socialEditing, setSocialEditing] = useState<SocialNetwork | null>(null);
@@ -172,6 +197,12 @@ export default function AdminSettings() {
             }
           } catch(e) {}
         }
+        if (data.promo_cards) {
+          try {
+            const parsed = JSON.parse(data.promo_cards);
+            if (Array.isArray(parsed)) setPromoCards(parsed);
+          } catch(e) {}
+        }
       }
     } catch (e) {
       // Ignorer
@@ -185,7 +216,8 @@ export default function AdminSettings() {
       await api.post("/settings", { 
         settings: {
           ...contactSettings,
-          trust_badges: JSON.stringify(trustBadges)
+          trust_badges: JSON.stringify(trustBadges),
+          promo_cards: JSON.stringify(promoCards)
         }
       });
       toast.success("Paramètres de contact enregistrés");
@@ -465,6 +497,72 @@ export default function AdminSettings() {
     }
   };
 
+  const handlePromoSave = async () => {
+    if (!promoForm.title.trim()) return toast.error("Le titre est requis");
+    
+    let imageUrl = promoForm.image_preview;
+    
+    if (promoForm.image_file) {
+      const fd = new FormData();
+      fd.append("file", promoForm.image_file);
+      fd.append("folder", "promo");
+      try {
+        const res = await api.post("/upload", fd);
+        imageUrl = res.path;
+      } catch {
+        return toast.error("Erreur lors de l'upload de l'image");
+      }
+    }
+
+    const newCard: PromoCard = {
+      id: promoEditing ? promoEditing.id : Date.now().toString(),
+      badge: promoForm.badge,
+      title: promoForm.title,
+      description: promoForm.description,
+      link_text: promoForm.link_text,
+      link_url: promoForm.link_url,
+      image: imageUrl
+    };
+
+    const newCards = promoEditing 
+      ? promoCards.map(c => c.id === promoEditing.id ? newCard : c)
+      : [...promoCards, newCard];
+
+    setPromoCards(newCards);
+    
+    try {
+      await api.post("/settings", {
+        settings: {
+          ...contactSettings,
+          trust_badges: JSON.stringify(trustBadges),
+          promo_cards: JSON.stringify(newCards)
+        }
+      });
+      toast.success("Bannière promo enregistrée");
+      setPromoOpen(false);
+      setPromoEditing(null);
+      setPromoForm({ badge: "OFFRE LIMITÉE", title: "", description: "", link_text: "Profiter de l'offre", link_url: "/boutique", image_file: null, image_preview: "" });
+    } catch {
+      toast.error("Erreur d'enregistrement");
+    }
+  };
+
+  const handlePromoDelete = async (id: string) => {
+    if (!(await confirmDelete("Supprimer ?", "Impossible d'annuler."))) return;
+    const newCards = promoCards.filter(c => c.id !== id);
+    setPromoCards(newCards);
+    try {
+      await api.post("/settings", {
+        settings: {
+          ...contactSettings,
+          trust_badges: JSON.stringify(trustBadges),
+          promo_cards: JSON.stringify(newCards)
+        }
+      });
+      toast.success("Supprimé");
+    } catch { toast.error("Erreur"); }
+  };
+
   const handleSocialSave = async () => {
     if (!socialForm.name.trim() || !socialForm.url.trim() || !socialForm.icon_id) {
       return toast.error("Veuillez remplir tous les champs");
@@ -506,6 +604,7 @@ export default function AdminSettings() {
         <TabsList className="bg-muted p-1">
           <TabsTrigger value="catalogue" className="gap-2"><Layers className="w-4 h-4" /> Catalogue</TabsTrigger>
           <TabsTrigger value="offres" className="gap-2"><Gift className="w-4 h-4" /> Offres Gratuites</TabsTrigger>
+          <TabsTrigger value="promo" className="gap-2"><Star className="w-4 h-4" /> Bannières Promo</TabsTrigger>
           <TabsTrigger value="boutique" className="gap-2"><Store className="w-4 h-4" /> Boutique & Contact</TabsTrigger>
           <TabsTrigger value="social" className="gap-2"><Share2 className="w-4 h-4" /> Réseaux Sociaux</TabsTrigger>
         </TabsList>
@@ -1005,33 +1104,117 @@ export default function AdminSettings() {
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1">
-                              <Button variant="ghost" size="icon" onClick={() => {
-                                setGiftEditing(gift);
-                                setGiftForm({
-                                  titre: gift.titre,
-                                  description: gift.description || "",
-                                  image_file: null,
-                                  image_preview: gift.image || "",
-                                  poids: gift.poids
-                                });
-                                // Charger les dimensions associées
-                                if (gift.dimensions && Array.isArray(gift.dimensions)) {
-                                  setSelectedGiftIds(gift.dimensions.map((d: any) => (d.id || d).toString()));
-                                } else {
-                                  setSelectedGiftIds([]);
-                                }
-                                setGiftOpen(true);
-                              }}><Pencil className="w-4 h-4" /></Button>
+                              <Button variant="ghost" size="icon" onClick={() => { setGiftEditing(gift); setGiftForm({ titre: gift.titre, description: gift.description || "", image_file: null, image_preview: gift.image || "", poids: gift.poids }); setSelectedProductIds(gift.products?.map((p: any) => p.id.toString()) || []); setSelectedGiftIds(gift.dimensions?.map((d: any) => d.id.toString()) || []); setGiftOpen(true); }}><Pencil className="w-4 h-4" /></Button>
                               <Button variant="ghost" size="icon" onClick={() => handleGiftDelete(gift.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                             </div>
                           </TableCell>
                         </TableRow>
                       ))}
-                      {freeGifts.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-4">Aucune offre gratuite</TableCell></TableRow>}
+                      {freeGifts.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-4">Aucune offre configurée</TableCell></TableRow>}
                     </TableBody>
                   </Table>
                 </div>
               </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="promo" className="space-y-6">
+          <div className="bg-card border border-border rounded-xl p-6 max-w-6xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Star className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-bold">Bannières Promotionnelles</h2>
+              </div>
+              <Dialog open={promoOpen} onOpenChange={(v) => {
+                setPromoOpen(v);
+                if (!v) { setPromoEditing(null); setPromoForm({ badge: "OFFRE LIMITÉE", title: "", description: "", link_text: "Profiter de l'offre", link_url: "/boutique", image_file: null, image_preview: "" }); }
+              }}>
+                <DialogTrigger asChild>
+                  <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Ajouter une bannière</Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>{promoEditing ? "Modifier la bannière" : "Ajouter une bannière"}</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Badge (ex: OFFRE LIMITÉE)</label>
+                        <Input value={promoForm.badge} onChange={(e) => setPromoForm({ ...promoForm, badge: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Titre</label>
+                        <Input value={promoForm.title} onChange={(e) => setPromoForm({ ...promoForm, title: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Description</label>
+                      <Input value={promoForm.description} onChange={(e) => setPromoForm({ ...promoForm, description: e.target.value })} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Texte du bouton</label>
+                        <Input value={promoForm.link_text} onChange={(e) => setPromoForm({ ...promoForm, link_text: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Lien du bouton</label>
+                        <Input value={promoForm.link_url} onChange={(e) => setPromoForm({ ...promoForm, link_url: e.target.value })} />
+                      </div>
+                    </div>
+                    <ImageUpload
+                      value={promoForm.image_file}
+                      onChange={(f) => setPromoForm({ ...promoForm, image_file: f })}
+                      preview={promoForm.image_preview}
+                      label="Image d'illustration"
+                      placeholder="Cliquez pour uploader"
+                    />
+                    <Button onClick={handlePromoSave} className="w-full">Enregistrer</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            
+            <div className="bg-background border border-border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Aperçu</TableHead>
+                    <TableHead>Détails</TableHead>
+                    <TableHead className="w-24">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {promoCards.map((card) => (
+                    <TableRow key={card.id}>
+                      <TableCell className="w-32">
+                        <div className="w-24 h-16 bg-muted rounded-md overflow-hidden">
+                          {card.image ? (
+                            <img src={getImageUrl(card.image)} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">Sans image</div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded uppercase w-fit">{card.badge}</span>
+                          <span className="font-bold">{card.title}</span>
+                          <span className="text-xs text-muted-foreground line-clamp-1">{card.description}</span>
+                          <span className="text-xs text-primary underline truncate">{card.link_text} ({card.link_url})</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1 items-center">
+                          <Button variant="ghost" size="icon" onClick={() => { setPromoEditing(card); setPromoForm({ badge: card.badge, title: card.title, description: card.description, link_text: card.link_text, link_url: card.link_url, image_file: null, image_preview: card.image }); setPromoOpen(true); }}><Pencil className="w-4 h-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => handlePromoDelete(card.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {promoCards.length === 0 && <TableRow><TableCell colSpan={3} className="text-center py-4 text-muted-foreground">Aucune bannière promotionnelle configurée</TableCell></TableRow>}
+                </TableBody>
+              </Table>
             </div>
           </div>
         </TabsContent>

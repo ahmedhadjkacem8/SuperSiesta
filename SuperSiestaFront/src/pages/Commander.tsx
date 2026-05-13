@@ -45,6 +45,8 @@ export default function Commander() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [dimensions, setDimensions] = useState<any[]>([]);
   const [useSaved, setUseSaved] = useState(false);
+  const [prospectId, setProspectId] = useState<string | null>(sessionStorage.getItem("current_prospect_id"));
+  const [isProspectSaved, setIsProspectSaved] = useState(false);
 
   // Auto-fill from profile when logged in
   useEffect(() => {
@@ -79,6 +81,47 @@ export default function Commander() {
     }
     fetchDimensions()
   }, [])
+
+  // Prospect logic: save form data as a prospect when user types
+  useEffect(() => {
+    // Only save if we have at least a name or a phone number
+    if ((!form.full_name.trim() && !form.telephone.trim()) || submitted || submitting) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const payload = {
+          id: prospectId,
+          full_name: form.full_name,
+          email: form.email,
+          phone: form.telephone,
+          phone2: form.telephone2,
+          address: form.adresse,
+          city: form.ville,
+          notes: form.notes,
+          cart_items: items.map(item => ({
+            id: item.product.id,
+            name: item.product.name,
+            size: item.size.label,
+            price: item.size.price,
+            quantity: item.quantity
+          })),
+          total: total,
+          status: 'nouveau'
+        };
+
+        const res = await api.post<any>("/prospects", payload);
+        if (res && res.id && !prospectId) {
+          setProspectId(res.id);
+          sessionStorage.setItem("current_prospect_id", res.id);
+        }
+        setIsProspectSaved(true);
+      } catch (err) {
+        console.error("Failed to save prospect", err);
+      }
+    }, 2000); // Wait 2 seconds of inactivity before saving
+
+    return () => clearTimeout(timer);
+  }, [form, items, total, submitted, submitting, prospectId]);
 
 
 
@@ -185,6 +228,12 @@ export default function Commander() {
 
       const response = await api.post<any>("/orders", payload);
       
+      // Mark prospect as converted if it exists
+      if (prospectId) {
+        api.put(`/prospects/${prospectId}`, { status: 'converti' }).catch(() => {});
+        sessionStorage.removeItem("current_prospect_id");
+      }
+
       if (response.token) {
         localStorage.setItem("auth_token", response.token);
       }
