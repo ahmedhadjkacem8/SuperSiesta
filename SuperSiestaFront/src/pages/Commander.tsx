@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/hooks/useAuthSecure";
@@ -16,6 +16,37 @@ const villes = [
   "Gabès", "Médenine", "Tataouine", "Gafsa", "Tozeur", "Kébili",
 ];
 
+const FORM_STORAGE_KEY = "supersiesta_commander_form";
+const FORM_TTL_MS = 24 * 60 * 60 * 1000; // 24 heures
+
+function loadFormFromStorage() {
+  try {
+    const raw = localStorage.getItem(FORM_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed.expiry || Date.now() > parsed.expiry) {
+      localStorage.removeItem(FORM_STORAGE_KEY);
+      return null;
+    }
+    return parsed.data || null;
+  } catch {
+    return null;
+  }
+}
+
+function saveFormToStorage(data: Record<string, any>) {
+  try {
+    localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify({
+      data,
+      expiry: Date.now() + FORM_TTL_MS,
+    }));
+  } catch {}
+}
+
+function clearFormStorage() {
+  try { localStorage.removeItem(FORM_STORAGE_KEY); } catch {}
+}
+
 function generateOrderNumber() {
   const d = new Date();
   return `CMD-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}-${Math.random().toString(36).substring(2,6).toUpperCase()}`;
@@ -25,14 +56,17 @@ export default function Commander() {
   const navigate = useNavigate();
   const { items, total, clearCart } = useCart();
   const { user } = useAuth();
+
+  const savedForm = loadFormFromStorage();
+
   const [form, setForm] = useState({ 
-    full_name: "", 
-    email: "", 
-    telephone: "", 
-    telephone2: "", 
-    adresse: "", 
-    ville: "", 
-    notes: "", 
+    full_name: savedForm?.full_name || "", 
+    email: savedForm?.email || "", 
+    telephone: savedForm?.telephone || "", 
+    telephone2: savedForm?.telephone2 || "", 
+    adresse: savedForm?.adresse || "", 
+    ville: savedForm?.ville || "", 
+    notes: savedForm?.notes || "", 
     createAccount: false, 
     password: "", 
     latitude: null as number | null, 
@@ -46,6 +80,8 @@ export default function Commander() {
   const [dimensions, setDimensions] = useState<any[]>([]);
   const [useSaved, setUseSaved] = useState(false);
   const [prospectId, setProspectId] = useState<string | null>(sessionStorage.getItem("current_prospect_id"));
+  const prospectIdRef = useRef<string | null>(sessionStorage.getItem("current_prospect_id"));
+  const isSavingProspect = useRef(false);
   const [isProspectSaved, setIsProspectSaved] = useState(false);
 
   // Auto-fill from profile when logged in
@@ -69,6 +105,19 @@ export default function Commander() {
     }).catch(() => {});
   }, [user]);
 
+  // Save form to localStorage whenever it changes (fields only, not password)
+  useEffect(() => {
+    saveFormToStorage({
+      full_name: form.full_name,
+      email: form.email,
+      telephone: form.telephone,
+      telephone2: form.telephone2,
+      adresse: form.adresse,
+      ville: form.ville,
+      notes: form.notes,
+    });
+  }, [form.full_name, form.email, form.telephone, form.telephone2, form.adresse, form.ville, form.notes]);
+
   // Fetch dimensions for gifts
   useEffect(() => {
     const fetchDimensions = async () => {
@@ -82,15 +131,20 @@ export default function Commander() {
     fetchDimensions()
   }, [])
 
-  // Prospect logic: save form data as a prospect when user types
+  // Prospect logic: debounced upsert — only one prospect per session
   useEffect(() => {
     // Only save if we have at least a name or a phone number
     if ((!form.full_name.trim() && !form.telephone.trim()) || submitted || submitting) return;
 
     const timer = setTimeout(async () => {
+      // Prevent concurrent API calls (race condition guard)
+      if (isSavingProspect.current) return;
+      isSavingProspect.current = true;
+
       try {
+        const currentId = prospectIdRef.current;
         const payload = {
-          id: prospectId,
+          id: currentId,
           full_name: form.full_name,
           email: form.email,
           phone: form.telephone,
@@ -109,19 +163,29 @@ export default function Commander() {
           status: 'nouveau'
         };
 
-        const res = await api.post<any>("/prospects", payload);
-        if (res && res.id && !prospectId) {
-          setProspectId(res.id);
-          sessionStorage.setItem("current_prospect_id", res.id);
+        if (currentId) {
+          // Update existing prospect (PUT)
+          await api.put<any>(`/prospects/${currentId}`, payload);
+        } else {
+          // Create new prospect (POST) — only once
+          const res = await api.post<any>("/prospects", payload);
+          if (res && res.id) {
+            // Update ref synchronously to block any concurrent POST
+            prospectIdRef.current = res.id;
+            setProspectId(res.id);
+            sessionStorage.setItem("current_prospect_id", res.id);
+          }
         }
         setIsProspectSaved(true);
       } catch (err) {
         console.error("Failed to save prospect", err);
+      } finally {
+        isSavingProspect.current = false;
       }
     }, 2000); // Wait 2 seconds of inactivity before saving
 
     return () => clearTimeout(timer);
-  }, [form, items, total, submitted, submitting, prospectId]);
+  }, [form, items, total, submitted, submitting]);
 
 
 
@@ -239,6 +303,8 @@ export default function Commander() {
       }
       setSubmitted(true);
       clearCart();
+      clearFormStorage();
+      sessionStorage.removeItem("current_prospect_id");
     } catch (err: any) {
       toast.error("Erreur lors de la commande: " + (err.message || "Réessayez"));
     }

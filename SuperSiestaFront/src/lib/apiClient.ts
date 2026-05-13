@@ -142,7 +142,11 @@ class SecureApiService {
     
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: 'GET',
-      headers: this.getHeaders(),
+      headers: {
+        ...this.getHeaders(),
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
     })
 
     const result = await this.handleResponse<T>(response)
@@ -359,6 +363,16 @@ class SecureApiService {
   // User/Auth
   getUser() {
     return this.get('/user')
+  }
+
+  // Prospects
+  getProspects(params?: { status?: string; search?: string }): Promise<any> {
+    const query = new URLSearchParams()
+    if (params?.status) query.append('status', params.status)
+    if (params?.search) query.append('search', params.search)
+    query.append('_t', String(Date.now())) // cache-buster
+
+    return this.get(`/prospects?${query.toString()}`)
   }
 }
 

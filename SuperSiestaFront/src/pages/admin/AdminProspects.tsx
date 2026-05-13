@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,82 +38,105 @@ export default function AdminProspects() {
   const [filterStatus, setFilterStatus] = useState("");
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [loading, setLoading] = useState(true);
+  const isUpdatingRef = useRef(false);
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
-  const fetchProspects = async (silent = false) => {
+  const fetchProspects = useCallback(async (silent = false) => {
+    if (silent && isUpdatingRef.current) return; // Don't overwrite optimistic state while updating
     if (!silent) setLoading(true);
     try {
-      const params: any = {};
-      if (filterStatus) params.status = filterStatus;
-      if (search) params.search = search;
+      const params = {
+        status: filterStatus,
+        search: search
+      };
       
-      const res = await api.get<any>("/prospects", { params });
-      if (res) {
-        const newData = Array.isArray(res) ? res : (res.data || []);
-        
-        // Detect new prospects for notification
-        if (silent && newData.length > prospects.length) {
+      const res = await api.getProspects(params);
+      const newData = Array.isArray(res) ? res : ((res as any).data || []);
+      
+      setProspects(prev => {
+        if (silent && newData.length > prev.length) {
           const latest = newData[0];
-          // Simple check: if the first one is different from our first one
-          if (prospects.length > 0 && latest.id !== prospects[0].id) {
+          if (prev.length > 0 && latest.id !== prev[0].id) {
             toast.success(`Nouveau prospect : ${latest.full_name || 'Anonyme'}`, {
               description: `Panier de ${formatPrice(latest.total)}`,
               icon: <Package className="w-4 h-4" />,
             });
-            // Try to play a subtle sound if possible or just rely on toast
           }
         }
-        
-        setProspects(newData);
-      }
+        return newData;
+      });
     } catch (err: any) {
       if (!silent) toast.error("Erreur lors de la récupération des prospects");
     } finally {
       if (!silent) setLoading(false);
     }
-  };
+  }, [filterStatus, search]);
 
+  // Initial load + auto-refresh every 10 seconds
   useEffect(() => {
     fetchProspects();
     
-    // Auto-refresh every 10 seconds
     const interval = setInterval(() => {
       fetchProspects(true);
     }, 10000);
     
     return () => clearInterval(interval);
-  }, [filterStatus]);
-
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (search) fetchProspects();
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [search]);
+  }, [fetchProspects]);
 
   const getStatusInfo = (s: string) => STATUSES.find((st) => st.value === s) || STATUSES[0];
 
   const updateStatus = async (id: string, newStatus: string) => {
+    let previousProspects: Prospect[] = [];
+    let previousSelected: Prospect | null = null;
+
+    // Optimistic update using functional state to avoid stale closures
+    setProspects(prev => {
+      previousProspects = [...prev];
+      return prev.map(p => p.id === id ? { ...p, status: newStatus } : p);
+    });
+
+    setSelectedProspect(prev => {
+      previousSelected = prev ? { ...prev } : null;
+      if (prev?.id === id) return { ...prev, status: newStatus };
+      return prev;
+    });
+    
+    isUpdatingRef.current = true;
     try {
       await api.put(`/prospects/${id}`, { status: newStatus });
-      setProspects(prospects.map(p => p.id === id ? { ...p, status: newStatus } : p));
-      if (selectedProspect?.id === id) setSelectedProspect({ ...selectedProspect, status: newStatus });
       toast.success("Statut mis à jour");
     } catch (err) {
+      // Revert on error
+      setProspects(previousProspects);
+      setSelectedProspect(previousSelected);
       toast.error("Erreur lors de la mise à jour");
+    } finally {
+      isUpdatingRef.current = false;
     }
   };
 
   const deleteProspect = async (id: string) => {
     if (!await confirmDelete("Supprimer ce prospect ?", "Cette action est irréversible.")) return;
+    
+    let previousProspects: Prospect[] = [];
+    
+    // Optimistic update
+    setProspects(prev => {
+      previousProspects = [...prev];
+      return prev.filter(p => p.id !== id);
+    });
+    
+    isUpdatingRef.current = true;
     try {
       await api.delete(`/prospects/${id}`);
-      setProspects(prospects.filter(p => p.id !== id));
       toast.success("Prospect supprimé");
     } catch (err) {
+      // Revert on error
+      setProspects(previousProspects);
       toast.error("Erreur lors de la suppression");
+    } finally {
+      isUpdatingRef.current = false;
     }
   };
 
@@ -132,7 +155,7 @@ export default function AdminProspects() {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchProspects}
+            onClick={() => fetchProspects()}
             disabled={loading}
             className="gap-2"
           >
@@ -359,10 +382,10 @@ export default function AdminProspects() {
 
               <div className="flex justify-end gap-3 pt-4">
                 <Button variant="outline" onClick={() => setDetailDialogOpen(false)}>Fermer</Button>
-                <Button onClick={() => window.open(`tel:${selectedProspect.phone}`)} className="gap-2">
+                {/* <Button onClick={() => window.open(`tel:${selectedProspect.phone}`)} className="gap-2">
                   <Phone className="w-4 h-4" />
                   Appeler le prospect
-                </Button>
+                </Button> */}
               </div>
             </div>
           )}

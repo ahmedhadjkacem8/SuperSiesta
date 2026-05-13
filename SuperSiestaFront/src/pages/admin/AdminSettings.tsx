@@ -16,6 +16,9 @@ import { useSocialNetworks, SocialNetwork, Icon } from "@/hooks/useSocialNetwork
 import LucideIcon from "@/components/common/LucideIcon";
 import { Share2, Store, Star } from "lucide-react";
 import { getImageUrl } from "@/utils/imageUtils";
+import { useGammes } from "@/hooks/useGammes";
+import { useBlogPosts } from "@/hooks/useBlog";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 interface Dimension {
@@ -62,6 +65,7 @@ interface FreeGift {
 interface Product {
   id: string;
   name: string;
+  slug: string;
 }
 
 export default function AdminSettings() {
@@ -144,6 +148,26 @@ export default function AdminSettings() {
     icon_id: "",
     is_active: true
   });
+
+  const { data: gammesData } = useGammes();
+  const { data: postsData } = useBlogPosts();
+
+  const staticPages = [
+    { label: "Accueil", value: "/" },
+    { label: "Boutique", value: "/boutique" },
+    { label: "À propos", value: "/a-propos" },
+    { label: "Contact", value: "/contact" },
+    { label: "Blog", value: "/blog" },
+    { label: "Mon Panier / Commander", value: "/commander" },
+  ];
+
+  const catLinks = (categories || []).map(c => ({ label: `Collection: ${c.label}`, value: `/boutique?categorie=${c.label}` }));
+  const gammeLinks = (gammesData || []).map(g => ({ label: `Gamme: ${g.name}`, value: `/gamme/${g.slug}` }));
+  const productLinks = (products || []).map(p => ({ label: `Produit: ${p.name}`, value: `/produit/${(p as any).slug || p.id}` }));
+  const blogLinks = (postsData || []).map(p => ({ label: `Article: ${p.title}`, value: `/blog/${p.slug}` }));
+
+  const allLinks = [...staticPages, ...catLinks, ...gammeLinks, ...productLinks, ...blogLinks];
+  const isCustomLink = !!promoForm.link_url && !allLinks.some(l => l.value === promoForm.link_url);
 
   const load = async () => {
     try {
@@ -1159,7 +1183,62 @@ export default function AdminSettings() {
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Lien du bouton</label>
-                        <Input value={promoForm.link_url} onChange={(e) => setPromoForm({ ...promoForm, link_url: e.target.value })} />
+                        <Select value={promoForm.link_url} onValueChange={(v) => setPromoForm({ ...promoForm, link_url: v })}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Choisir une destination" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[300px]">
+                            <SelectGroup>
+                              <SelectLabel>Pages statiques</SelectLabel>
+                              {staticPages.map((p) => (
+                                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                              ))}
+                            </SelectGroup>
+                            
+                            {catLinks.length > 0 && (
+                              <SelectGroup>
+                                <SelectLabel>Collections (Catégories)</SelectLabel>
+                                {catLinks.map((p) => (
+                                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                                ))}
+                              </SelectGroup>
+                            )}
+
+                            {gammeLinks.length > 0 && (
+                              <SelectGroup>
+                                <SelectLabel>Gammes</SelectLabel>
+                                {gammeLinks.map((p) => (
+                                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                                ))}
+                              </SelectGroup>
+                            )}
+
+                            {productLinks.length > 0 && (
+                              <SelectGroup>
+                                <SelectLabel>Produits</SelectLabel>
+                                {productLinks.map((p) => (
+                                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                                ))}
+                              </SelectGroup>
+                            )}
+
+                            {blogLinks.length > 0 && (
+                              <SelectGroup>
+                                <SelectLabel>Articles Blog</SelectLabel>
+                                {blogLinks.map((p) => (
+                                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                                ))}
+                              </SelectGroup>
+                            )}
+
+                            {isCustomLink && (
+                              <SelectGroup>
+                                <SelectLabel>Lien actuel (personnalisé)</SelectLabel>
+                                <SelectItem value={promoForm.link_url}>{promoForm.link_url}</SelectItem>
+                              </SelectGroup>
+                            )}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                     <ImageUpload

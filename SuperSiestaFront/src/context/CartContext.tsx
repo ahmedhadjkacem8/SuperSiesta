@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { Product, ProductSize } from "@/hooks/useProducts";
 
 export interface CartItem {
@@ -20,11 +20,43 @@ interface CartContextType {
   clearCart: () => void;
 }
 
+const CART_STORAGE_KEY = "supersiesta_cart";
+const CART_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+function loadCartFromStorage(): CartItem[] {
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!parsed.expiry || Date.now() > parsed.expiry) {
+      localStorage.removeItem(CART_STORAGE_KEY);
+      return [];
+    }
+    return parsed.items || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCartToStorage(items: CartItem[]) {
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify({
+      items,
+      expiry: Date.now() + CART_TTL_MS,
+    }));
+  } catch {}
+}
+
 const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(() => loadCartFromStorage());
   const [isOpen, setIsOpen] = useState(false);
+
+  // Persist cart to localStorage on every change
+  useEffect(() => {
+    saveCartToStorage(items);
+  }, [items]);
 
   const addItem = (product: Product, size: ProductSize, qty = 1) => {
     setItems((prev) => {
@@ -48,7 +80,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const total = items.reduce((sum, i) => sum + i.size.price * i.quantity, 0);
   const count = items.reduce((sum, i) => sum + i.quantity, 0);
-  const clearCart = () => setItems([]);
+
+  const clearCart = () => {
+    setItems([]);
+    localStorage.removeItem(CART_STORAGE_KEY);
+  };
 
   return (
     <CartContext.Provider value={{ items, isOpen, openCart: () => setIsOpen(true), closeCart: () => setIsOpen(false), addItem, removeItem, updateQty, total, count, clearCart }}>
