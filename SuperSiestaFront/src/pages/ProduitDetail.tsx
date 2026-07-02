@@ -267,7 +267,7 @@ export default function ProduitDetail() {
               )}
               {Number(selectedSize.originalPrice) > 0 && selectedSize.price !== 0 && <span className="text-lg text-muted-foreground line-through">{formatPrice(selectedSize.originalPrice)}</span>}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Prix pour la taille {selectedSize.label}</p>
+            <p className="text-xs text-muted-foreground mt-1">Prix pour la dimension {selectedSize.label}</p>
             {isB2B && selectedSize.resellerPrice && <p className="text-xs text-primary font-bold mt-1">💼 Prix revendeur appliqué</p>}
           </div>
 

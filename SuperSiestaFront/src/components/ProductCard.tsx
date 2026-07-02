@@ -111,14 +111,14 @@ export default function ProductCard({ product, selectedDimension, selectedCatego
                     <span className="text-sm font-medium text-muted-foreground italic">&nbsp;</span>
                   )}
                   {Number(displaySize.originalPrice) > 0 && displaySize.price !== 0 && (
-                    <span className="text-xs sm:text-sm text-muted-foreground line-through">
+                    <span className="text-xs sm:text-sm text-foreground line-through">
                       {formatPrice(displaySize.originalPrice)}
                     </span>
                   )}
                 </div>
                 {isSpecificDimension && displaySize.price !== 0 && (
                   <div className="mt-1 sm:mt-1.5 flex items-center gap-1.5 flex-wrap">
-                    <span className="hidden sm:inline text-[11px] uppercase tracking-wider text-muted-foreground font-bold">
+                    <span className="sm:inline text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
                       Pour la dimension
                     </span>
                     <span className="bg-primary/10 text-primary text-[10px] sm:text-s font-black px-2 py-0.5 rounded-md border border-primary/20">
