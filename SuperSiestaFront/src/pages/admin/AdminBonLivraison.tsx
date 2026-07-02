@@ -52,6 +52,7 @@ interface DeliveryItem {
   quantity: number;
   delivered_quantity: number;
   unit_price?: number;
+  parameters?: Record<string, any>;
   gifts_grammage?: Record<string, string> | null;
   product?: {
     id: string;
@@ -82,17 +83,22 @@ export default function AdminBonLivraison() {
   const [dimensions, setDimensions] = useState<any[]>([]);
   const printRef = useRef<HTMLDivElement>(null);
 
+  const [perPage, setPerPage] = useState<number>(25);
+  const [page, setPage] = useState<number>(1);
+  const [pagination, setPagination] = useState<any>(null);
+
   const load = async () => {
     try {
       // Add timestamp to bypass potential browser/network caching (Issue: Instant Sync)
       const timestamp = Date.now();
       const [notesData, livreursData, gammesData, dimensionsData] = await Promise.all([
-        api.get<DeliveryNote[]>(`/delivery-notes?t=${timestamp}`),
+        api.get<any>(`/delivery-notes?per_page=${perPage}&page=${page}&_raw=1&t=${timestamp}`),
         api.get<{ id: string, name: string, is_active: boolean }[]>(`/delivery-men?t=${timestamp}`),
         api.get<any[]>(`/gammes?t=${timestamp}`),
         api.get<any[]>(`/dimensions?t=${timestamp}`)
       ]);
-      setNotes(notesData || []);
+      setNotes((notesData && notesData.data) ? notesData.data : (notesData || []));
+      setPagination(notesData || null);
       setLivreurs(livreursData || []);
       setGammes(Array.isArray(gammesData) ? gammesData : (gammesData as any).data || []);
       setDimensions(Array.isArray(dimensionsData) ? dimensionsData : (dimensionsData as any).data || []);
@@ -103,7 +109,7 @@ export default function AdminBonLivraison() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [page, perPage]);
 
   const viewDetail = async (dn: DeliveryNote) => {
     setDetail(dn);
@@ -484,6 +490,16 @@ export default function AdminBonLivraison() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Bons de Livraison</h1>
         <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 rounded-2xl border border-border bg-background px-4 py-2 text-sm shadow-sm shadow-slate-900/5">
+            <span className="text-sm text-muted-foreground">Afficher</span>
+            <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }} className="bg-transparent text-sm font-semibold outline-none appearance-none pr-8">
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span className="text-sm text-muted-foreground">/ page</span>
+          </label>
+
           <Button
             variant="outline"
             size="sm"
@@ -493,7 +509,8 @@ export default function AdminBonLivraison() {
             <RefreshCw className="w-4 h-4" />
             Rafraîchir
           </Button>
-          <Badge variant="outline">{notes.length} bon{notes.length > 1 ? "s" : ""}</Badge>
+          <Badge variant="outline">{pagination?.total ?? notes.length} bon{(pagination?.total ?? notes.length) > 1 ? "s" : ""}</Badge>
+
         </div>
       </div>
 
@@ -559,6 +576,26 @@ export default function AdminBonLivraison() {
           </TableBody>
         </Table>
       </div>
+      {pagination && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 px-2 py-3 rounded-lg border border-border bg-background">
+          <div className="text-sm text-muted-foreground">Affichage {pagination.from} - {pagination.to} sur {pagination.total}</div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="rounded border border-border bg-background px-3 py-1 text-sm transition hover:bg-muted/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >Précédent</button>
+            <span className="text-sm text-muted-foreground">Page {pagination.current_page} / {pagination.last_page}</span>
+            <button
+              type="button"
+              disabled={page >= pagination.last_page}
+              onClick={() => setPage((p) => Math.min(pagination.last_page, p + 1))}
+              className="rounded border border-border bg-background px-3 py-1 text-sm transition hover:bg-muted/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >Suivant</button>
+          </div>
+        </div>
+      )}
 
       {/* Detail Dialog */}
       <Dialog open={!!detail} onOpenChange={v => { if (!v) setDetail(null); }}>
@@ -654,6 +691,21 @@ export default function AdminBonLivraison() {
                             {item.size_label && `Taille ${item.size_label} `}
                             {item.grammage && `— Gr: ${item.grammage} `}
                             — Qté: {item.quantity}
+                            {item.parameters?.custom && (
+                              <><br/><span className="italic text-primary/70">Paramètres: {
+                                (() => {
+                                  try {
+                                    const parsed = JSON.parse(item.parameters.custom);
+                                    if (typeof parsed === 'object') {
+                                      return Object.entries(parsed).map(([k, v]: [string, any]) => `${k}: ${v.custom || v}`).join(', ');
+                                    }
+                                    return item.parameters.custom;
+                                  } catch {
+                                    return item.parameters.custom;
+                                  }
+                                })()
+                              }</span></>
+                            )}
                           </p>
                         </div>
                         <div className="flex items-center gap-1">
@@ -845,6 +897,17 @@ export default function AdminBonLivraison() {
                                 <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
                                   {it.size_label && `Taille: ${it.size_label}`}
                                   {it.grammage && ` — ${it.grammage}g`}
+                                  {it.parameters?.custom && ` — Params: ${(() => {
+                                    try {
+                                      const parsed = JSON.parse(it.parameters.custom);
+                                      if (typeof parsed === 'object') {
+                                        return Object.entries(parsed).map(([k, v]: [string, any]) => `${k}: ${v.custom || v}`).join(', ');
+                                      }
+                                      return it.parameters.custom;
+                                    } catch {
+                                      return it.parameters.custom;
+                                    }
+                                  })()}`}
                                 </div>
                               </td>
                               <td style={{ textAlign: 'center', fontWeight: '700', fontSize: '14px' }}>

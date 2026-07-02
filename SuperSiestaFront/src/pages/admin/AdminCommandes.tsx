@@ -30,7 +30,9 @@ export default function AdminCommandes() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Use optimized hook with admin endpoint
-  const { orders, loading, fetchOrders, updateOrderStatus } = useOrders({ adminEndpoint: true });
+  const { orders, loading, fetchOrders, updateOrderStatus, pagination } = useOrders({ adminEndpoint: true });
+  const [perPage, setPerPage] = useState<number>(25);
+  const [page, setPage] = useState<number>(1);
 
   const filtered = orders.filter((o) => {
     const matchSearch = !search || 
@@ -47,15 +49,13 @@ export default function AdminCommandes() {
   // Refetch when filter changes or on interval
   useEffect(() => {
     const fetchData = () => {
-      if (filterStatus) {
-        fetchOrders({ status: filterStatus, adminEndpoint: true });
-      } else {
-        fetchOrders({ adminEndpoint: true });
-      }
+      const opts: any = { adminEndpoint: true, perPage, page, raw: true };
+      if (filterStatus) opts.status = filterStatus;
+      fetchOrders(opts);
     };
 
     fetchData();
-  }, [filterStatus]);
+  }, [filterStatus, perPage, page]);
 
   const viewDetail = (o: Order) => {
     setSelectedOrder(o);
@@ -106,7 +106,7 @@ export default function AdminCommandes() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => fetchOrders({ adminEndpoint: true })}
+            onClick={() => fetchOrders({ adminEndpoint: true, perPage, page, raw: true })}
             disabled={loading}
             className="gap-2"
           >
@@ -120,8 +120,20 @@ export default function AdminCommandes() {
             <Plus className="w-4 h-4" />
             Créer une commande
           </Button>
-          <Badge variant="outline">{orders.length} commande{orders.length > 1 ? "s" : ""}</Badge>
+          <Badge variant="outline">{pagination?.total ?? orders.length} commande{(pagination?.total ?? orders.length) > 1 ? "s" : ""}</Badge>
         </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <label className="flex items-center gap-2 rounded-2xl border border-border bg-background px-4 py-2 text-sm shadow-sm shadow-slate-900/5">
+          <span className="text-sm text-muted-foreground">Afficher</span>
+          <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }} className="bg-transparent text-sm font-semibold outline-none appearance-none pr-8">
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+          <span className="text-sm text-muted-foreground">/ page</span>
+        </label>
+        <div className="text-sm text-muted-foreground">Page {pagination ? pagination.current_page : page} sur {pagination ? pagination.last_page : '-'}</div>
       </div>
 
       <div className="flex flex-wrap gap-3 mb-4">
@@ -283,6 +295,27 @@ export default function AdminCommandes() {
               })}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {pagination && !loading && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 px-2 py-3 rounded-b-lg border border-t-0 border-border bg-background">
+          <div className="text-sm text-muted-foreground">Affichage {pagination.from} - {pagination.to} sur {pagination.total}</div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={pagination.current_page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="rounded border border-border bg-background px-3 py-1 text-sm transition hover:bg-muted/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >Précédent</button>
+            <span className="text-sm text-muted-foreground">Page {pagination.current_page} / {pagination.last_page}</span>
+            <button
+              type="button"
+              disabled={pagination.current_page >= pagination.last_page}
+              onClick={() => setPage((p) => Math.min(pagination.last_page, p + 1))}
+              className="rounded border border-border bg-background px-3 py-1 text-sm transition hover:bg-muted/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >Suivant</button>
+          </div>
         </div>
       )}
 

@@ -152,6 +152,11 @@ class SecureApiService {
     const result = await this.handleResponse<T>(response)
     let output = result.data || (result as any)
 
+    // If caller requested raw paginator (useful for admin pagination), return full output including meta
+    if (endpoint.includes('_raw=1')) {
+      return output as T
+    }
+
     // Handle Laravel Paginator (it nests the array in another 'data' property)
     // IMPORTANT: Do not unwrap if unreadCount is present (Notifications)
     if (output && typeof output === 'object' && Array.isArray(output.data) && ('current_page' in output || 'meta' in output) && !('unreadCount' in output)) {

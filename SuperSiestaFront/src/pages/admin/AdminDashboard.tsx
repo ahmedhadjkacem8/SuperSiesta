@@ -65,14 +65,14 @@ export default function AdminDashboard() {
         ordersData, 
         reviewsData
       ] = await Promise.all([
-        api.get<any[]>(`/delivery-notes?t=${timestamp}`),
-        api.get<any[]>(`/clients?t=${timestamp}`),
-        api.get<any[]>(`/orders?t=${timestamp}`),
+        api.get<any[]>(`/delivery-notes?per_page=1000&t=${timestamp}`),
+        api.get<any[]>(`/clients?per_page=1000&t=${timestamp}`),
+        api.get<any[]>(`/orders?per_page=1000&t=${timestamp}`),
         api.get<{ average: number }>(`/published-reviews?t=${timestamp}`),
       ]);
 
-      const orders = ordersData || [];
-      const notes = notesData || [];
+      const orders = Array.isArray(ordersData) ? ordersData : (ordersData?.data || []);
+      const notes = Array.isArray(notesData) ? notesData : (notesData?.data || []);
 
       const safeTotal = (val: any) => {
         const n = parseFloat(String(val).replace(',', '.'));
@@ -93,8 +93,10 @@ export default function AdminDashboard() {
 
       const deliveredCount = notes.filter((n: any) => n.status === "livrée").length;
 
+      const clientCount = Array.isArray(clientsData) ? clientsData.length : (clientsData?.data?.length || 0);
+
       setStats({
-        clients: clientsData?.length || 0,
+        clients: clientCount,
         orders: orders.length,
         pendingPayments,
         deliveredOrders: deliveredCount,
@@ -402,6 +404,7 @@ export default function AdminDashboard() {
                     </button>
                   ))}
                 </div>
+
               </div>
             </CardHeader>
             <CardContent className="p-6 pt-0">

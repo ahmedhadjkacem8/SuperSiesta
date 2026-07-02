@@ -45,6 +45,7 @@ export default function Index() {
   // ÉTATS POUR LES GAMMES ET DIMENSIONS
   const [blogPageIndex, setBlogPageIndex] = useState(0);
   const [reviewsPageIndex, setReviewsPageIndex] = useState(0);
+  const [expandedReviews, setExpandedReviews] = useState<number[]>([]);
   const [gammes, setGammes] = useState<any[]>([]);
   const [dbDimensions, setDbDimensions] = useState<{ id: string, label: string, is_standard: boolean }[]>([]);
   const [categories, setCategories] = useState<{ id: string, label: string, image: string | null, description: string | null, color: string | null, text_color: string | null }[]>([]);
@@ -384,6 +385,15 @@ export default function Index() {
                 >
                   <Link
                     to={`/boutique?gamme=${encodeURIComponent(g.name)}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const matched = (products || []).filter(p => (p.gamme || '') === g.name);
+                      if (matched.length === 1 && matched[0].slug) {
+                        navigate(`/produit/${matched[0].slug}`);
+                      } else {
+                        navigate(`/boutique?gamme=${encodeURIComponent(g.name)}`);
+                      }
+                    }}
                     className="flex flex-col items-center gap-3 min-w-[120px] sm:min-w-[150px] snap-center group"
                   >
                     <div className="w-28 h-20 sm:w-36 sm:h-24 rounded-2xl border-2 border-primary/20 p-1 group-hover:border-primary transition-colors overflow-hidden shrink-0">
@@ -599,15 +609,15 @@ export default function Index() {
       </motion.section>
 
       {/* BEST SELLERS */}
-      <section className="bg-muted/50 py-20">
+      <section className="bg-muted/50 py-12 sm:py-20">
         <div className="max-w-7xl mx-auto px-4">
           <motion.div
             {...fadeInUp}
-            className="flex items-center justify-between mb-12"
+            className="flex items-center justify-between mb-8 sm:mb-12"
           >
             <div>
               <span className="text-xs font-bold text-primary uppercase tracking-widest">Populaires</span>
-              <h2 className="text-3xl md:text-4xl font-black mt-1">Best Sellers</h2>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mt-1">Best Sellers</h2>
             </div>
             <Link to="/boutique" className="flex items-center gap-1 text-sm font-bold text-primary hover:underline">
               Voir tout <ChevronRight className="w-4 h-4" />
@@ -621,7 +631,7 @@ export default function Index() {
               initial="initial"
               whileInView="whileInView"
               viewport={{ once: true }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+              className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-8"
             >
               {allProducts.map((p) => (
                 <motion.div key={p.id} variants={fadeInUp}>
@@ -632,7 +642,6 @@ export default function Index() {
           )}
         </div>
       </section>
-
       {/* PROMO BANNER CAROUSEL */}
       <motion.section
         {...fadeInUp}
@@ -733,7 +742,21 @@ export default function Index() {
                         <Star key={s} className={`w-4 h-4 ${s <= r.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}`} />
                       ))}
                     </div>
-                    <p className="text-base text-foreground/80 mb-6 italic flex-1 leading-relaxed line-clamp-4">"{r.message}"</p>
+                    <div className="flex-1">
+                      <p className={`text-base text-foreground/80 mb-4 italic leading-relaxed ${expandedReviews.includes(r.id) ? 'whitespace-pre-wrap' : 'line-clamp-4'}`}>"{r.message}"</p>
+                      {r.message.length > 180 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedReviews(prev => prev.includes(r.id) ? prev.filter(id => id !== r.id) : [...prev, r.id]);
+                          }}
+                          className="text-sm font-bold text-primary hover:underline"
+                        >
+                          {expandedReviews.includes(r.id) ? 'Voir moins' : 'Voir plus'}
+                        </button>
+                      )}
+                    </div>
                     <div className="flex items-center gap-3 pt-4 border-t border-border/50">
                       <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center text-lg font-black shadow-inner">{r.name?.[0] || 'U'}</div>
                       <div>

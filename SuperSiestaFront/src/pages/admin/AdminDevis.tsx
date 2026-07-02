@@ -18,6 +18,7 @@ interface QuoteSubItem {
   quantity: number;
   unit_price: number;
   total: number;
+  parameters?: string;
 }
 
 interface ProductGroup {
@@ -33,6 +34,7 @@ interface LineItem {
   unit_price: number;
   total: number;
   dimension?: string;
+  parameters?: Record<string, any>;
 }
 
 interface Quote {
@@ -65,7 +67,7 @@ export default function AdminDevis() {
   const [groups, setGroups] = useState<ProductGroup[]>([{ 
     product_slug: "", 
     description: "", 
-    items: [{ dimension: "", quantity: 1, unit_price: 0, total: 0 }]
+    items: [{ dimension: "", quantity: 1, unit_price: 0, total: 0, parameters: "" }]
   }]);
   const [taxRate, setTaxRate] = useState(0);
   const [form, setForm] = useState({ 
@@ -79,11 +81,16 @@ export default function AdminDevis() {
     discount_value: 0
   });
 
+  const [perPage, setPerPage] = useState<number>(25);
+  const [page, setPage] = useState<number>(1);
+  const [pagination, setPagination] = useState<any>(null);
+
   const load = async () => {
     setLoading(true);
     try {
-      const data = await api.get<Quote[]>("/quotes");
-      setQuotes(data || []);
+      const data = await api.get<any>(`/quotes?per_page=${perPage}&page=${page}&_raw=1`);
+      setQuotes((data && data.data) ? data.data : (data || []));
+      setPagination(data || null);
       const cl = await api.get<Client[]>("/clients");
       setClients(cl || []);
       
@@ -99,7 +106,7 @@ export default function AdminDevis() {
 
   useEffect(() => { 
     load(); 
-  }, []);
+  }, [page, perPage]);
 
   const fetchNextNumber = async () => {
     try {
@@ -128,7 +135,7 @@ export default function AdminDevis() {
       discount_type: "amount",
       discount_value: 0
     });
-    setGroups([{ product_slug: "", description: "", items: [{ dimension: "", quantity: 1, unit_price: 0, total: 0 }] }]);
+    setGroups([{ product_slug: "", description: "", items: [{ dimension: "", quantity: 1, unit_price: 0, total: 0, parameters: "" }] }]);
     setTaxRate(0);
     setEditing(null);
     fetchNextNumber();
@@ -152,7 +159,7 @@ export default function AdminDevis() {
     setGroups(prev => {
       const next = [...prev];
       const g = { ...next[groupIndex] };
-      g.items = [...g.items, { dimension: "", quantity: 1, unit_price: 0, total: 0 }];
+      g.items = [...g.items, { dimension: "", quantity: 1, unit_price: 0, total: 0, parameters: "" }];
       next[groupIndex] = g;
       return next;
     });
@@ -181,7 +188,8 @@ export default function AdminDevis() {
           dimension: product.sizes[0]?.label || "", 
           quantity: 1, 
           unit_price: product.sizes[0]?.price || 0,
-          total: product.sizes[0]?.price || 0
+          total: product.sizes[0]?.price || 0,
+          parameters: ""
         }]
       };
       next[index] = g;
@@ -209,7 +217,8 @@ export default function AdminDevis() {
         dimension: it.dimension,
         quantity: it.quantity,
         unit_price: it.unit_price,
-        total: it.total
+        total: it.total,
+        parameters: it.parameters ? { custom: it.parameters } : null
       }))
     ).filter(it => it.product_slug !== "");
 
@@ -304,16 +313,17 @@ export default function AdminDevis() {
             dimension: item.dimension || "", 
             quantity: item.quantity, 
             unit_price: Number(item.unit_price), 
-            total: Number(item.total) 
+            total: Number(item.total),
+            parameters: item.parameters?.custom || ""
           });
         });
         setGroups(grouped);
       } else {
-        setGroups([{ product_slug: "", description: "", items: [{ dimension: "", quantity: 1, unit_price: 0, total: 0 }] }]);
+        setGroups([{ product_slug: "", description: "", items: [{ dimension: "", quantity: 1, unit_price: 0, total: 0, parameters: "" }] }]);
       }
     } catch (err: any) {
       toast.error(err.message || "Erreur lors du chargement des articles du devis");
-      setGroups([{ product_slug: "", description: "", items: [{ dimension: "", quantity: 1, unit_price: 0, total: 0 }] }]);
+      setGroups([{ product_slug: "", description: "", items: [{ dimension: "", quantity: 1, unit_price: 0, total: 0, parameters: "" }] }]);
     }
     setOpen(true);
   };
@@ -372,7 +382,17 @@ export default function AdminDevis() {
     <AdminLayout>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Devis</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 rounded-2xl border border-border bg-background px-4 py-2 text-sm shadow-sm shadow-slate-900/5">
+            <span className="text-sm text-muted-foreground">Afficher</span>
+            <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }} className="bg-transparent text-sm font-semibold outline-none appearance-none pr-8">
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span className="text-sm text-muted-foreground">/ page</span>
+          </label>
+          <div className="text-sm text-muted-foreground">Page {pagination ? pagination.current_page : page} sur {pagination ? pagination.last_page : '-'}</div>
           <Button
             variant="outline"
             size="sm"
@@ -494,6 +514,7 @@ export default function AdminDevis() {
                               <TableHeader className="bg-muted/40">
                                 <TableRow className="h-8 border-b border-border hover:bg-transparent">
                                   <TableHead className="text-[10px] uppercase font-black h-8 text-primary/70">Dimension</TableHead>
+                                  <TableHead className="text-[10px] uppercase font-black h-8 text-primary/70">Paramètres</TableHead>
                                   <TableHead className="text-[10px] uppercase font-black w-32 h-8 text-center text-primary/70">Quantité</TableHead>
                                   <TableHead className="text-[10px] uppercase font-black w-44 h-8 text-right text-primary/70">Prix Unitaire (DT)</TableHead>
                                   <TableHead className="text-[10px] uppercase font-black w-44 h-8 text-right text-primary/70">Total Ligne</TableHead>
@@ -510,6 +531,14 @@ export default function AdminDevis() {
                                           {selectedProd?.sizes.map(s => <SelectItem key={s.label} value={s.label}>{s.label}</SelectItem>)}
                                         </SelectContent>
                                       </Select>
+                                    </TableCell>
+                                    <TableCell className="py-1">
+                                      <Input 
+                                        placeholder="Couleur, tissu..." 
+                                        value={sub.parameters || ""} 
+                                        onChange={(e) => updateDimension(gIdx, iIdx, "parameters", e.target.value)}
+                                        className="h-8 text-xs border-border/50 bg-background hover:border-primary/40 transition-all focus:ring-1 focus:ring-primary/50"
+                                      />
                                     </TableCell>
                                     <TableCell className="py-1">
                                       <div className="flex justify-center">
@@ -693,6 +722,26 @@ export default function AdminDevis() {
           </TableBody>
         </Table>
       </div>
+      {pagination && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 px-2 py-3 rounded-lg border border-border bg-background">
+          <div className="text-sm text-muted-foreground">Affichage {pagination.from} - {pagination.to} sur {pagination.total}</div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="rounded border border-border bg-background px-3 py-1 text-sm transition hover:bg-muted/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >Précédent</button>
+            <span className="text-sm text-muted-foreground">Page {pagination.current_page} / {pagination.last_page}</span>
+            <button
+              type="button"
+              disabled={page >= pagination.last_page}
+              onClick={() => setPage((p) => Math.min(pagination.last_page, p + 1))}
+              className="rounded border border-border bg-background px-3 py-1 text-sm transition hover:bg-muted/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >Suivant</button>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }

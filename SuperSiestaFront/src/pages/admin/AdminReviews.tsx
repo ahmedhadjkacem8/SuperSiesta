@@ -28,6 +28,7 @@ interface Review {
 export default function AdminReviews() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedMessages, setExpandedMessages] = useState<number[]>([]);
 
   const fetchReviews = async () => {
     try {
@@ -116,7 +117,18 @@ export default function AdminReviews() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <p className="text-xs italic text-foreground/80 line-clamp-3 max-w-[300px]">"{r.message}"</p>
+                  <div className="space-y-2">
+                    <p className={`text-xs italic text-foreground/80 max-w-[300px] ${expandedMessages.includes(r.id) ? 'whitespace-pre-wrap' : 'line-clamp-3'}`}>"{r.message}"</p>
+                    {r.message.length > 180 && (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedMessages(prev => prev.includes(r.id) ? prev.filter(id => id !== r.id) : [...prev, r.id])}
+                        className="text-[10px] font-bold text-primary hover:underline"
+                      >
+                        {expandedMessages.includes(r.id) ? 'Voir moins' : 'Voir plus'}
+                      </button>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-0.5">

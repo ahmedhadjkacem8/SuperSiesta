@@ -40,6 +40,7 @@ export interface OrderItem {
   unit_price: number;
   quantity: number;
   total: number;
+  parameters?: Record<string, any> | null;
 }
 
 interface UseOrdersOptions {
@@ -71,6 +72,8 @@ export function useOrders(options: UseOrdersOptions = {}) {
       if (finalOpts.page) params.append('page', finalOpts.page.toString());
       if (finalOpts.perPage) params.append('per_page', finalOpts.perPage.toString());
       if (finalOpts.status) params.append('status', finalOpts.status);
+      // allow requesting raw paginator metadata when needed
+      if ((finalOpts as any).raw) params.append('_raw', '1');
       params.append('t', Date.now().toString());
 
       // Déterminer l'endpoint à utiliser
