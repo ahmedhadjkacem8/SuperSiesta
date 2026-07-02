@@ -103,7 +103,7 @@ export default function ProductCard({ product, selectedDimension, selectedCatego
                   {!(isSpecificDimension && displaySize.price === 0) ? (
                     <span className="text-base sm:text-xl font-black text-primary whitespace-nowrap">
                       {!isSpecificDimension && (
-                        <span className="hidden sm:inline">à partir de </span>
+                        <span className="text-xs sm:inline">à partir de </span>
                       )}
                       {formatPrice(displaySize.price)}
                     </span>
