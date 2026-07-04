@@ -25,6 +25,10 @@ interface FormState {
   cta_link: string;
   image_file: File | null;
   image_preview: string;
+  mobile_image_file: File | null;
+  mobile_image_preview: string;
+  remove_image: boolean;
+  remove_mobile_image: boolean;
   active: boolean;
 }
 
@@ -40,6 +44,10 @@ export default function AdminHeroSlides() {
     cta_link: "",
     image_file: null,
     image_preview: "",
+    mobile_image_file: null,
+    mobile_image_preview: "",
+    remove_image: false,
+    remove_mobile_image: false,
     active: true,
   });
 
@@ -71,7 +79,11 @@ export default function AdminHeroSlides() {
       cta_text: s.cta_text || "",
       cta_link: s.cta_link || "",
       image_file: null,
-      image_preview: s.image_url || "",
+      image_preview: getImageUrl(s.image_url),
+      mobile_image_file: null,
+      mobile_image_preview: getImageUrl(s.mobile_image_url),
+      remove_image: false,
+      remove_mobile_image: false,
       active: s.active || false,
     };
     setForm(newForm);
@@ -86,6 +98,10 @@ export default function AdminHeroSlides() {
       cta_link: "",
       image_file: null,
       image_preview: "",
+      mobile_image_file: null,
+      mobile_image_preview: "",
+      remove_image: false,
+      remove_mobile_image: false,
       active: true,
     });
   };
@@ -98,6 +114,10 @@ export default function AdminHeroSlides() {
       cta_link: "",
       image_file: null,
       image_preview: "",
+      mobile_image_file: null,
+      mobile_image_preview: "",
+      remove_image: false,
+      remove_mobile_image: false,
       active: true,
     });
   };
@@ -105,7 +125,7 @@ export default function AdminHeroSlides() {
   const handleSave = async () => {
     if (!editSlide) return;
     
-    if (!form.image_file && !form.image_preview) {
+    if (!form.image_file && !form.image_preview && !form.remove_image) {
       toast.error("Une image est requise");
       return;
     }
@@ -118,6 +138,15 @@ export default function AdminHeroSlides() {
     
     if (form.image_file) {
       formData.append("image_url", form.image_file);
+    }
+    if (form.mobile_image_file) {
+      formData.append("mobile_image_url", form.mobile_image_file);
+    }
+    if (form.remove_image) {
+      formData.append("remove_image_url", "1");
+    }
+    if (form.remove_mobile_image) {
+      formData.append("remove_mobile_image_url", "1");
     }
     
     formData.append("active", form.active ? "1" : "0");
@@ -210,25 +239,25 @@ export default function AdminHeroSlides() {
           resetForm();
         }
       }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+        <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader className="px-1">
             <DialogTitle>{editSlide?.id === "new" ? "Nouvelle slide" : "Modifier la slide"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <div>
+          <div className="space-y-4 px-1 pb-1">
+            <div className="space-y-2">
               <label className="text-sm font-medium">Titre</label>
               <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
             </div>
-            <div>
+            <div className="space-y-2">
               <label className="text-sm font-medium">Sous-titre</label>
-              <Textarea value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} rows={3} />
+              <Textarea value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} rows={4} className="min-h-[96px]" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
                 <label className="text-sm font-medium">Texte CTA</label>
                 <Input value={form.cta_text} onChange={(e) => setForm({ ...form, cta_text: e.target.value })} placeholder="Voir nos produits" />
               </div>
-              <div>
+              <div className="space-y-2">
                 <label className="text-sm font-medium">Lien CTA</label>
                 <Select value={form.cta_link} onValueChange={(v) => setForm({ ...form, cta_link: v })}>
                   <SelectTrigger className="w-full">
@@ -279,19 +308,29 @@ export default function AdminHeroSlides() {
                 </Select>
               </div>
             </div>
-            <div>
+            <div className="grid gap-3">
               <ImageUpload
                 value={form.image_file}
-                onChange={(file) => setForm({ ...form, image_file: file })}
+                onChange={(file) => setForm({ ...form, image_file: file, remove_image: false })}
+                onRemove={() => setForm({ ...form, image_preview: "", remove_image: true, image_file: null })}
                 folder="banners"
-                label="Image du héros"
+                label="Image du héros (desktop)"
                 placeholder="Glissez ou cliquez pour uploader l'image"
                 preview={form.image_preview}
               />
+              <ImageUpload
+                value={form.mobile_image_file}
+                onChange={(file) => setForm({ ...form, mobile_image_file: file, remove_mobile_image: false })}
+                onRemove={() => setForm({ ...form, mobile_image_preview: "", remove_mobile_image: true, mobile_image_file: null })}
+                folder="banners"
+                label="Image du héros (mobile)"
+                placeholder="Glissez ou cliquez pour uploader l'image mobile"
+                preview={form.mobile_image_preview}
+              />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
+              <label className="text-sm">Activer cette slide</label>
               <Switch checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} />
-              <label className="text-sm">Active</label>
             </div>
             <Button onClick={handleSave} className="w-full"><Save className="w-4 h-4 mr-1" /> Sauvegarder</Button>
           </div>

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 interface ImageUploadProps {
   value: File | null;
   onChange: (file: File | null) => void;
+  onRemove?: () => void;
   folder?: string;
   label?: string;
   placeholder?: string;
@@ -16,6 +17,7 @@ interface ImageUploadProps {
 export default function ImageUpload({
   value,
   onChange,
+  onRemove,
   folder = "",
   label = "Image",
   placeholder = "Cliquez pour uploader une image",
@@ -39,6 +41,7 @@ export default function ImageUpload({
 
   const handleClear = () => {
     onChange(null);
+    onRemove?.();
     setPreviewError(false);
   };
 

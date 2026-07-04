@@ -8,6 +8,7 @@ export interface HeroSlide {
   cta_text: string | null;
   cta_link: string | null;
   image_url: string;
+  mobile_image_url?: string | null;
   sort_order: number;
   active: boolean;
 }

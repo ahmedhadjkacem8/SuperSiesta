@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Star, Shield, Truck, Clock, CreditCard,
-  ChevronRight, Loader2, ArrowRight, ChevronDown, Send
+  ChevronRight, Loader2, ArrowRight, ChevronDown, Send,
+  ChevronLeft
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -55,8 +56,8 @@ export default function Index() {
   const { subscribe, isSubscribing } = useNewsletters();
   const { socials } = useSocialNetworks();
 
-  const { data: blogPosts = [] } = useBlogPosts({ per_page: 3 });
-  const { data: favoritePosts = [] } = useBlogPosts({ is_favorite: true, per_page: 5 });
+  const { data: blogPosts = [] } = useBlogPosts();
+  const { data: favoritePosts = [] } = useBlogPosts({ is_favorite: true });
 
   const [promoIndex, setPromoIndex] = useState(0);
 
@@ -254,6 +255,32 @@ export default function Index() {
     }
   };
 
+const [carouselIndex, setCarouselIndex] = useState(0);
+const [isPaused, setIsPaused] = useState(false);
+
+useEffect(() => {
+  const handleResize = () => setWindowWidth(window.innerWidth);
+  window.addEventListener('resize', handleResize);
+  return () => window.removeEventListener('resize', handleResize);
+}, []);
+
+useEffect(() => {
+  setCarouselIndex(0);
+}, [windowWidth < 640, windowWidth < 1024]);
+
+// Défilement automatique, un item à la fois
+useEffect(() => {
+  if (gammes.length <= 1 || isPaused) return;
+
+  const timer = setInterval(() => {
+    setCarouselIndex((prev) => (prev + 1) % gammes.length);
+  }, 3500);
+
+  return () => clearInterval(timer);
+}, [gammes.length, isPaused]);
+
+
+
 
   return (
     <main className="overflow-hidden">
@@ -275,145 +302,281 @@ export default function Index() {
         </div>
       </motion.section>
 
-      {/* FLOAT CARD FAVORITES OVER HERO */}
-      {favoritePosts.length > 0 && (
-        <div className="relative z-20 max-w-9xl mx-auto px-2 -mt-32 md:-mt-[29rem] mb-26 pointer-events-none">
-          <div className="flex justify-center md:justify-end pr-0 md:pr-10">
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.8 }}
-              className="w-full max-w-[450px] bg-background/80 backdrop-blur-2xl border border-white/20 rounded-[3rem] p-8 md:p-10 shadow-[0_25px_80px_-15px_rgba(0,0,0,0.2)] pointer-events-auto"
-            >
-              <div className="flex items-center justify-between mb-8">
-                <div className="space-y-1">
-                  <h3 className="font-black text-2xl tracking-tighter uppercase leading-none">
-                    Nos <span className="text-primary italic">conseils</span>
-                  </h3>
-                </div>
-              </div>
+{/* FLOAT CARD FAVORITES OVER HERO */}
+{favoritePosts.length > 0 && (() => {
+  const itemsPerView = Math.min(windowWidth < 640 ? 1 : 3, favoritePosts.length);
 
-              <div className="min-h-[320px]">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={blogPageIndex}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.4 }}
-                    className="space-y-6"
+  // Fenêtre glissante circulaire (comme le carrousel des gammes)
+  const currentPosts = Array.from({ length: itemsPerView }, (_, i) =>
+    favoritePosts[(blogPageIndex + i) % favoritePosts.length]
+  );
+
+  const isActiveThumb = (idx: number) => {
+    for (let i = 0; i < itemsPerView; i++) {
+      if ((blogPageIndex + i) % favoritePosts.length === idx) return true;
+    }
+    return false;
+  };
+
+  return (
+    <div className="relative z-20 max-w-9xl mx-auto px-2 -mt-48 md:-mt-[29rem] mb-26 pointer-events-none">      <div className="flex justify-center md:justify-end pr-0 md:pr-10">
+      <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+            className="w-full max-w-[400px] bg-background border border-border rounded-2xl p-5 shadow-[0_25px_80px_-15px_rgba(0,0,0,0.2)] pointer-events-auto"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-black text-xs uppercase tracking-wider text-muted-foreground">
+                Nos conseils
+              </h3>
+              <span className="text-[10px] font-bold text-muted-foreground/50 tabular-nums">
+                {Math.floor(blogPageIndex / itemsPerView) + 1}/{Math.ceil(favoritePosts.length / itemsPerView)}
+              </span>
+            </div>
+            {/* Articles actifs (fenêtre de 1 sur mobile, 3 sur desktop) */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={blogPageIndex}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="divide-y divide-border/60 mb-4"
+              >
+                {currentPosts.map((post) => (
+                  <Link
+                    key={post.id}
+                    to={`/blog/${post.slug}`}
+                    className="group flex gap-3 items-center py-2.5 first:pt-0 last:pb-0"
                   >
-                    {favoritePosts.slice(blogPageIndex * blogItemsPerPage, (blogPageIndex + 1) * blogItemsPerPage).map((post, i) => (
-                      <motion.div
-                        key={post.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                      >
-                        <Link
-                          to={`/blog/${post.slug}`}
-                          className="group flex gap-5 items-start transition-all"
-                        >
-                          <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-border shadow-sm">
-                            {post.image_url ? (
-                              <img src={getImageUrl(post.image_url)} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-muted/50 text-muted-foreground/30 font-black">★</div>
-                            )}
-                          </div>
-                          <div className="flex-1 py-1">
-                            <div className="flex items-center gap-2 mb-1.5">
-                              <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${post.category === 'conseil' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
-                                }`}>
-                                {post.category || 'Article'}
-                              </span>
-                            </div>
-                            <h4 className="font-bold text-sm leading-[1.3] group-hover:text-primary transition-colors line-clamp-2 tracking-tight">{post.title}</h4>
-                          </div>
-                        </Link>
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                </AnimatePresence>
+                    <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-muted/50">
+                      {post.image_url ? (
+                        <img
+                          src={getImageUrl(post.image_url)}
+                          alt={post.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground/30 font-black text-sm">★</div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <span className={`inline-block text-[8px] font-black uppercase px-1.5 py-0.5 rounded mb-1 ${post.category === 'conseil' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                        }`}>
+                        {post.category || 'Article'}
+                      </span>
+                      <h4 className="font-bold text-xs leading-snug group-hover:text-primary transition-colors line-clamp-2 tracking-tight">
+                        {post.title}
+                      </h4>
+                    </div>
+
+                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+                  </Link>
+                ))}
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Bande de miniatures = TOUS les articles */}
+            {favoritePosts.length > itemsPerView && (
+              <div className="flex flex-nowrap items-center justify-center gap-2 overflow-x-auto pb-1 mb-4 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                {favoritePosts.map((post, idx) => (
+                  <button
+                    key={post.id}
+                    type="button"
+                    onClick={() => setBlogPageIndex(idx)}
+                    className={`relative flex-1 min-w-[2.5rem] max-w-[3rem] aspect-square shrink-0 rounded-lg overflow-hidden border transition-all ${
+                      isActiveThumb(idx)
+                        ? "border-primary ring-2 ring-primary/20 ring-offset-1 ring-offset-background shadow-sm"
+                        : "border-border/70 opacity-55 hover:opacity-85"
+                    }`}
+                    aria-label={post.title}
+                  >
+                    {post.image_url ? (
+                      <img src={getImageUrl(post.image_url)} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center text-[10px] font-black text-muted-foreground/50">
+                        ★
+                      </div>
+                    )}
+                  </button>
+                ))}
               </div>
+            )}
 
-              {favoritePosts.length > blogItemsPerPage && (
-                <div className="flex justify-center gap-2">
-                  {Array.from({ length: Math.ceil(favoritePosts.length / blogItemsPerPage) }).map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setBlogPageIndex(idx)}
-                      className={`h-2 rounded-full transition-all ${blogPageIndex === idx ? "w-8 bg-primary" : "w-2 bg-primary/20 hover:bg-primary/40"
-                        }`}
-                    />
-                  ))}
-                </div>
-              )}
-
-              <div className="mt-2 pt-2">
-                <Link
-                  to="/blog"
-                  className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 transition-all"
-                >
-                  Découvrir les articles <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      )}
-
-      {/* GAMMES CARRE CAROUSEL */}
-      {gammes.length > 0 && (
-        <motion.section
-          {...fadeInUp}
-          className="py-8 bg-background border-b border-border"
-        >
-          <div className="max-w-7xl mx-auto px-4">
-            <motion.div
-              variants={staggerContainer}
-              initial="initial"
-              whileInView="whileInView"
-              viewport={{ once: true }}
-              className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 snap-x custom-scrollbar"
+            {/* CTA */}
+            <Link
+              to="/blog"
+              className="w-full py-2.5 rounded-xl bg-primary/10 text-primary font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-primary hover:text-primary-foreground transition-all"
             >
-              {gammes.map((g) => (
+              Tous les articles <ArrowRight className="w-3 h-3" />
+            </Link>
+          </motion.div>
+        </div>
+      </div>
+    );
+})()}
+
+{/* GAMMES EDITORIAL CAROUSEL */}
+{gammes.length > 0 && (() => {
+  const itemsPerPage = windowWidth < 640 ? 2 : windowWidth < 1024 ? 3 : 5;
+  const canScroll = gammes.length > itemsPerPage;
+
+  // Fenêtre glissante circulaire : avance d'1 item à la fois
+  const visibleGammes = Array.from({ length: Math.min(itemsPerPage, gammes.length) }, (_, i) =>
+    gammes[(carouselIndex + i) % gammes.length]
+  );
+
+  const goToIndex = (idx: number) => {
+    setIsPaused(true);
+    setCarouselIndex(((idx % gammes.length) + gammes.length) % gammes.length);
+  };
+
+  const handleDragEnd = (_: any, info: { offset: { x: number }; velocity: { x: number } }) => {
+    const swipeThreshold = 50;
+    const { offset, velocity } = info;
+
+    if (offset.x < -swipeThreshold || velocity.x < -500) {
+      goToIndex(carouselIndex + 1);
+    } else if (offset.x > swipeThreshold || velocity.x > 500) {
+      goToIndex(carouselIndex - 1);
+    } else {
+      setIsPaused(false);
+    }
+  };
+
+return (
+  <motion.section
+    {...fadeInUp}
+    className="mt-10 py-10 sm:mt-32 sm:py-12 bg-background border-b border-border"
+  >
+    <div className="max-w-7xl mx-auto px-4">
+      {/* Carrousel */}
+      <div
+        className="relative overflow-hidden"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        <AnimatePresence mode="popLayout">
+          <motion.div
+            key={carouselIndex}
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.15}
+            onDragStart={() => setIsPaused(true)}
+            onDragEnd={handleDragEnd}
+            className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6 lg:grid-cols-5 cursor-grab active:cursor-grabbing touch-pan-y"
+          >
+            {visibleGammes.map((g, i) => {
+              const handleNavigate = () => {
+                const matched = (products || []).filter(p => (p.gamme || '') === g.name);
+                if (matched.length === 1 && matched[0].slug) {
+                  navigate(`/produit/${matched[0].slug}`);
+                } else {
+                  navigate(`/boutique?gamme=${encodeURIComponent(g.name)}`);
+                }
+              };
+
+              return (
                 <motion.div
                   key={g.id}
-                  variants={fadeInUp}
-                  whileHover={{ y: -5 }}
+                  whileHover={{ y: -4 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="w-full h-full flex flex-col select-none group"
                 >
-                  <Link
-                    to={`/boutique?gamme=${encodeURIComponent(g.name)}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const matched = (products || []).filter(p => (p.gamme || '') === g.name);
-                      if (matched.length === 1 && matched[0].slug) {
-                        navigate(`/produit/${matched[0].slug}`);
-                      } else {
-                        navigate(`/boutique?gamme=${encodeURIComponent(g.name)}`);
-                      }
-                    }}
-                    className="flex flex-col items-center gap-3 min-w-[120px] sm:min-w-[150px] snap-center group"
-                  >
-                    <div className="w-28 h-20 sm:w-36 sm:h-24 rounded-2xl border-2 border-primary/20 p-1 group-hover:border-primary transition-colors overflow-hidden shrink-0">
+                  <button type="button" onClick={handleNavigate} className="w-full text-left">
+                    <div className="w-full aspect-square relative overflow-hidden rounded-lg border border-border/70">
                       {g.cover_image ? (
-                        <img src={getImageUrl(g.cover_image)} alt={g.name} className="w-full h-full object-cover rounded-xl group-hover:scale-110 transition-transform duration-500" />
+                        <img
+                          src={getImageUrl(g.cover_image)}
+                          alt={g.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
+                          draggable={false}
+                        />
                       ) : (
-                        <div className="w-full h-full bg-muted rounded-xl flex items-center justify-center">
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
                           <span className="text-[10px] text-muted-foreground text-center">Sans image</span>
                         </div>
                       )}
                     </div>
-                    <span className="text-sm font-bold text-center group-hover:text-primary transition-colors">{g.name}</span>
-                  </Link>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </motion.section>
-      )}
+                  </button>
 
+                  <div className="pt-3 sm:pt-4 flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <span className="block w-6 h-[2px] bg-primary mb-1.5 sm:mb-2" />
+                      <button
+                        type="button"
+                        onClick={handleNavigate}
+                        className="text-xs sm:text-sm font-bold text-left leading-tight line-clamp-2 group-hover:text-primary transition-colors"
+                      >
+                        {g.name}
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleNavigate}
+                      aria-label={`Découvrir ${g.name}`}
+                      className="shrink-0 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full border border-border text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Flèches + Dots (PC et mobile) */}
+      {canScroll && (
+        <div className="flex items-center justify-center gap-4 mt-6 sm:mt-8">
+          <button
+            type="button"
+            onClick={() => goToIndex(carouselIndex - 1)}
+            className="w-9 h-9 flex items-center justify-center rounded-full border border-border bg-card hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all flex-shrink-0"
+            aria-label="Gamme précédente"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          <div className="flex gap-2 flex-wrap justify-center max-w-full">
+            {gammes.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => goToIndex(idx)}
+                className={`h-2.5 rounded-full transition-all flex-shrink-0 ${
+                  carouselIndex === idx
+                    ? 'w-10 bg-primary shadow-[0_0_15px_rgba(59,130,246,0.4)]'
+                    : 'w-2.5 bg-primary/20 hover:bg-primary/40'
+                }`}
+                aria-label={`Aller à la gamme ${idx + 1}`}
+              />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => goToIndex(carouselIndex + 1)}
+            className="w-9 h-9 flex items-center justify-center rounded-full border border-border bg-card hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all flex-shrink-0"
+            aria-label="Gamme suivante"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+    </div>
+  </motion.section>
+);
+})()}
       {/* TRUST BADGES */}
       <motion.section
         variants={staggerContainer}

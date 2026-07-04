@@ -22,13 +22,14 @@ class HeroSlideController extends BaseController
         $this->authorize('create', HeroSlide::class);
 
         $validated = $request->validate([
-            'title'      => 'nullable|string|max:255',
-            'subtitle'   => 'nullable|string',
-            'cta_text'   => 'nullable|string|max:100',
-            'cta_link'   => 'nullable|string',
-            'image_url'  => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:204800',
-            'sort_order' => 'integer',
-            'active'     => 'boolean',
+            'title'            => 'nullable|string|max:255',
+            'subtitle'         => 'nullable|string',
+            'cta_text'         => 'nullable|string|max:100',
+            'cta_link'         => 'nullable|string',
+            'image_url'        => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:204800',
+            'mobile_image_url' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:204800',
+            'sort_order'       => 'integer',
+            'active'           => 'boolean',
         ]);
 
         // Convert empty strings to null for nullable fields
@@ -40,6 +41,13 @@ class HeroSlideController extends BaseController
 
         $slide = new HeroSlide($validated);
         $slide->image_url = $slide->saveUploadedImage($request->file('image_url'));
+
+        if ($request->hasFile('mobile_image_url')) {
+            $slide->mobile_image_url = $slide->saveUploadedImage(
+                $request->file('mobile_image_url')
+            );
+        }
+
         $slide->save();
         $slide->refresh(); // Ensure we return fresh data
 
@@ -51,13 +59,16 @@ class HeroSlideController extends BaseController
         $this->authorize('update', $slide);
 
         $validated = $request->validate([
-            'title'      => 'nullable|string|max:255',
-            'subtitle'   => 'nullable|string',
-            'cta_text'   => 'nullable|string|max:100',
-            'cta_link'   => 'nullable|string',
-            'image_url'  => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:204800',
-            'sort_order' => 'integer',
-            'active'     => 'boolean',
+            'title'                    => 'nullable|string|max:255',
+            'subtitle'                 => 'nullable|string',
+            'cta_text'                 => 'nullable|string|max:100',
+            'cta_link'                 => 'nullable|string',
+            'image_url'                => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:204800',
+            'mobile_image_url'         => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:204800',
+            'remove_image_url'         => 'nullable|boolean',
+            'remove_mobile_image_url'  => 'nullable|boolean',
+            'sort_order'               => 'integer',
+            'active'                   => 'boolean',
         ]);
 
         // Handle image upload if present
@@ -66,6 +77,23 @@ class HeroSlideController extends BaseController
                 $request->file('image_url'),
                 $slide->image_url
             );
+        }
+
+        if ($request->boolean('remove_image_url')) {
+            $slide->deleteLocalImage($slide->image_url);
+            $validated['image_url'] = null;
+        }
+
+        if ($request->hasFile('mobile_image_url')) {
+            $validated['mobile_image_url'] = $slide->saveUploadedImage(
+                $request->file('mobile_image_url'),
+                $slide->mobile_image_url
+            );
+        }
+
+        if ($request->boolean('remove_mobile_image_url')) {
+            $slide->deleteLocalImage($slide->mobile_image_url);
+            $validated['mobile_image_url'] = null;
         }
 
         // Convert empty strings to null for nullable fields

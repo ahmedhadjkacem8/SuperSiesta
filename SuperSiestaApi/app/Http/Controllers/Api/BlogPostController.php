@@ -24,9 +24,15 @@ class BlogPostController extends BaseController
             $query->where('is_favorite', $request->is_favorite);
         }
 
+        $perPage = $request->get('per_page');
         $posts = $query->orderBy('sort_order', 'asc')
-                       ->orderBy('published_at', 'desc')
-                       ->paginate($request->get('per_page', 10));
+                       ->orderBy('published_at', 'desc');
+
+        if ($perPage !== null) {
+            $posts = $posts->paginate((int) $perPage);
+        } else {
+            $posts = $posts->get();
+        }
 
         return $this->sendResponse($posts, 'Blog posts retrieved successfully');
     }

@@ -19,6 +19,7 @@ class HeroSlide extends Model
         'cta_text',
         'cta_link',
         'image_url',
+        'mobile_image_url',
         'sort_order',
         'active',
     ];
@@ -30,7 +31,7 @@ class HeroSlide extends Model
     protected static function booted(): void
     {
         static::deleting(function (HeroSlide $slide) {
-            $slide->deleteAllImages(['image_url']);
+            $slide->deleteAllImages(['image_url', 'mobile_image_url']);
         });
     }
 

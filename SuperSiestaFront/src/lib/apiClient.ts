@@ -9,7 +9,7 @@
  * - Request/Response logging in development
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
 const isDevelopment = import.meta.env.DEV
 
 interface ApiResponse<T> {
@@ -140,16 +140,17 @@ class SecureApiService {
   async get<T>(endpoint: string): Promise<T> {
     this.logRequest('GET', endpoint)
     
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      method: 'GET',
-      headers: {
-        ...this.getHeaders(),
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-      },
-    })
+    try {
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'GET',
+        headers: {
+          ...this.getHeaders(),
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+      })
 
-    const result = await this.handleResponse<T>(response)
+      const result = await this.handleResponse<T>(response)
     let output = result.data || (result as any)
 
     // If caller requested raw paginator (useful for admin pagination), return full output including meta
@@ -163,47 +164,62 @@ class SecureApiService {
       return output.data as T
     }
 
-    return output
+      return output
+    } catch (error) {
+      throw new Error('Impossible de joindre l’API. Vérifiez que le backend est démarré et que l’URL est correcte.')
+    }
   }
 
   async post<T>(endpoint: string, body: any): Promise<T> {
     this.logRequest('POST', endpoint, body)
     
-    const isFormData = body instanceof FormData
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      method: 'POST',
-      headers: this.getHeaders({}, isFormData),
-      body: isFormData ? body : JSON.stringify(body),
-    })
+    try {
+      const isFormData = body instanceof FormData
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: this.getHeaders({}, isFormData),
+        body: isFormData ? body : JSON.stringify(body),
+      })
 
-    const result = await this.handleResponse<T>(response)
-    return result.data || (result as any)
+      const result = await this.handleResponse<T>(response)
+      return result.data || (result as any)
+    } catch (error) {
+      throw new Error('Impossible de joindre l’API. Vérifiez que le backend est démarré et que l’URL est correcte.')
+    }
   }
 
   async put<T>(endpoint: string, body: any): Promise<T> {
     this.logRequest('PUT', endpoint, body)
     
-    const isFormData = body instanceof FormData
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      method: 'PUT',
-      headers: this.getHeaders({}, isFormData),
-      body: isFormData ? body : JSON.stringify(body),
-    })
+    try {
+      const isFormData = body instanceof FormData
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'PUT',
+        headers: this.getHeaders({}, isFormData),
+        body: isFormData ? body : JSON.stringify(body),
+      })
 
-    const result = await this.handleResponse<T>(response)
-    return result.data || (result as any)
+      const result = await this.handleResponse<T>(response)
+      return result.data || (result as any)
+    } catch (error) {
+      throw new Error('Impossible de joindre l’API. Vérifiez que le backend est démarré et que l’URL est correcte.')
+    }
   }
 
   async delete<T>(endpoint: string): Promise<T> {
     this.logRequest('DELETE', endpoint)
     
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      method: 'DELETE',
-      headers: this.getHeaders(),
-    })
+    try {
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+      })
 
-    const result = await this.handleResponse<T>(response)
-    return result.data || (result as any)
+      const result = await this.handleResponse<T>(response)
+      return result.data || (result as any)
+    } catch (error) {
+      throw new Error('Impossible de joindre l’API. Vérifiez que le backend est démarré et que l’URL est correcte.')
+    }
   }
 
   /**
