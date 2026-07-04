@@ -291,7 +291,7 @@ useEffect(() => {
         transition={{ duration: 1 }}
         className="relative overflow-hidden"
       >
-        <div className="relative min-h-[500px] md:min-h-[700px] bg-muted/20">
+        <div className="relative min-h-[400px] md:min-h-[600px] bg-muted/20">
           {slidesLoading ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -450,7 +450,7 @@ useEffect(() => {
 return (
   <motion.section
     {...fadeInUp}
-    className="mt-10 py-10 sm:mt-32 sm:py-12 bg-background border-b border-border"
+    className="py-4 sm:py-4 bg-background border-b border-border"
   >
     <div className="max-w-7xl mx-auto px-4">
       {/* Carrousel */}
