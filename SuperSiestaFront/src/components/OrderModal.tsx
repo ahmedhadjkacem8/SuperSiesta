@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { X, Check, Loader2, ArrowLeft, ArrowRight } from "lucide-react";
 import { Product } from "@/hooks/useProducts";
 import { api } from "@/lib/apiClient";
@@ -54,6 +55,7 @@ interface OrderModalProps {
 }
 
 export default function OrderModal({ product, open, onOpenChange, sizeGroup }: OrderModalProps) {
+  const navigate = useNavigate();
   const [dimensions, setDimensions] = useState<any[]>([]);
 
   useEffect(() => {
@@ -196,13 +198,34 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
           </div>
 
           {success ? (
-            <div className="px-6 pb-6 pt-4 text-center">
-              <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Check className="w-10 h-10" />
+            <div className="px-6 pb-8 pt-4 text-center">
+              <div className="w-20 h-20 bg-accent rounded-full flex items-center justify-center mx-auto mb-5">
+                <Check className="w-10 h-10 text-primary" />
               </div>
-              <h3 className="text-2xl font-black mb-3">Commande envoyée !</h3>
-              <p className="text-sm text-muted-foreground mb-6">Merci, votre demande a bien été reçue. Nous revenons vers vous au plus vite.</p>
-              <button onClick={() => onOpenChange(false)} className="w-full bg-primary text-primary-foreground py-3 rounded-2xl font-bold hover:bg-primary/90 transition-colors">Continuer mes achats</button>
+              <h3 className="text-2xl font-black mb-3">Commande confirmée !</h3>
+              <p className="text-sm text-muted-foreground mb-2">
+                Merci <strong>{form.full_name}</strong> pour votre commande !
+              </p>
+              <p className="text-sm text-muted-foreground mb-5">
+                Notre équipe vous contactera au <strong>{form.telephone}</strong> pour confirmer la livraison.
+              </p>
+              <div className="bg-accent rounded-2xl p-3 mb-6 text-sm text-accent-foreground font-medium">
+                ✅ Paiement à la livraison — Livraison gratuite
+              </div>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => { onOpenChange(false); navigate("/boutique"); }}
+                  className="w-full bg-primary text-primary-foreground py-3 rounded-2xl font-bold hover:bg-primary/90 transition-colors"
+                >
+                  Continuer mes achats
+                </button>
+                <button
+                  onClick={() => { onOpenChange(false); navigate("/"); }}
+                  className="w-full border border-border py-3 rounded-2xl font-bold text-sm hover:bg-muted transition-colors"
+                >
+                  Retour à l'accueil
+                </button>
+              </div>
             </div>
           ) : (
             <div className="px-6 pb-6 space-y-5">

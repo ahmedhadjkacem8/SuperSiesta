@@ -887,9 +887,9 @@ return (
       {/* PROMO BANNER CAROUSEL */}
       <motion.section
         {...fadeInUp}
-        className="max-w-7xl mx-auto px-4 py-16"
+        className="max-w-7xl mx-auto px-4 py-10 md:py-16"
       >
-        <div className="relative overflow-hidden rounded-[2rem] bg-secondary text-secondary-foreground shadow-2xl shadow-secondary/20 min-h-[400px]">
+        <div className="relative overflow-hidden rounded-[1.5rem] md:rounded-[2rem] bg-secondary text-secondary-foreground shadow-2xl shadow-secondary/20">
           <AnimatePresence mode="wait">
             <motion.div
               key={promoIndex}
@@ -897,42 +897,68 @@ return (
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.5 }}
-              className="absolute inset-0 p-10 md:p-16 flex flex-col md:flex-row items-center gap-10"
+              className="relative flex flex-col lg:flex-row items-center gap-6 p-6 sm:p-10 lg:p-16 pb-14 sm:pb-16 lg:pb-16"
             >
-              <div className="absolute right-0 top-0 w-80 h-full opacity-10 pointer-events-none">
+              {/* Background watermark image */}
+              <div className="absolute right-0 top-0 w-1/2 h-full opacity-10 pointer-events-none">
                 <img src={getImageUrl(promoCardsList[promoIndex]?.image)} alt="" className="w-full h-full object-cover" />
               </div>
-              <div className="relative z-10 flex-1">
+
+              {/* Text content */}
+              <div className="relative z-10 flex-1 w-full">
                 <motion.span
                   initial={{ x: -20, opacity: 0 }}
                   whileInView={{ x: 0, opacity: 1 }}
-                  className="bg-primary text-primary-foreground text-[10px] sm:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-widest"
+                  className="inline-block bg-primary text-primary-foreground text-[10px] sm:text-xs font-black px-3 sm:px-4 py-1 sm:py-1.5 rounded-full uppercase tracking-widest"
                 >
                   {promoCardsList[promoIndex]?.badge || "OFFRE"}
                 </motion.span>
-                <h2 className="text-4xl md:text-5xl font-black mt-5 mb-4 leading-tight">{promoCardsList[promoIndex]?.title}</h2>
-                <p className="text-secondary-foreground/80 mb-8 text-lg max-w-lg">{promoCardsList[promoIndex]?.description}</p>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black mt-4 mb-3 leading-tight">
+                  {promoCardsList[promoIndex]?.title}
+                </h2>
+                <p className="text-secondary-foreground/80 mb-6 text-sm sm:text-base lg:text-lg max-w-lg leading-relaxed">
+                  {promoCardsList[promoIndex]?.description}
+                </p>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => navigate(promoCardsList[promoIndex]?.link_url || "/boutique")}
-                  className="bg-primary text-primary-foreground font-black px-10 py-5 rounded-2xl hover:opacity-90 transition-all shadow-xl shadow-primary/20 flex items-center gap-2 w-fit"
+                  className="bg-primary text-primary-foreground font-black px-6 sm:px-8 lg:px-10 py-3 sm:py-4 lg:py-5 rounded-xl sm:rounded-2xl hover:opacity-90 transition-all shadow-xl shadow-primary/20 flex items-center gap-2 text-sm sm:text-base w-fit"
                 >
-                  {promoCardsList[promoIndex]?.link_text || "Profiter de l'offre"} <ArrowRight className="w-5 h-5" />
+                  {promoCardsList[promoIndex]?.link_text || "Profiter de l'offre"} <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
                 </motion.button>
               </div>
+
+              {/* Side image — visible from lg */}
               <motion.div
                 initial={{ scale: 0.8, opacity: 0, rotate: 5 }}
                 whileInView={{ scale: 1, opacity: 1, rotate: 0 }}
-                className="relative z-10 hidden lg:block"
+                className="relative z-10 hidden lg:block flex-shrink-0"
               >
-                <img src={getImageUrl(promoCardsList[promoIndex]?.image)} alt={promoCardsList[promoIndex]?.title} className="w-80 h-60 object-cover rounded-3xl shadow-2xl border-4 border-white/20" />
+                <img
+                  src={getImageUrl(promoCardsList[promoIndex]?.image)}
+                  alt={promoCardsList[promoIndex]?.title}
+                  className="w-72 xl:w-80 h-52 xl:h-60 object-cover rounded-3xl shadow-2xl border-4 border-white/20"
+                />
+              </motion.div>
+
+              {/* Mobile image square */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                className="relative z-10 block lg:hidden w-full aspect-square max-h-64"
+              >
+                <img
+                  src={getImageUrl(promoCardsList[promoIndex]?.image)}
+                  alt={promoCardsList[promoIndex]?.title}
+                  className="w-full h-full object-cover rounded-2xl shadow-lg border-2 border-white/10"
+                />
               </motion.div>
             </motion.div>
           </AnimatePresence>
 
           {promoCardsList.length > 1 && (
-            <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2 z-20">
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20">
               {promoCardsList.map((_, idx) => (
                 <button
                   key={idx}
@@ -1098,7 +1124,7 @@ return (
               required
               value={newsletterEmail}
               onChange={(e) => setNewsletterEmail(e.target.value)}
-              placeholder="votre-email@exemple.com"
+              placeholder="votre-email@gmail.com"
               className="flex-1 bg-white border-2 border-transparent rounded-2xl px-6 py-4 text-lg shadow-inner focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all"
             />
             <motion.button
