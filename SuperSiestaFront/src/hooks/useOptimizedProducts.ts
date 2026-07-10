@@ -149,7 +149,7 @@ export const useOptimizedProducts = (initialFilters?: ProductFilters, options?: 
   }, [pagination, currentFilters, fetchProducts])
 
   // Client-side filtering using cachedProducts (immediate, no API call)
-  const filterClientSide = useCallback((filters: ProductFilters, dataset?: Product[]) => {
+  const filterClientSide = useCallback((filters: any, dataset?: Product[]) => {
     const source = dataset && dataset.length > 0 ? dataset : cachedProducts
     if (!source || source.length === 0) {
       setProducts([])
@@ -159,18 +159,34 @@ export const useOptimizedProducts = (initialFilters?: ProductFilters, options?: 
     const norm = (v: any) => (v === undefined || v === null) ? '' : String(v).toLowerCase().trim()
 
     const filtered = source.filter((p) => {
-      if (filters.categorie && filters.categorie !== 'Tous') {
-        if (norm(p.categorie) !== norm(filters.categorie)) return false
+      if (filters.categorie) {
+        const cats = Array.isArray(filters.categorie) ? filters.categorie : [filters.categorie];
+        const activeCats = cats.filter(c => c !== 'Tous');
+        if (activeCats.length > 0) {
+          if (!activeCats.map(norm).includes(norm(p.categorie))) return false;
+        }
       }
-      if (filters.fermete && filters.fermete !== 'Tous') {
-        if (norm(p.fermete) !== norm(filters.fermete)) return false
+      if (filters.fermete) {
+        const ferms = Array.isArray(filters.fermete) ? filters.fermete : [filters.fermete];
+        const activeFerms = ferms.filter(f => f !== 'Tous');
+        if (activeFerms.length > 0) {
+          if (!activeFerms.map(norm).includes(norm(p.fermete))) return false;
+        }
       }
-      if (filters.gamme && filters.gamme !== 'Tous') {
-        if (norm(p.gamme) !== norm(filters.gamme)) return false
+      if (filters.gamme) {
+        const gms = Array.isArray(filters.gamme) ? filters.gamme : [filters.gamme];
+        const activeGms = gms.filter(g => g !== 'Tous');
+        if (activeGms.length > 0) {
+          if (!activeGms.map(norm).includes(norm(p.gamme))) return false;
+        }
       }
-      if (filters.dimension && filters.dimension !== 'Tous') {
-        const hasSize = p.sizes && p.sizes.some(s => norm(s.label) === norm(filters.dimension))
-        if (!hasSize) return false
+      if (filters.dimension) {
+        const dims = Array.isArray(filters.dimension) ? filters.dimension : [filters.dimension];
+        const activeDims = dims.filter(d => d !== 'Tous');
+        if (activeDims.length > 0) {
+          const hasSize = p.sizes && p.sizes.some(s => activeDims.map(norm).includes(norm(s.label)));
+          if (!hasSize) return false;
+        }
       }
       return true
     })

@@ -4,7 +4,7 @@ import { useOptimizedProducts } from "@/hooks/useOptimizedProducts";
 import { useGammes } from "@/hooks/useGammes";
 import ProductCard from "@/components/ProductCard";
 import LoadMore from "@/components/LoadMore";
-import { SlidersHorizontal, Loader2 } from "lucide-react";
+import { SlidersHorizontal, Loader2, ChevronDown, Check } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
 import { api } from "@/lib/apiClient";
@@ -20,7 +20,7 @@ export default function Boutique() {
 
   const { products, loading, hasMore, loadMore, search, filterClientSide } = useOptimizedProducts(initialFilters as any, { preloadAll: true, maxPerPage: 10000 });
   const { data: gammesData } = useGammes();
-  const gammes = ["Tous", ...(gammesData || []).map((g) => g.name)];
+  const gammesList = ["Tous", ...(gammesData || []).map((g) => g.name)];
 
   const [dbCategories, setDbCategories] = useState<string[]>([]);
   const [dbFermetes, setDbFermetes] = useState<string[]>([]);
@@ -48,30 +48,62 @@ export default function Boutique() {
   const FERMETES = ["Tous", ...dbFermetes];
   const DIMENSIONS = ["Tous", ...dbDimensions];
 
-  const [categorie, setCategorie] = useState(searchParams.get("categorie") || "Tous");
-  const [fermete, setFermete] = useState(searchParams.get("fermete") || "Tous");
-  const [gamme, setGamme] = useState(searchParams.get("gamme") || "Tous");
-  const [dimension, setDimension] = useState(searchParams.get("dimension") || "Tous");
+  const getArrayParam = (name: string): string[] => {
+    const val = searchParams.get(name);
+    if (!val || val === "Tous") return ["Tous"];
+    return val.split(",");
+  };
+
+  const [categories, setCategories] = useState<string[]>(getArrayParam("categorie"));
+  const [fermetes, setFermetes] = useState<string[]>(getArrayParam("fermete"));
+  const [gammes, setGammes] = useState<string[]>(getArrayParam("gamme"));
+  const [dimensions, setDimensions] = useState<string[]>(getArrayParam("dimension"));
   const [priceMax, setPriceMax] = useState(3000);
   const [showFilters, setShowFilters] = useState(false);
   const [dimSearch, setDimSearch] = useState("");
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setActiveDropdown(null);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const toggleFilter = (list: string[], setList: (v: string[]) => void, item: string) => {
+    if (item === "Tous") {
+      setList(["Tous"]);
+      return;
+    }
+    const next = list.filter((x) => x !== "Tous");
+    if (next.includes(item)) {
+      const filtered = next.filter((x) => x !== item);
+      setList(filtered.length === 0 ? ["Tous"] : filtered);
+    } else {
+      setList([...next, item]);
+    }
+  };
 
   // Send filter changes to server (debounced) but apply client-side immediately
   const filterTimer = useRef<number | null>(null);
   const handleFilterChange = async () => {
     const filters: any = {};
 
-    if (categorie !== "Tous") filters.categorie = categorie;
-    if (fermete !== "Tous") filters.fermete = fermete;
-    if (gamme !== "Tous") filters.gamme = gamme;
-    if (dimension !== "Tous") filters.dimension = dimension;
+    if (categories.length > 0 && !categories.includes("Tous")) filters.categorie = categories;
+    if (fermetes.length > 0 && !fermetes.includes("Tous")) filters.fermete = fermetes;
+    if (gammes.length > 0 && !gammes.includes("Tous")) filters.gamme = gammes;
+    if (dimensions.length > 0 && !dimensions.includes("Tous")) filters.dimension = dimensions;
 
     // Update URL params to reflect active filters
     const sp = new URLSearchParams();
-    if (filters.categorie) sp.set('categorie', String(filters.categorie));
-    if (filters.fermete) sp.set('fermete', String(filters.fermete));
-    if (filters.gamme) sp.set('gamme', String(filters.gamme));
-    if (filters.dimension) sp.set('dimension', String(filters.dimension));
+    if (filters.categorie) sp.set('categorie', categories.join(','));
+    if (filters.fermete) sp.set('fermete', fermetes.join(','));
+    if (filters.gamme) sp.set('gamme', gammes.join(','));
+    if (filters.dimension) sp.set('dimension', dimensions.join(','));
     setSearchParams(sp, { replace: true });
 
     // Immediate client-side filtering for snappy UI
@@ -99,7 +131,7 @@ export default function Boutique() {
       return;
     }
     handleFilterChange();
-  }, [categorie, fermete, gamme, dimension]);
+  }, [categories, fermetes, gammes, dimensions]);
 
   if (loading && products.length === 0) {
     return (
@@ -131,22 +163,33 @@ export default function Boutique() {
         </p>
       </div>
 
-      <div className="flex gap-6">
-        <aside className="hidden lg:block w-56 flex-shrink-0">
+      <div className="flex gap-6">        <aside className="hidden lg:block w-56 flex-shrink-0">
           <div className="bg-card border border-border rounded-2xl p-5 sticky top-24 space-y-6">
             <div>
               <h3 className="text-sm font-bold mb-3">Catégorie</h3>
               <div className="space-y-2">
                 {CATEGORIES.map((c) => (
-                  <FilterButton key={c} active={categorie === c} onClick={() => setCategorie(c)}>{c}</FilterButton>
+                  <FilterButton
+                    key={c}
+                    active={categories.includes(c)}
+                    onClick={() => toggleFilter(categories, setCategories, c)}
+                  >
+                    {c}
+                  </FilterButton>
                 ))}
               </div>
             </div>
             <div>
               <h3 className="text-sm font-bold mb-3">Gamme</h3>
               <div className="space-y-2">
-                {gammes.map((g) => (
-                  <FilterButton key={g} active={gamme === g} onClick={() => setGamme(g)}>{g}</FilterButton>
+                {gammesList.map((g) => (
+                  <FilterButton
+                    key={g}
+                    active={gammes.includes(g)}
+                    onClick={() => toggleFilter(gammes, setGammes, g)}
+                  >
+                    {g}
+                  </FilterButton>
                 ))}
               </div>
             </div>
@@ -154,16 +197,22 @@ export default function Boutique() {
               <h3 className="text-sm font-bold mb-3">Fermeté</h3>
               <div className="space-y-2">
                 {FERMETES.map((f) => (
-                  <FilterButton key={f} active={fermete === f} onClick={() => setFermete(f)}>{f}</FilterButton>
+                  <FilterButton
+                    key={f}
+                    active={fermetes.includes(f)}
+                    onClick={() => toggleFilter(fermetes, setFermetes, f)}
+                  >
+                    {f}
+                  </FilterButton>
                 ))}
               </div>
             </div>
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-bold">Dimensions</h3>
-                {dimension !== "Tous" && (
+                {!dimensions.includes("Tous") && (
                   <button 
-                    onClick={() => setDimension("Tous")}
+                    onClick={() => setDimensions(["Tous"])}
                     className="text-[10px] text-primary font-black uppercase tracking-widest hover:underline"
                   >
                     Effacer
@@ -185,9 +234,9 @@ export default function Boutique() {
                 {DIMENSIONS.filter(d => d === "Tous" || d.toLowerCase().includes(dimSearch.toLowerCase())).map((d) => (
                   <button
                     key={d}
-                    onClick={() => setDimension(d)}
+                    onClick={() => toggleFilter(dimensions, setDimensions, d)}
                     className={`text-[10px] py-2 px-2 rounded-lg border transition-all truncate font-bold uppercase tracking-tighter ${
-                      dimension === d 
+                      dimensions.includes(d) 
                         ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[0.98]" 
                         : "bg-background border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
                     }`}
@@ -206,56 +255,175 @@ export default function Boutique() {
         </aside>
 
         <div className="flex-1">
-          <button className="lg:hidden flex items-center gap-2 mb-4 bg-muted px-4 py-2 rounded-xl text-sm font-medium" onClick={() => setShowFilters(!showFilters)}>
-            <SlidersHorizontal className="w-4 h-4" /> Filtres
-          </button>
+          {/* Mobile Horizontal Filters Dropdowns Container */}
+          <div ref={dropdownRef} className="lg:hidden flex flex-wrap gap-2 mb-6 relative z-40">
+            {/* Category Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setActiveDropdown(activeDropdown === "category" ? null : "category")}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap transition-all ${
+                  !categories.includes("Tous")
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-foreground border-border hover:bg-muted"
+                }`}
+              >
+                Catégorie {!categories.includes("Tous") && `(${categories.length})`}
+                <ChevronDown className="w-3 h-3 transition-transform duration-200" style={{ transform: activeDropdown === "category" ? "rotate(180deg)" : "rotate(0deg)" }} />
+              </button>
 
-          {showFilters && (
-            <div className="lg:hidden bg-card border border-border rounded-2xl p-4 mb-4 grid grid-cols-2 gap-4">
-              <div>
-                <h3 className="text-xs font-bold mb-2">Catégorie</h3>
-                <div className="flex flex-wrap gap-1">
-                  {CATEGORIES.map((c) => (
-                    <button key={c} onClick={() => setCategorie(c)} className={`text-xs px-2.5 py-1 rounded-full capitalize transition-colors ${categorie === c ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{c}</button>
-                  ))}
+              {activeDropdown === "category" && (
+                <div className="absolute left-0 mt-2 bg-card border border-border shadow-xl rounded-2xl p-4 min-w-[200px] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="space-y-1 max-h-60 overflow-y-auto">
+                    {CATEGORIES.map((c) => {
+                      const active = categories.includes(c);
+                      return (
+                        <button
+                          key={c}
+                          onClick={() => toggleFilter(categories, setCategories, c)}
+                          className={`w-full text-left text-xs px-3 py-2 rounded-xl flex items-center justify-between font-semibold capitalize ${
+                            active ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
+                          }`}
+                        >
+                          <span>{c}</span>
+                          {active && <Check className="w-3.5 h-3.5 text-primary" />}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <h3 className="text-xs font-bold mb-2">Fermeté</h3>
-                <div className="flex flex-wrap gap-1">
-                  {FERMETES.map((f) => (
-                    <button key={f} onClick={() => setFermete(f)} className={`text-xs px-2.5 py-1 rounded-full capitalize transition-colors ${fermete === f ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{f}</button>
-                  ))}
-                </div>
-              </div>
-              <div className="col-span-2">
-                <div className="flex items-center justify-between mb-2">
-                   <h3 className="text-xs font-bold">Dimensions</h3>
-                   {dimension !== "Tous" && (
-                     <button onClick={() => setDimension("Tous")} className="text-[10px] text-primary font-black uppercase">Effacer</button>
-                   )}
-                </div>
-                <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-1 bg-muted/30 rounded-xl">
-                  {DIMENSIONS.map((d) => (
-                    <button 
-                      key={d} 
-                      onClick={() => setDimension(d)} 
-                      className={`text-[10px] px-3 py-1.5 rounded-lg font-bold uppercase transition-all ${
-                        dimension === d ? "bg-primary text-primary-foreground shadow-lg" : "bg-card border border-border"
-                      }`}
-                    >
-                      {d}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
-          )}
+
+            {/* Gamme Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setActiveDropdown(activeDropdown === "gamme" ? null : "gamme")}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap transition-all ${
+                  !gammes.includes("Tous")
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-foreground border-border hover:bg-muted"
+                }`}
+              >
+                Gamme {!gammes.includes("Tous") && `(${gammes.length})`}
+                <ChevronDown className="w-3 h-3 transition-transform duration-200" style={{ transform: activeDropdown === "gamme" ? "rotate(180deg)" : "rotate(0deg)" }} />
+              </button>
+
+              {activeDropdown === "gamme" && (
+                <div className="absolute left-0 mt-2 bg-card border border-border shadow-xl rounded-2xl p-4 min-w-[200px] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="space-y-1 max-h-60 overflow-y-auto">
+                    {gammesList.map((g) => {
+                      const active = gammes.includes(g);
+                      return (
+                        <button
+                          key={g}
+                          onClick={() => toggleFilter(gammes, setGammes, g)}
+                          className={`w-full text-left text-xs px-3 py-2 rounded-xl flex items-center justify-between font-semibold capitalize ${
+                            active ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
+                          }`}
+                        >
+                          <span>{g}</span>
+                          {active && <Check className="w-3.5 h-3.5 text-primary" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Fermeté Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setActiveDropdown(activeDropdown === "fermete" ? null : "fermete")}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap transition-all ${
+                  !fermetes.includes("Tous")
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-foreground border-border hover:bg-muted"
+                }`}
+              >
+                Fermeté {!fermetes.includes("Tous") && `(${fermetes.length})`}
+                <ChevronDown className="w-3 h-3 transition-transform duration-200" style={{ transform: activeDropdown === "fermete" ? "rotate(180deg)" : "rotate(0deg)" }} />
+              </button>
+
+              {activeDropdown === "fermete" && (
+                <div className="absolute left-0 mt-2 bg-card border border-border shadow-xl rounded-2xl p-4 min-w-[200px] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="space-y-1 max-h-60 overflow-y-auto">
+                    {FERMETES.map((f) => {
+                      const active = fermetes.includes(f);
+                      return (
+                        <button
+                          key={f}
+                          onClick={() => toggleFilter(fermetes, setFermetes, f)}
+                          className={`w-full text-left text-xs px-3 py-2 rounded-xl flex items-center justify-between font-semibold capitalize ${
+                            active ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
+                          }`}
+                        >
+                          <span>{f}</span>
+                          {active && <Check className="w-3.5 h-3.5 text-primary" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Dimensions Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setActiveDropdown(activeDropdown === "dimension" ? null : "dimension")}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap transition-all ${
+                  !dimensions.includes("Tous")
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-foreground border-border hover:bg-muted"
+                }`}
+              >
+                Dimensions {!dimensions.includes("Tous") && `(${dimensions.length})`}
+                <ChevronDown className="w-3 h-3 transition-transform duration-200" style={{ transform: activeDropdown === "dimension" ? "rotate(180deg)" : "rotate(0deg)" }} />
+              </button>
+
+              {activeDropdown === "dimension" && (
+                <div className="absolute right-0 mt-2 bg-card border border-border shadow-xl rounded-2xl p-4 min-w-[280px] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Dimensions</span>
+                    {!dimensions.includes("Tous") && (
+                      <button onClick={() => setDimensions(["Tous"])} className="text-[9px] text-primary font-black uppercase">Effacer</button>
+                    )}
+                  </div>
+                  <input 
+                    type="text"
+                    placeholder="Rechercher..."
+                    value={dimSearch}
+                    onChange={(e) => setDimSearch(e.target.value)}
+                    className="w-full bg-muted/50 border-none rounded-xl py-1.5 px-3 text-xs mb-2.5 focus:ring-1 focus:ring-primary outline-none transition-all"
+                  />
+                  <div className="grid grid-cols-3 gap-1.5 max-h-40 overflow-y-auto p-1 bg-muted/10 border border-border/40 rounded-xl custom-scrollbar">
+                    {DIMENSIONS.filter(d => d === "Tous" || d.toLowerCase().includes(dimSearch.toLowerCase())).map((d) => {
+                      const active = dimensions.includes(d);
+                      return (
+                        <button 
+                          key={d} 
+                          onClick={() => toggleFilter(dimensions, setDimensions, d)} 
+                          className={`text-[10px] py-1.5 px-1.5 rounded-lg font-black uppercase transition-all border ${
+                            active 
+                              ? "bg-primary text-primary-foreground border-primary shadow-sm" 
+                              : "bg-card border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {d}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
           {products.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">
               <p className="text-lg font-medium">Aucun produit ne correspond à vos filtres.</p>
-              <button onClick={() => { setCategorie("Tous"); setFermete("Tous"); setGamme("Tous"); setDimension("Tous"); }} className="mt-4 text-primary hover:underline text-sm">Réinitialiser les filtres</button>
+              <button onClick={() => { setCategories(["Tous"]); setFermetes(["Tous"]); setGammes(["Tous"]); setDimensions(["Tous"]); }} className="mt-4 text-primary hover:underline text-sm">Réinitialiser les filtres</button>
             </div>
           ) : (
             <>
@@ -274,10 +442,10 @@ export default function Boutique() {
                       <ProductCard 
                   key={p.id} 
                   product={p} 
-                  selectedDimension={dimension} 
-                  selectedCategorie={categorie}
-                  selectedGamme={gamme}
-                  selectedFermete={fermete}
+                  selectedDimension={dimensions[0]} 
+                  selectedCategorie={categories[0]}
+                  selectedGamme={gammes[0]}
+                  selectedFermete={fermetes[0]}
                 />
                     ));
                   })()

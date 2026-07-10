@@ -11,10 +11,11 @@ class Dimension extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = ['label', 'is_standard', 'sort_order'];
+    protected $fillable = ['label', 'is_standard', 'nb_places', 'sort_order'];
 
     protected $casts = [
         'is_standard' => 'boolean',
+        'nb_places' => 'decimal:1',
         'sort_order' => 'integer',
     ];
 

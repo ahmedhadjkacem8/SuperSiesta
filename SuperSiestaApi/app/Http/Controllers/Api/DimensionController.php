@@ -28,6 +28,7 @@ class DimensionController extends BaseController
         $validated = $request->validate([
             'label' => 'required|string|unique:dimensions|max:100',
             'is_standard' => 'boolean',
+            'nb_places' => 'nullable|numeric|min:1|max:2',
             'free_gift_ids' => 'nullable|array',
             'free_gift_ids.*' => 'exists:free_gifts,id',
         ]);
@@ -90,6 +91,7 @@ class DimensionController extends BaseController
         $validated = $request->validate([
             'label' => 'required|string|unique:dimensions,label,' . $dimension->id . '|max:100',
             'is_standard' => 'boolean',
+            'nb_places' => 'nullable|numeric|min:1|max:2',
             'free_gift_ids' => 'nullable|array',
             'free_gift_ids.*' => 'exists:free_gifts,id',
         ]);

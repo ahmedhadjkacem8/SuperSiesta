@@ -57,6 +57,10 @@ export default function Commander() {
   const { items, total, clearCart } = useCart();
   const { user } = useAuth();
 
+  const surCommandeCount = items
+    .filter((item) => item.size.price <= 0)
+    .reduce((sum, item) => sum + item.quantity, 0);
+
   const savedForm = loadFormFromStorage();
 
   const [form, setForm] = useState({ 
@@ -505,7 +509,9 @@ export default function Commander() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold truncate">{item.product.name}</p>
                     <p className="text-xs text-muted-foreground mb-1">Dimensions: {item.size.label}</p>
-                    <p className="text-sm font-black text-primary">{formatPrice(item.size.price * item.quantity)}</p>
+                    <p className="text-sm font-black text-primary">
+                      {item.size.price > 0 ? formatPrice(item.size.price * item.quantity) : "Sur commande"}
+                    </p>
                     
                     {(() => {
                       const currentDim = dimensions.find(d => d.label === item.size.label);
@@ -543,9 +549,29 @@ export default function Commander() {
                 <span className="text-muted-foreground">Livraison standard</span>
                 <span className="text-emerald-600 font-bold">Gratuite</span>
               </div>
-              <div className="flex justify-between text-xl font-black border-t border-dashed border-border pt-3">
+              <div className="flex justify-between items-start text-xl font-black border-t border-dashed border-border pt-3">
                 <span>Total TTC</span>
-                <span className="text-primary">{formatPrice(total)}</span>
+                {surCommandeCount > 0 ? (
+                  <div className="flex flex-col items-end gap-1">
+                    {total > 0 ? (
+                      <>
+                        <span className="text-primary">{formatPrice(total)}</span>
+                        <span className="bg-amber-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-sm mt-0.5">
+                          + {surCommandeCount} sur commande
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-amber-600">Sur commande</span>
+                        <span className="bg-amber-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-sm mt-0.5">
+                          × {surCommandeCount}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-primary">{formatPrice(total)}</span>
+                )}
               </div>
             </div>
 

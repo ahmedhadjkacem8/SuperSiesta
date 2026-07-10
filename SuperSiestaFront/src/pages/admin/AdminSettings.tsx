@@ -17,7 +17,7 @@ import LucideIcon from "@/components/common/LucideIcon";
 import { Share2, Store, Star } from "lucide-react";
 import { getImageUrl } from "@/utils/imageUtils";
 import { useGammes } from "@/hooks/useGammes";
-import { useBlogPosts } from "@/hooks/useBlog";
+import { useBlogPosts } from "@/hooks/useBlog"; 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
@@ -25,6 +25,7 @@ interface Dimension {
   id: string;
   label: string;
   is_standard: boolean;
+  nb_places?: number | null;
   free_gifts?: FreeGift[];
 }
 
@@ -68,6 +69,36 @@ interface Product {
   slug: string;
 }
 
+const normalizeNbPlacesValue = (value: number | string | null | undefined): string => {
+  if (value === null || value === undefined || value === "") return "";
+
+  const normalized = typeof value === "string" ? value.replace(",", ".").trim() : String(value);
+  const parsed = Number(normalized);
+
+  if (Number.isNaN(parsed)) return "";
+  if (parsed === 1) return "1";
+  if (parsed === 2) return "2";
+  if (parsed === 1.5) return "1.5";
+
+  return normalized;
+};
+
+const formatNbPlacesLabel = (value: number | string | null | undefined) => {
+  const normalized = normalizeNbPlacesValue(value);
+  if (!normalized) return null;
+
+  switch (normalized) {
+    case "1":
+      return "1 place";
+    case "2":
+      return "2 places";
+    case "1.5":
+      return "1.5 place";
+    default:
+      return `${normalized} place${Number(normalized) > 1 ? "s" : ""}`;
+  }
+};
+
 export default function AdminSettings() {
   const [dimensions, setDimensions] = useState<Dimension[]>([]);
   const [dimCurrentPage, setDimCurrentPage] = useState(1);
@@ -77,6 +108,7 @@ export default function AdminSettings() {
   const [width, setWidth] = useState("");
   const [length, setLength] = useState("");
   const [isStandard, setIsStandard] = useState(false);
+  const [nbPlaces, setNbPlaces] = useState("");
   const [selectedGiftIds, setSelectedGiftIds] = useState<string[]>([]);
 
   const [categories, setCategories] = useState<Categorie[]>([]);
@@ -261,6 +293,7 @@ export default function AdminSettings() {
         await api.put(`/dimensions/${editing.id}`, { 
           label: finalLabel, 
           is_standard: isStandard,
+          nb_places: nbPlaces ? Number(nbPlaces) : null,
           free_gift_ids: selectedGiftIds
         });
         toast.success("Dimension mise à jour");
@@ -268,6 +301,7 @@ export default function AdminSettings() {
         await api.post("/dimensions", { 
           label: finalLabel, 
           is_standard: isStandard,
+          nb_places: nbPlaces ? Number(nbPlaces) : null,
           free_gift_ids: selectedGiftIds
         });
         toast.success("Dimension ajoutée");
@@ -276,6 +310,7 @@ export default function AdminSettings() {
       setWidth("");
       setLength("");
       setIsStandard(false);
+      setNbPlaces("");
       setEditing(null);
       load();
     } catch (err: any) {
@@ -531,8 +566,8 @@ export default function AdminSettings() {
       fd.append("file", promoForm.image_file);
       fd.append("folder", "promo");
       try {
-        const res = await api.post("/upload", fd);
-        imageUrl = res.path;
+        const res = await api.post<{ path?: string; url?: string }>("/upload", fd);
+        imageUrl = res?.path || res?.url || imageUrl;
       } catch {
         return toast.error("Erreur lors de l'upload de l'image");
       }
@@ -646,7 +681,7 @@ export default function AdminSettings() {
                   </div>
                   <Dialog open={open} onOpenChange={(v) => {
                     setOpen(v);
-                    if (!v) { setEditing(null); setWidth(""); setLength(""); setIsStandard(false); }
+                    if (!v) { setEditing(null); setWidth(""); setLength(""); setIsStandard(false); setNbPlaces(""); }
                   }}>
                     <DialogTrigger asChild>
                       <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Ajouter une dimension</Button>
@@ -673,6 +708,19 @@ export default function AdminSettings() {
                               className="text-center"
                             />
                           </div>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Catégorie de places</label>
+                          <Select value={nbPlaces} onValueChange={setNbPlaces}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner une catégorie" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">1 place</SelectItem>
+                              <SelectItem value="2">2 places</SelectItem>
+                              <SelectItem value="1.5">1.5 place</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="flex items-center gap-3">
                           <Switch
@@ -751,11 +799,18 @@ export default function AdminSettings() {
                               {d.label}
                             </TableCell>
                             <TableCell>
-                              {d.is_standard ? (
-                                <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-bold">Standard</span>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">Secondaire</span>
-                              )}
+                              <div className="flex flex-wrap gap-2">
+                                {d.is_standard ? (
+                                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-bold">Standard</span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Secondaire</span>
+                                )}
+                                {d.nb_places != null ? (
+                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-bold">
+                                    {formatNbPlacesLabel(d.nb_places)}
+                                  </span>
+                                ) : null}
+                              </div>
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-1 items-center">
@@ -768,6 +823,7 @@ export default function AdminSettings() {
                                     setWidth(w || "");
                                     setLength(l || "");
                                     setIsStandard(d.is_standard);
+                                    setNbPlaces(normalizeNbPlacesValue(d.nb_places));
                                     setSelectedGiftIds(d.free_gifts?.map(g => g.id.toString()) || []);
                                     setOpen(true);
                                   }}

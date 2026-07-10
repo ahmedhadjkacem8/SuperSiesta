@@ -20,7 +20,47 @@ import { getImageUrl } from "@/utils/imageUtils";
 import { api } from '@/lib/apiClient'
 import { useSettings } from "@/hooks/useSettings";
 import LucideIcon from "@/components/common/LucideIcon";
+import OrderModal, { OrderSizeGroup } from "@/components/OrderModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+const normalizeDimensionLabel = (label: string | undefined | null) => {
+  if (!label) return "";
+  return label.toString().replace(/\s*[x×]\s*/gi, "×").trim();
+};
+
+const normalizeBooleanValue = (value: unknown): boolean => {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["1", "true", "yes", "y", "on"].includes(normalized)) return true;
+    if (["0", "false", "no", "n", "off", "null", "undefined", ""].includes(normalized)) return false;
+  }
+  return Boolean(value);
+};
+
+const normalizeNbPlacesValue = (value: string | null | undefined) => {
+  if (!value) return null;
+
+  const normalized = value.replace(",", ".").trim();
+  const parsed = Number(normalized);
+
+  if (Number.isNaN(parsed)) return null;
+  if (parsed === 1) return "1";
+  if (parsed === 2) return "2";
+  if (parsed === 1.5) return "1.5";
+
+  return normalized;
+};
+
+const getVisibleSizes = (sizes: any[], dimensions: any[], selectedNbPlaces: string | null) => {
+  if (!selectedNbPlaces) return sizes;
+
+  return sizes.filter((size: any) => {
+    const matchingDimension = dimensions.find((dimension: any) => normalizeDimensionLabel(dimension.label) === normalizeDimensionLabel(size.label));
+    return matchingDimension && normalizeNbPlacesValue(String(matchingDimension.nb_places)) === selectedNbPlaces;
+  });
+};
 
 export default function ProduitDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -48,6 +88,7 @@ export default function ProduitDetail() {
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
   const [dimensions, setDimensions] = useState<any[]>([])
   const [submittingReview, setSubmittingReview] = useState(false)
+  const [selectedNbPlaces, setSelectedNbPlaces] = useState<string | null>(null)
 
   const TUNIS_CITIES = [
     "Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan", "Bizerte", "Béja", "Jendouba", "Le Kef", 
@@ -55,24 +96,53 @@ export default function ProduitDetail() {
     "Tozeur", "Kebili", "Gabès", "Médenine", "Tataouine"
   ];
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
+  const [orderModalGroup, setOrderModalGroup] = useState<OrderSizeGroup | null>(null);
+
+  const getGroupFromNbPlaces = (value: string | null): OrderSizeGroup | null => {
+    if (value === "1") return "1 Place";
+    if (value === "1.5") return "1 Place et Demi";
+    if (value === "2") return "2 Places";
+    return null;
+  };
+
+  const getGroupFromDimension = (label: string | null): OrderSizeGroup | null => {
+    if (!label) return null;
+    if (["90×190", "100×190"].includes(label)) return "1 Place";
+    if (["120×190", "140×190"].includes(label)) return "1 Place et Demi";
+    if (["140×190", "160×190", "160×200", "180×200"].includes(label)) return "2 Places";
+    return null;
+  };
+
+  useEffect(() => {
+    const nbPlacesParam = normalizeNbPlacesValue(searchParams.get("nbPlaces"));
+    setSelectedNbPlaces(nbPlacesParam);
+  }, [searchParams]);
 
   // Set default size when product loads
   useEffect(() => {
-    if (product && product.sizes.length > 0 && !selectedSize) {
-      const dim = searchParams.get("dimension") || (typeof window !== 'undefined' ? sessionStorage.getItem("selectedDimension") : null);
-      if (dim) {
-        const found = product.sizes.find((s: any) => s.label === dim);
-        if (found) {
-          setSelectedSize(found);
-          return;
-        }
+    if (!product || product.sizes.length === 0) return;
+
+    const visibleSizes = getVisibleSizes(product.sizes, dimensions, selectedNbPlaces);
+    const candidateSizes = visibleSizes.length > 0 ? visibleSizes : product.sizes;
+    const dim = searchParams.get("dimension") || (typeof window !== 'undefined' ? sessionStorage.getItem("selectedDimension") : null);
+
+    if (dim) {
+      const found = candidateSizes.find((s: any) => s.label === dim);
+      if (found) {
+        setSelectedSize(found);
+        return;
       }
-      // Prefer first non-zero price size, otherwise fallback to first size
-      const firstNonZero = product.sizes.find((s: any) => s.price > 0);
-      setSelectedSize(firstNonZero || product.sizes[0]);
     }
-  }, [product, selectedSize, searchParams]);
+
+    if (selectedSize && candidateSizes.some((s: any) => s.label === selectedSize.label)) {
+      return;
+    }
+
+    const firstNonZero = candidateSizes.find((s: any) => s.price > 0);
+    setSelectedSize(firstNonZero || candidateSizes[0]);
+  }, [product, selectedSize, searchParams, dimensions, selectedNbPlaces]);
 
   // Update form when user changes
   useEffect(() => {
@@ -205,6 +275,20 @@ export default function ProduitDetail() {
     setTimeout(() => setAdded(false), 2000);
   };
 
+  const visibleSizes = getVisibleSizes(product?.sizes || [], dimensions, selectedNbPlaces);
+
+  const handlePlacesSelection = (value: string | null) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+
+    if (value) {
+      nextParams.set("nbPlaces", value);
+    } else {
+      nextParams.delete("nbPlaces");
+    }
+
+    setSearchParams(nextParams, { replace: true });
+  };
+
   return (
     <main className="max-w-7xl mx-auto px-4 py-10">
       <button onClick={() => {
@@ -274,34 +358,111 @@ export default function ProduitDetail() {
           <p className="text-muted-foreground leading-relaxed">{product.description}</p>
 
           <div>
-            <h3 className="text-sm font-bold mb-3">Choisir la taille</h3>
-            <div className="flex flex-wrap gap-2">
-              {product.sizes.map((size) => {
-                const isSurCommande = size.price === 0;
-                const isSelected = selectedSize.label === size.label;
-                const baseClass = `relative px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all`;
-                const selectedClass = "border-primary bg-primary text-primary-foreground";
-                const normalClass = "border-border hover:border-primary";
-                const surCommandeClass = "border-amber-300 bg-amber-50 text-amber-800";
-                const selectedSurCommandeClass =
-                  "border-amber-500 bg-amber-100 text-amber-900";
+            {searchParams.get("nbPlaces") ? (
+              // Accès via URL avec nbPlaces → badge verrouillé (lecture seule)
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-sm font-bold text-muted-foreground">Catégorie :</span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold bg-primary text-primary-foreground">
+                  {selectedNbPlaces === "1" ? "1 place" : selectedNbPlaces === "1.5" ? "1.5 place" : selectedNbPlaces === "2" ? "2 places" : selectedNbPlaces}
+                </span>
+              </div>
+            ) : (
+              // Accès libre → sélecteur toujours visible
+              <>
+                <h3 className="text-sm font-bold mb-3">Choisir la catégorie de places</h3>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {[
+                    { value: null, label: "Tous", title: "Afficher toutes les dimensions" },
+                    { value: "1", label: "1 place", title: "Choisir la taille - 1 place" },
+                    { value: "1.5", label: "1.5 place", title: "Choisir la taille - 1 place et demi" },
+                    { value: "2", label: "2 places", title: "Choisir la taille - 2 places" },
+                  ].map((option) => (
+                    <button
+                      key={option.value ?? "tous"}
+                      onClick={() => setSelectedNbPlaces(option.value)}
+                      className={`px-3 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${
+                        selectedNbPlaces === option.value
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border hover:border-primary"
+                      }`}
+                      title={option.title}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
 
-                let cls = normalClass;
-                if (isSelected && isSurCommande) {
-                  cls = selectedSurCommandeClass;
-                } else if (isSelected) {
-                  cls = selectedClass;
-                } else if (isSurCommande) {
-                  cls = surCommandeClass;
-                }
-                return (
-                  <button key={size.label} onClick={() => setSelectedSize(size)} className={`${baseClass} ${cls}`}>
-                    {size.label}
-                    <span className="block text-xs mt-1 opacity-75">{formatPrice(size.price)}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <h3 className="text-sm font-bold mb-3">Choisir la taille</h3>
+            {selectedNbPlaces && visibleSizes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aucune dimension n'est disponible pour cette catégorie.</p>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {(selectedNbPlaces ? visibleSizes : product.sizes).map((size) => {
+                  const isSelected = selectedSize?.label === size.label;
+                  const normLabel = normalizeDimensionLabel(size.label);
+                  const dimMeta = dimensions.find((d: any) => normalizeDimensionLabel(d.label) === normLabel);
+                  const isStandard = dimMeta ? normalizeBooleanValue(dimMeta.is_standard) : true;
+                  const isSurCommande = size.price === 0;
+
+                  const baseClass = "relative min-w-[105px] px-4 py-4 rounded-2xl text-center border-2 transition-all font-bold text-sm overflow-hidden group";
+                  
+                  let btnClass = "";
+                  if (isSelected) {
+                    if (isSurCommande) {
+                      btnClass = "border-amber-400 bg-amber-100 text-amber-900 shadow-md";
+                    } else if (isStandard) {
+                      btnClass = "border-primary bg-primary text-primary-foreground shadow-md";
+                    } else {
+                      btnClass = "border-amber-400 bg-amber-100 text-amber-900 shadow-md";
+                    }
+                  } else {
+                    if (isSurCommande) {
+                      btnClass = "border-amber-200 bg-amber-50/30 text-amber-800 hover:bg-amber-100 hover:border-amber-400";
+                    } else if (isStandard) {
+                      btnClass = "border-primary bg-primary/5 hover:bg-primary hover:text-primary-foreground hover:border-primary hover:shadow-md";
+                    } else {
+                      btnClass = "border-amber-200 bg-amber-50/30 text-amber-800 hover:bg-amber-100 hover:border-amber-400";
+                    }
+                  }
+
+                  return (
+                    <button
+                      key={size.label}
+                      onClick={() => setSelectedSize(size)}
+                      className={`${baseClass} ${btnClass}`}
+                    >
+                      {!isSelected && (
+                        <>
+                          {isStandard ? (
+                            <span className="absolute top-0 left-0 bg-primary/10 text-primary text-[7px] font-black px-1.5 py-0.5 rounded-br-lg uppercase tracking-tighter">
+                              Standard
+                            </span>
+                          ) : (
+                            <span className="absolute top-0 right-0 bg-amber-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-bl-lg uppercase tracking-tighter">
+                              Spéciale
+                            </span>
+                          )}
+                        </>
+                      )}
+                      
+                      <span className="relative z-10 block mt-1">{size.label}</span>
+                      
+                      <span className={`block text-xs font-bold mt-1 relative z-10 transition-colors ${
+                        isSelected
+                          ? (isStandard ? "text-primary-foreground/90" : "text-amber-955/80")
+                          : (isSurCommande || !isStandard)
+                            ? "text-amber-700 group-hover:text-amber-900"
+                            : "text-primary group-hover:text-primary-foreground"
+                      }`}>
+                        {isSurCommande ? "Sur commande" : formatPrice(size.price)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div>
@@ -313,11 +474,19 @@ export default function ProduitDetail() {
             </div>
           </div>
 
-          <div className="flex gap-3">
-            <button onClick={handleAddToCart} className={`flex-1 font-bold py-4 rounded-2xl transition-all text-sm ${added ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}>
+          <div className="flex flex-col gap-3">
+            <button onClick={handleAddToCart} className={`w-full font-bold py-4 rounded-2xl transition-all text-sm ${added ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}>
               {added ? <span className="flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Ajouté !</span> : "Ajouter au panier"}
             </button>
-            <button onClick={() => { addItem(product as any, selectedSize, qty); navigate("/commander"); }} className="flex-1 bg-secondary text-secondary-foreground font-bold py-4 rounded-2xl hover:bg-secondary/90 transition-colors text-sm">Commander →</button>
+            <button
+              onClick={() => {
+                addItem(product as any, selectedSize, qty);
+                navigate("/commander");
+              }}
+              className="w-full bg-secondary text-secondary-foreground font-bold py-4 rounded-2xl hover:bg-secondary/90 transition-colors text-sm"
+            >
+              Commander directement
+            </button>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -650,6 +819,12 @@ export default function ProduitDetail() {
           </div>
         </div>
       </section>
+      <OrderModal
+        product={product}
+        open={orderModalOpen}
+        onOpenChange={(open) => setOrderModalOpen(open)}
+        sizeGroup={orderModalGroup ?? "1 Place"}
+      />
     </main>
     
   );
