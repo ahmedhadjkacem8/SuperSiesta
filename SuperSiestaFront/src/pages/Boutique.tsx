@@ -234,7 +234,7 @@ export default function Boutique() {
                 {DIMENSIONS.filter(d => d === "Tous" || d.toLowerCase().includes(dimSearch.toLowerCase())).map((d) => (
                   <button
                     key={d}
-                    onClick={() => toggleFilter(dimensions, setDimensions, d)}
+                    onClick={() => setDimensions(dimensions.includes(d) ? [] : [d])}
                     className={`text-[10px] py-2 px-2 rounded-lg border transition-all truncate font-bold uppercase tracking-tighter ${
                       dimensions.includes(d) 
                         ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[0.98]" 

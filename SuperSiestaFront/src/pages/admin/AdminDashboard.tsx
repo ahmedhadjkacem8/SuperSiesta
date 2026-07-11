@@ -21,6 +21,7 @@ export default function AdminDashboard() {
     orders: 0, 
     pendingPayments: 0, 
     deliveredOrders: 0, 
+    cancelledOrders: 0,
     caisse: 0,
     averageRating: 5.0 
   });
@@ -71,8 +72,8 @@ export default function AdminDashboard() {
         api.get<{ average: number }>(`/published-reviews?t=${timestamp}`),
       ]);
 
-      const orders = Array.isArray(ordersData) ? ordersData : (ordersData?.data || []);
-      const notes = Array.isArray(notesData) ? notesData : (notesData?.data || []);
+      const orders = Array.isArray(ordersData) ? ordersData : ((ordersData as any)?.data || []);
+      const notes = Array.isArray(notesData) ? notesData : ((notesData as any)?.data || []);
 
       const safeTotal = (val: any) => {
         const n = parseFloat(String(val).replace(',', '.'));
@@ -92,14 +93,19 @@ export default function AdminDashboard() {
         .reduce((s: number, o: any) => s + safeTotal(o.total), 0);
 
       const deliveredCount = notes.filter((n: any) => n.status === "livrée").length;
+    
+      const cancelledCount = orders.filter((o: any) => o.status === "annulée").length;
 
-      const clientCount = Array.isArray(clientsData) ? clientsData.length : (clientsData?.data?.length || 0);
+
+
+      const clientCount = Array.isArray(clientsData) ? clientsData.length : ((clientsData as any)?.data?.length || 0);
 
       setStats({
         clients: clientCount,
         orders: orders.length,
         pendingPayments,
         deliveredOrders: deliveredCount,
+        cancelledOrders: cancelledCount, 
         caisse,
         averageRating: (reviewsData as any)?.average || 5.0,
       });
@@ -218,14 +224,14 @@ export default function AdminDashboard() {
       value: formatPrice(stats.pendingPayments), 
       icon: AlertCircle, 
       color: "from-amber-400 to-amber-600",
-      description: "Commandes acceptées"
+      description: "Paiement en attente"
     },
     { 
       label: "Commandes", 
       value: stats.orders, 
       icon: ShoppingCart, 
       color: "from-blue-500 to-blue-600",
-      description: "Total commandes"
+      description: `${stats.cancelledOrders} annulée${stats.cancelledOrders > 1 ? 's' : ''}`
     },
     { 
       label: "Livraisons", 
@@ -338,7 +344,12 @@ export default function AdminDashboard() {
                 >
                   {c.value}
                 </h3>
-
+                {/* Description ← ajouté */}
+                {c.description && (
+                  <p className="text-[9px] text-muted-foreground font-medium truncate mt-0.5">
+                    {c.description}
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
