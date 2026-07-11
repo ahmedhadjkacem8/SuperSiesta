@@ -240,7 +240,7 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
                       Aucune dimension disponible pour cette catégorie de places.
                     </div>
                   ) : (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {availableSizes.map((size) => {
                         const selected = selectedSize?.id === size.id;
                         const normalizedSizeLabel = normalizeDimensionLabel(size.label);
@@ -279,22 +279,34 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
                             onClick={() => setSelectedSizeId(size.id)}
                             className={`${baseClass} ${sizeClass}`}
                           >
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
+                            <div className="flex h-full flex-col justify-between">
+                              <div className="flex items-start justify-between gap-2">
                                 <p className="font-black text-sm">{size.label}</p>
-                                <p className={`mt-1 text-xs font-bold ${
-                                  selected
-                                    ? (isStandard ? "text-primary-foreground/90" : "text-amber-950/80")
-                                    : (isStandard ? "text-primary/80" : "text-amber-700/80")
-                                }`}>
-                                  {priceText}
-                                </p>
+
+                                {dimensionMeta && (
+                                  <span
+                                    className={`rounded-full px-2 py-1 text-[10px] font-bold whitespace-nowrap ${isStandard
+                                        ? "bg-primary/10 text-primary"
+                                        : "bg-amber-100 text-amber-700"
+                                      }`}
+                                  >
+                                    {isStandard ? "Standard" : "Spéciale"}
+                                  </span>
+                                )}
                               </div>
-                              {dimensionMeta && (
-                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${isSurCommande ? "bg-amber-500 text-white" : isStandard ? "bg-primary/10 text-primary" : "bg-amber-100 text-amber-700"}`}>
-                                  {isSurCommande ? "Sur commande" : isStandard ? "Standard" : "Spéciale"}
-                                </span>
-                              )}
+
+                              <p
+                                className={`text-sm font-bold ${selected
+                                    ? isStandard
+                                      ? "text-primary-foreground/90"
+                                      : "text-amber-950/80"
+                                    : isStandard
+                                      ? "text-primary"
+                                      : "text-amber-700"
+                                  }`}
+                              >
+                                {priceText}
+                              </p>
                             </div>
                           </button>
                         );

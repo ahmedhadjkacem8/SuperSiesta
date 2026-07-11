@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Allow model-viewer element in this TSX file
@@ -91,8 +91,8 @@ export default function ProduitDetail() {
   const [selectedNbPlaces, setSelectedNbPlaces] = useState<string | null>(null)
 
   const TUNIS_CITIES = [
-    "Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan", "Bizerte", "Béja", "Jendouba", "Le Kef", 
-    "Siliana", "Kairouan", "Kasserine", "Sidi Bouzid", "Sousse", "Monastir", "Mahdia", "Sfax", "Gafsa", 
+    "Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan", "Bizerte", "Béja", "Jendouba", "Le Kef",
+    "Siliana", "Kairouan", "Kasserine", "Sidi Bouzid", "Sousse", "Monastir", "Mahdia", "Sfax", "Gafsa",
     "Tozeur", "Kebili", "Gabès", "Médenine", "Tataouine"
   ];
 
@@ -114,7 +114,7 @@ export default function ProduitDetail() {
     if (["140×190", "160×190", "160×200", "180×200"].includes(label)) return "2 Places";
     return null;
   };
-
+  const previousNbPlaces = useRef<string | null>(null);
   useEffect(() => {
     const nbPlacesParam = normalizeNbPlacesValue(searchParams.get("nbPlaces"));
     setSelectedNbPlaces(nbPlacesParam);
@@ -124,34 +124,86 @@ export default function ProduitDetail() {
   useEffect(() => {
     if (!product || product.sizes.length === 0) return;
 
-    const visibleSizes = getVisibleSizes(product.sizes, dimensions, selectedNbPlaces);
-    const candidateSizes = visibleSizes.length > 0 ? visibleSizes : product.sizes;
-    const dim = searchParams.get("dimension") || (typeof window !== 'undefined' ? sessionStorage.getItem("selectedDimension") : null);
+    const visibleSizes = getVisibleSizes(
+      product.sizes,
+      dimensions,
+      selectedNbPlaces
+    );
+
+    const candidateSizes = visibleSizes.length > 0
+      ? visibleSizes
+      : product.sizes;
+
+
+    // Détecter changement du nombre de places
+    const nbPlacesChanged =
+      previousNbPlaces.current !== selectedNbPlaces;
+
+
+    if (nbPlacesChanged) {
+      previousNbPlaces.current = selectedNbPlaces;
+
+      // Pointer automatiquement sur la première dimension disponible
+      const firstNonZero = candidateSizes.find(
+        (s: any) => s.price > 0
+      );
+
+      setSelectedSize(firstNonZero || candidateSizes[0]);
+
+      return;
+    }
+
+
+    const dim =
+      searchParams.get("dimension") ||
+      (typeof window !== "undefined"
+        ? sessionStorage.getItem("selectedDimension")
+        : null);
+
 
     if (dim) {
-      const found = candidateSizes.find((s: any) => s.label === dim);
+      const found = candidateSizes.find(
+        (s: any) => normalizeDimensionLabel(s.label) === normalizeDimensionLabel(dim)
+      );
+
       if (found) {
         setSelectedSize(found);
         return;
       }
     }
 
-    if (selectedSize && candidateSizes.some((s: any) => s.label === selectedSize.label)) {
+
+    if (
+      selectedSize &&
+      candidateSizes.some(
+        (s: any) => s.label === selectedSize.label
+      )
+    ) {
       return;
     }
 
-    const firstNonZero = candidateSizes.find((s: any) => s.price > 0);
+
+    const firstNonZero = candidateSizes.find(
+      (s: any) => s.price > 0
+    );
+
     setSelectedSize(firstNonZero || candidateSizes[0]);
-  }, [product, selectedSize, searchParams, dimensions, selectedNbPlaces]);
+
+  }, [
+    product,
+    searchParams,
+    dimensions,
+    selectedNbPlaces
+  ]);
 
   // Update form when user changes
   useEffect(() => {
     if (user) {
-      setReviewForm(prev => ({ 
-        ...prev, 
-        name: user.name || prev.name, 
-        email: user.email || prev.email, 
-        phone: user.profile?.phone || prev.phone 
+      setReviewForm(prev => ({
+        ...prev,
+        name: user.name || prev.name,
+        email: user.email || prev.email,
+        phone: user.profile?.phone || prev.phone
       }));
     }
   }, [user]);
@@ -380,11 +432,10 @@ export default function ProduitDetail() {
                     <button
                       key={option.value ?? "tous"}
                       onClick={() => setSelectedNbPlaces(option.value)}
-                      className={`px-3 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${
-                        selectedNbPlaces === option.value
+                      className={`px-3 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${selectedNbPlaces === option.value
                           ? "border-primary bg-primary text-primary-foreground"
                           : "border-border hover:border-primary"
-                      }`}
+                        }`}
                       title={option.title}
                     >
                       {option.label}
@@ -395,68 +446,49 @@ export default function ProduitDetail() {
             )}
 
             <h3 className="text-sm font-bold mb-3">Choisir la taille</h3>
+
             {selectedNbPlaces && visibleSizes.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Aucune dimension n'est disponible pour cette catégorie.</p>
+              <p className="text-sm text-muted-foreground">
+                Aucune dimension n'est disponible pour cette catégorie.
+              </p>
             ) : (
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2">
                 {(selectedNbPlaces ? visibleSizes : product.sizes).map((size) => {
                   const isSelected = selectedSize?.label === size.label;
-                  const normLabel = normalizeDimensionLabel(size.label);
-                  const dimMeta = dimensions.find((d: any) => normalizeDimensionLabel(d.label) === normLabel);
-                  const isStandard = dimMeta ? normalizeBooleanValue(dimMeta.is_standard) : true;
                   const isSurCommande = size.price === 0;
 
-                  const baseClass = "relative min-w-[105px] px-4 py-4 rounded-2xl text-center border-2 transition-all font-bold text-sm overflow-hidden group";
-                  
-                  let btnClass = "";
-                  if (isSelected) {
-                    if (isSurCommande) {
-                      btnClass = "border-amber-400 bg-amber-100 text-amber-900 shadow-md";
-                    } else if (isStandard) {
-                      btnClass = "border-primary bg-primary text-primary-foreground shadow-md";
-                    } else {
-                      btnClass = "border-amber-400 bg-amber-100 text-amber-900 shadow-md";
-                    }
-                  } else {
-                    if (isSurCommande) {
-                      btnClass = "border-amber-200 bg-amber-50/30 text-amber-800 hover:bg-amber-100 hover:border-amber-400";
-                    } else if (isStandard) {
-                      btnClass = "border-primary bg-primary/5 hover:bg-primary hover:text-primary-foreground hover:border-primary hover:shadow-md";
-                    } else {
-                      btnClass = "border-amber-200 bg-amber-50/30 text-amber-800 hover:bg-amber-100 hover:border-amber-400";
-                    }
+                  const baseClass = "relative grow px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all";
+
+                  const selectedClass = "border-primary bg-primary text-primary-foreground ring-2 ring-[hsl(var(--primary))] ring-offset-2 shadow-md";
+
+                  const normalClass = "border-border hover:border-primary";
+
+                  const surCommandeClass = "border-amber-300 bg-amber-50 text-amber-800";
+
+                  const selectedSurCommandeClass = "border-amber-500 bg-amber-500 text-white ring-2 ring-amber-300 ring-offset-2 shadow-md";
+
+                  let cls = normalClass;
+
+                  if (isSelected && isSurCommande) {
+                    cls = selectedSurCommandeClass;
+                  } else if (isSelected) {
+                    cls = selectedClass;
+                  } else if (isSurCommande) {
+                    cls = surCommandeClass;
                   }
 
                   return (
                     <button
                       key={size.label}
                       onClick={() => setSelectedSize(size)}
-                      className={`${baseClass} ${btnClass}`}
+                      className={`${baseClass} ${cls}`}
                     >
-                      {!isSelected && (
-                        <>
-                          {isStandard ? (
-                            <span className="absolute top-0 left-0 bg-primary/10 text-primary text-[7px] font-black px-1.5 py-0.5 rounded-br-lg uppercase tracking-tighter">
-                              Standard
-                            </span>
-                          ) : (
-                            <span className="absolute top-0 right-0 bg-amber-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-bl-lg uppercase tracking-tighter">
-                              Spéciale
-                            </span>
-                          )}
-                        </>
-                      )}
-                      
-                      <span className="relative z-10 block mt-1">{size.label}</span>
-                      
-                      <span className={`block text-xs font-bold mt-1 relative z-10 transition-colors ${
-                        isSelected
-                          ? (isStandard ? "text-primary-foreground/90" : "text-amber-955/80")
-                          : (isSurCommande || !isStandard)
-                            ? "text-amber-700 group-hover:text-amber-900"
-                            : "text-primary group-hover:text-primary-foreground"
-                      }`}>
-                        {isSurCommande ? "Sur commande" : formatPrice(size.price)}
+                      {size.label}
+
+                      <span className="block text-xs mt-1 opacity-75">
+                        {isSurCommande
+                          ? "Sur commande"
+                          : formatPrice(size.price)}
                       </span>
                     </button>
                   );
@@ -699,9 +731,9 @@ export default function ProduitDetail() {
                 </div>
                 <div>
                   <label className="text-sm font-bold mb-1 block">Ville</label>
-                  <select 
-                    value={reviewForm.city} 
-                    onChange={(e) => setReviewForm({ ...reviewForm, city: e.target.value })} 
+                  <select
+                    value={reviewForm.city}
+                    onChange={(e) => setReviewForm({ ...reviewForm, city: e.target.value })}
                     required
                     className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   >
@@ -719,8 +751,8 @@ export default function ProduitDetail() {
                         onClick={() => setReviewRating(s)}
                         className="focus:outline-none transition-transform hover:scale-110"
                       >
-                        <Star 
-                          className={`w-7 h-7 transition-colors ${s <= reviewRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
+                        <Star
+                          className={`w-7 h-7 transition-colors ${s <= reviewRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
                         />
                       </button>
                     ))}
@@ -826,6 +858,6 @@ export default function ProduitDetail() {
         sizeGroup={orderModalGroup ?? "1 Place"}
       />
     </main>
-    
+
   );
 }
