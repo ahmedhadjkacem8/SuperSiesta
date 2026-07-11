@@ -4,10 +4,116 @@ import { useOptimizedProducts } from "@/hooks/useOptimizedProducts";
 import { useGammes } from "@/hooks/useGammes";
 import ProductCard from "@/components/ProductCard";
 import LoadMore from "@/components/LoadMore";
-import { SlidersHorizontal, Loader2, ChevronDown, Check } from "lucide-react";
+import { SlidersHorizontal, Loader2, ChevronDown, Check, X } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
 import { api } from "@/lib/apiClient";
+
+// ------------------------------------------------------------------
+// Composants définis EN DEHORS de Boutique() : leur identité ne change
+// pas entre deux rendus, donc React ne les démonte/remonte jamais
+// (c'est ce qui causait la réouverture des feuilles de filtres mobiles).
+// ------------------------------------------------------------------
+
+function FilterButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full text-left text-sm px-3 py-1.5 rounded-xl transition-colors capitalize ${
+        active ? "bg-primary text-primary-foreground font-bold" : "hover:bg-muted text-foreground"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function MobileFilterTrigger({
+  label,
+  isActive,
+  badge,
+  isOpen,
+  onClick,
+}: {
+  label: string;
+  isActive: boolean;
+  badge?: string;
+  isOpen: boolean;
+  onClick: () => void;
+}) {
+  return (
+<button
+  onClick={onClick}
+  className={`w-full flex items-center justify-between px-3 py-2 rounded-full border text-xs font-semibold transition-all ${
+    isActive
+      ? "bg-primary text-primary-foreground border-primary"
+      : "bg-background text-foreground border-border hover:bg-muted"
+  }`}
+>
+  <span className="truncate">
+    {label}
+  </span>
+
+  <div className="flex items-center gap-1 shrink-0">
+    {badge && (
+      <span
+        className={`flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${
+          isActive
+            ? "bg-primary-foreground text-primary"
+            : "bg-primary text-primary-foreground"
+        }`}
+      >
+        {badge}
+      </span>
+    )}
+
+    <ChevronDown
+      className={`w-3 h-3 transition-transform ${
+        isOpen ? "rotate-180" : ""
+      }`}
+    />
+  </div>
+</button>
+  );
+}
+
+// Panneau "bottom sheet" — s'ouvre depuis le bas, largeur pleine, ne dépasse jamais de l'écran
+function MobileSheet({
+  open,
+  title,
+  onClose,
+  onClear,
+  children,
+}: {
+  open: boolean;
+  title: string;
+  onClose: () => void;
+  onClear?: () => void;
+  children: React.ReactNode;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-50 bg-card border-t border-border rounded-t-2xl shadow-2xl w-full max-h-[75vh] flex flex-col animate-in slide-in-from-bottom duration-200">
+      <div className="flex items-center justify-center pt-2.5 pb-1 shrink-0">
+        <div className="w-10 h-1 rounded-full bg-border" />
+      </div>
+      <div className="flex items-center justify-between px-4 pb-2 shrink-0">
+        <h3 className="text-sm font-bold">{title}</h3>
+        <div className="flex items-center gap-3">
+          {onClear && (
+            <button onClick={onClear} className="text-[10px] text-primary font-black uppercase tracking-widest hover:underline">
+              Effacer
+            </button>
+          )}
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-muted">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      <div className="px-4 pb-6 overflow-y-auto">{children}</div>
+    </div>
+  );
+}
 
 export default function Boutique() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -57,7 +163,11 @@ export default function Boutique() {
   const [categories, setCategories] = useState<string[]>(getArrayParam("categorie"));
   const [fermetes, setFermetes] = useState<string[]>(getArrayParam("fermete"));
   const [gammes, setGammes] = useState<string[]>(getArrayParam("gamme"));
-  const [dimensions, setDimensions] = useState<string[]>(getArrayParam("dimension"));
+  // Dimensions : sélection UNIQUE uniquement (jamais de multi-select), sur mobile comme sur desktop
+  const [dimensions, setDimensions] = useState<string[]>(() => {
+    const arr = getArrayParam("dimension");
+    return arr.length > 0 ? [arr[0]] : ["Tous"];
+  });
   const [priceMax, setPriceMax] = useState(3000);
   const [showFilters, setShowFilters] = useState(false);
   const [dimSearch, setDimSearch] = useState("");
@@ -74,6 +184,18 @@ export default function Boutique() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
+  // Lock body scroll while a mobile bottom-sheet filter is open
+  useEffect(() => {
+    if (activeDropdown) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [activeDropdown]);
+
+  // Multi-select (catégorie / gamme / fermeté)
   const toggleFilter = (list: string[], setList: (v: string[]) => void, item: string) => {
     if (item === "Tous") {
       setList(["Tous"]);
@@ -88,6 +210,15 @@ export default function Boutique() {
     }
   };
 
+  // Dimensions : sélection UNIQUE — cliquer sur une dimension déjà active revient à "Tous"
+  const selectDimension = (item: string) => {
+    if (item === "Tous") {
+      setDimensions(["Tous"]);
+      return;
+    }
+    setDimensions((prev) => (prev.includes(item) ? ["Tous"] : [item]));
+  };
+
   // Send filter changes to server (debounced) but apply client-side immediately
   const filterTimer = useRef<number | null>(null);
   const handleFilterChange = async () => {
@@ -96,14 +227,14 @@ export default function Boutique() {
     if (categories.length > 0 && !categories.includes("Tous")) filters.categorie = categories;
     if (fermetes.length > 0 && !fermetes.includes("Tous")) filters.fermete = fermetes;
     if (gammes.length > 0 && !gammes.includes("Tous")) filters.gamme = gammes;
-    if (dimensions.length > 0 && !dimensions.includes("Tous")) filters.dimension = dimensions;
+    if (dimensions.length > 0 && !dimensions.includes("Tous")) filters.dimension = dimensions[0];
 
     // Update URL params to reflect active filters
     const sp = new URLSearchParams();
     if (filters.categorie) sp.set('categorie', categories.join(','));
     if (filters.fermete) sp.set('fermete', fermetes.join(','));
     if (filters.gamme) sp.set('gamme', gammes.join(','));
-    if (filters.dimension) sp.set('dimension', dimensions.join(','));
+    if (filters.dimension) sp.set('dimension', dimensions[0]);
     setSearchParams(sp, { replace: true });
 
     // Immediate client-side filtering for snappy UI
@@ -141,29 +272,19 @@ export default function Boutique() {
     );
   }
 
-  const FilterButton = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
-    <button
-      onClick={onClick}
-      className={`w-full text-left text-sm px-3 py-1.5 rounded-xl transition-colors capitalize ${
-        active ? "bg-primary text-primary-foreground font-bold" : "hover:bg-muted text-foreground"
-      }`}
-    >
-      {children}
-    </button>
-  );
-
   return (
-    <main className="max-w-7xl mx-auto px-4 py-10">
-      <div className="mb-8">
+    <main className="max-w-7xl mx-auto px-4 py-6 sm:py-10">
+      <div className="mb-6 sm:mb-8">
         <span className="text-xs font-bold text-primary uppercase tracking-widest">Boutique</span>
-        <h1 className="text-3xl font-black mt-1 mb-2">Tous nos matelas</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-black mt-1 mb-2">Tous nos matelas</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           {products.length} produit{products.length > 1 ? "s" : ""} chargé{products.length > 1 ? "s" : ""}
           {hasMore && " (+ de résultats disponibles)"}
         </p>
       </div>
 
-      <div className="flex gap-6">        <aside className="hidden lg:block w-56 flex-shrink-0">
+      <div className="flex gap-6">
+        <aside className="hidden lg:block w-56 flex-shrink-0">
           <div className="bg-card border border-border rounded-2xl p-5 sticky top-24 space-y-6">
             <div>
               <h3 className="text-sm font-bold mb-3">Catégorie</h3>
@@ -211,7 +332,7 @@ export default function Boutique() {
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-bold">Dimensions</h3>
                 {!dimensions.includes("Tous") && (
-                  <button 
+                  <button
                     onClick={() => setDimensions(["Tous"])}
                     className="text-[10px] text-primary font-black uppercase tracking-widest hover:underline"
                   >
@@ -219,9 +340,9 @@ export default function Boutique() {
                   </button>
                 )}
               </div>
-              
+
               <div className="relative mb-3">
-                <input 
+                <input
                   type="text"
                   placeholder="Rechercher une taille..."
                   value={dimSearch}
@@ -234,10 +355,10 @@ export default function Boutique() {
                 {DIMENSIONS.filter(d => d === "Tous" || d.toLowerCase().includes(dimSearch.toLowerCase())).map((d) => (
                   <button
                     key={d}
-                    onClick={() => setDimensions(dimensions.includes(d) ? [] : [d])}
+                    onClick={() => selectDimension(d)}
                     className={`text-[10px] py-2 px-2 rounded-lg border transition-all truncate font-bold uppercase tracking-tighter ${
-                      dimensions.includes(d) 
-                        ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[0.98]" 
+                      dimensions.includes(d)
+                        ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[0.98]"
                         : "bg-background border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
                     }`}
                   >
@@ -254,175 +375,150 @@ export default function Boutique() {
           </div>
         </aside>
 
-        <div className="flex-1">
-          {/* Mobile Horizontal Filters Dropdowns Container */}
-          <div ref={dropdownRef} className="lg:hidden flex flex-wrap gap-2 mb-6 relative z-40">
-            {/* Category Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setActiveDropdown(activeDropdown === "category" ? null : "category")}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap transition-all ${
-                  !categories.includes("Tous")
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-background text-foreground border-border hover:bg-muted"
-                }`}
-              >
-                Catégorie {!categories.includes("Tous") && `(${categories.length})`}
-                <ChevronDown className="w-3 h-3 transition-transform duration-200" style={{ transform: activeDropdown === "category" ? "rotate(180deg)" : "rotate(0deg)" }} />
-              </button>
+        <div className="flex-1 min-w-0">
+          {/* Barre de filtres mobile : scroll horizontal, jamais de retour à la ligne qui pousse hors écran */}
+            <div
+              ref={dropdownRef}
+              className="lg:hidden grid grid-cols-2 gap-2 mb-6"
+            >
+            <MobileFilterTrigger
+              label="Catégorie"
+              isActive={!categories.includes("Tous")}
+              badge={!categories.includes("Tous") ? String(categories.length) : undefined}
+              isOpen={activeDropdown === "category"}
+              onClick={() => setActiveDropdown(activeDropdown === "category" ? null : "category")}
+            />
+            <MobileFilterTrigger
+              label="Gamme"
+              isActive={!gammes.includes("Tous")}
+              badge={!gammes.includes("Tous") ? String(gammes.length) : undefined}
+              isOpen={activeDropdown === "gamme"}
+              onClick={() => setActiveDropdown(activeDropdown === "gamme" ? null : "gamme")}
+            />
+            <MobileFilterTrigger
+              label="Fermeté"
+              isActive={!fermetes.includes("Tous")}
+              badge={!fermetes.includes("Tous") ? String(fermetes.length) : undefined}
+              isOpen={activeDropdown === "fermete"}
+              onClick={() => setActiveDropdown(activeDropdown === "fermete" ? null : "fermete")}
+            />
+            <MobileFilterTrigger
+              label="Dimensions"
+              isActive={!dimensions.includes("Tous")}
+              badge={!dimensions.includes("Tous") ? dimensions[0] : undefined}
+              isOpen={activeDropdown === "dimension"}
+              onClick={() => setActiveDropdown(activeDropdown === "dimension" ? null : "dimension")}
+            />
 
-              {activeDropdown === "category" && (
-                <div className="absolute left-0 mt-2 bg-card border border-border shadow-xl rounded-2xl p-4 min-w-[200px] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="space-y-1 max-h-60 overflow-y-auto">
-                    {CATEGORIES.map((c) => {
-                      const active = categories.includes(c);
-                      return (
-                        <button
-                          key={c}
-                          onClick={() => toggleFilter(categories, setCategories, c)}
-                          className={`w-full text-left text-xs px-3 py-2 rounded-xl flex items-center justify-between font-semibold capitalize ${
-                            active ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
-                          }`}
-                        >
-                          <span>{c}</span>
-                          {active && <Check className="w-3.5 h-3.5 text-primary" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Overlay derrière la feuille mobile */}
+            {activeDropdown && (
+              <div
+                className="fixed inset-0 bg-black/40 z-40"
+                onClick={() => setActiveDropdown(null)}
+              />
+            )}
 
-            {/* Gamme Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setActiveDropdown(activeDropdown === "gamme" ? null : "gamme")}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap transition-all ${
-                  !gammes.includes("Tous")
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-background text-foreground border-border hover:bg-muted"
-                }`}
-              >
-                Gamme {!gammes.includes("Tous") && `(${gammes.length})`}
-                <ChevronDown className="w-3 h-3 transition-transform duration-200" style={{ transform: activeDropdown === "gamme" ? "rotate(180deg)" : "rotate(0deg)" }} />
-              </button>
+            <MobileSheet open={activeDropdown === "category"} title="Catégorie" onClose={() => setActiveDropdown(null)}>
+              <div className="space-y-1">
+                {CATEGORIES.map((c) => {
+                  const active = categories.includes(c);
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => toggleFilter(categories, setCategories, c)}
+                      className={`w-full text-left text-sm px-3 py-2.5 rounded-xl flex items-center justify-between font-semibold capitalize ${
+                        active ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
+                      }`}
+                    >
+                      <span>{c}</span>
+                      {active && <Check className="w-4 h-4 text-primary" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </MobileSheet>
 
-              {activeDropdown === "gamme" && (
-                <div className="absolute left-0 mt-2 bg-card border border-border shadow-xl rounded-2xl p-4 min-w-[200px] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="space-y-1 max-h-60 overflow-y-auto">
-                    {gammesList.map((g) => {
-                      const active = gammes.includes(g);
-                      return (
-                        <button
-                          key={g}
-                          onClick={() => toggleFilter(gammes, setGammes, g)}
-                          className={`w-full text-left text-xs px-3 py-2 rounded-xl flex items-center justify-between font-semibold capitalize ${
-                            active ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
-                          }`}
-                        >
-                          <span>{g}</span>
-                          {active && <Check className="w-3.5 h-3.5 text-primary" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
+            <MobileSheet open={activeDropdown === "gamme"} title="Gamme" onClose={() => setActiveDropdown(null)}>
+              <div className="space-y-1">
+                {gammesList.map((g) => {
+                  const active = gammes.includes(g);
+                  return (
+                    <button
+                      key={g}
+                      onClick={() => toggleFilter(gammes, setGammes, g)}
+                      className={`w-full text-left text-sm px-3 py-2.5 rounded-xl flex items-center justify-between font-semibold capitalize ${
+                        active ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
+                      }`}
+                    >
+                      <span>{g}</span>
+                      {active && <Check className="w-4 h-4 text-primary" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </MobileSheet>
 
-            {/* Fermeté Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setActiveDropdown(activeDropdown === "fermete" ? null : "fermete")}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap transition-all ${
-                  !fermetes.includes("Tous")
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-background text-foreground border-border hover:bg-muted"
-                }`}
-              >
-                Fermeté {!fermetes.includes("Tous") && `(${fermetes.length})`}
-                <ChevronDown className="w-3 h-3 transition-transform duration-200" style={{ transform: activeDropdown === "fermete" ? "rotate(180deg)" : "rotate(0deg)" }} />
-              </button>
+            <MobileSheet open={activeDropdown === "fermete"} title="Fermeté" onClose={() => setActiveDropdown(null)}>
+              <div className="space-y-1">
+                {FERMETES.map((f) => {
+                  const active = fermetes.includes(f);
+                  return (
+                    <button
+                      key={f}
+                      onClick={() => toggleFilter(fermetes, setFermetes, f)}
+                      className={`w-full text-left text-sm px-3 py-2.5 rounded-xl flex items-center justify-between font-semibold capitalize ${
+                        active ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
+                      }`}
+                    >
+                      <span>{f}</span>
+                      {active && <Check className="w-4 h-4 text-primary" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </MobileSheet>
 
-              {activeDropdown === "fermete" && (
-                <div className="absolute left-0 mt-2 bg-card border border-border shadow-xl rounded-2xl p-4 min-w-[200px] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="space-y-1 max-h-60 overflow-y-auto">
-                    {FERMETES.map((f) => {
-                      const active = fermetes.includes(f);
-                      return (
-                        <button
-                          key={f}
-                          onClick={() => toggleFilter(fermetes, setFermetes, f)}
-                          className={`w-full text-left text-xs px-3 py-2 rounded-xl flex items-center justify-between font-semibold capitalize ${
-                            active ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
-                          }`}
-                        >
-                          <span>{f}</span>
-                          {active && <Check className="w-3.5 h-3.5 text-primary" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Dimensions Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setActiveDropdown(activeDropdown === "dimension" ? null : "dimension")}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap transition-all ${
-                  !dimensions.includes("Tous")
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-background text-foreground border-border hover:bg-muted"
-                }`}
-              >
-                Dimensions {!dimensions.includes("Tous") && `(${dimensions.length})`}
-                <ChevronDown className="w-3 h-3 transition-transform duration-200" style={{ transform: activeDropdown === "dimension" ? "rotate(180deg)" : "rotate(0deg)" }} />
-              </button>
-
-              {activeDropdown === "dimension" && (
-                <div className="absolute right-0 mt-2 bg-card border border-border shadow-xl rounded-2xl p-4 min-w-[280px] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Dimensions</span>
-                    {!dimensions.includes("Tous") && (
-                      <button onClick={() => setDimensions(["Tous"])} className="text-[9px] text-primary font-black uppercase">Effacer</button>
-                    )}
-                  </div>
-                  <input 
-                    type="text"
-                    placeholder="Rechercher..."
-                    value={dimSearch}
-                    onChange={(e) => setDimSearch(e.target.value)}
-                    className="w-full bg-muted/50 border-none rounded-xl py-1.5 px-3 text-xs mb-2.5 focus:ring-1 focus:ring-primary outline-none transition-all"
-                  />
-                  <div className="grid grid-cols-3 gap-1.5 max-h-40 overflow-y-auto p-1 bg-muted/10 border border-border/40 rounded-xl custom-scrollbar">
-                    {DIMENSIONS.filter(d => d === "Tous" || d.toLowerCase().includes(dimSearch.toLowerCase())).map((d) => {
-                      const active = dimensions.includes(d);
-                      return (
-                        <button 
-                          key={d} 
-                          onClick={() => toggleFilter(dimensions, setDimensions, d)} 
-                          className={`text-[10px] py-1.5 px-1.5 rounded-lg font-black uppercase transition-all border ${
-                            active 
-                              ? "bg-primary text-primary-foreground border-primary shadow-sm" 
-                              : "bg-card border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          {d}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Dimensions — sélection UNIQUE, se ferme automatiquement après le choix */}
+            <MobileSheet
+              open={activeDropdown === "dimension"}
+              title="Dimensions"
+              onClose={() => setActiveDropdown(null)}
+              onClear={!dimensions.includes("Tous") ? () => setDimensions(["Tous"]) : undefined}
+            >
+              <input
+                type="text"
+                placeholder="Rechercher une taille..."
+                value={dimSearch}
+                onChange={(e) => setDimSearch(e.target.value)}
+                className="w-full bg-muted/50 border-none rounded-xl py-2.5 px-3 text-sm mb-3 focus:ring-1 focus:ring-primary outline-none transition-all"
+              />
+              <div className="grid grid-cols-3 gap-2">
+                {DIMENSIONS.filter(d => d === "Tous" || d.toLowerCase().includes(dimSearch.toLowerCase())).map((d) => {
+                  const active = dimensions.includes(d);
+                  return (
+                    <button
+                      key={d}
+                      onClick={() => {
+                        selectDimension(d);
+                        setActiveDropdown(null);
+                      }}
+                      className={`text-xs py-2.5 px-2 rounded-lg font-black uppercase transition-all border ${
+                        active
+                          ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                          : "bg-card border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
+            </MobileSheet>
           </div>
 
           {products.length === 0 ? (
-            <div className="text-center py-20 text-muted-foreground">
-              <p className="text-lg font-medium">Aucun produit ne correspond à vos filtres.</p>
+            <div className="text-center py-16 sm:py-20 text-muted-foreground px-4">
+              <p className="text-base sm:text-lg font-medium">Aucun produit ne correspond à vos filtres.</p>
               <button onClick={() => { setCategories(["Tous"]); setFermetes(["Tous"]); setGammes(["Tous"]); setDimensions(["Tous"]); }} className="mt-4 text-primary hover:underline text-sm">Réinitialiser les filtres</button>
             </div>
           ) : (
@@ -439,10 +535,10 @@ export default function Boutique() {
                     }
                     const sorted = [...products].sort((a, b) => idx(a.gamme) - idx(b.gamme));
                     return sorted.map((p) => (
-                      <ProductCard 
-                  key={p.id} 
-                  product={p} 
-                  selectedDimension={dimensions[0]} 
+                      <ProductCard
+                  key={p.id}
+                  product={p}
+                  selectedDimension={dimensions[0]}
                   selectedCategorie={categories[0]}
                   selectedGamme={gammes[0]}
                   selectedFermete={fermetes[0]}
