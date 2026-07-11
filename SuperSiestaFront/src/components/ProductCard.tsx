@@ -514,9 +514,9 @@ export default function ProductCard({
               }`}
             >
               {[
-                { value: "1", label: "Choisir cette taille — 1 place", title: "Choisir la taille - 1 place" },
-                { value: "1.5", label: "Choisir cette taille — 1.5 place", title: "Choisir la taille - 1 place et demi" },
-                { value: "2", label: "Choisir cette taille — 2 places", title: "Choisir la taille - 2 places" },
+                { value: "1", label: "1 place", title: "Choisir la taille - 1 place" },
+                { value: "1.5", label: "1 place et demi", title: "Choisir la taille - 1 place et demi" },
+                { value: "2", label: "2 places", title: "Choisir la taille - 2 places" },
               ].map((option) => (
                 <button
                   key={option.value}

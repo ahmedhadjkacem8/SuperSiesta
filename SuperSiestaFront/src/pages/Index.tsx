@@ -434,7 +434,47 @@ useEffect(() => {
       </div>
     );
 })()}
+      {/* CHOISISSEZ VOTRE MATELAS */}
+      <motion.section
+        {...fadeInUp}
+        className="bg-muted/30 py-14 sm:py-20"
+      >
+        <div className="max-w-7xl mx-auto px-4">
+          <motion.div
+            {...fadeInUp}
+            className="text-center mb-8 sm:mb-12"
+          >
+            <span className="text-xs font-bold text-primary uppercase tracking-widest">Nos Gammes</span>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mt-1">Choisissez votre matelas</h2>
+            <p className="text-muted-foreground text-sm mt-1">Sélectionnez le format souhaité et commandez en quelques clics</p>
+          </motion.div>
 
+          {productsLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>
+          ) : (
+            <motion.div
+              variants={staggerContainer}
+              initial="initial"
+              whileInView="whileInView"
+              viewport={{ once: true }}
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6"
+            >
+              {(products || []).filter(p => p.sizes && p.sizes.length > 0).map((p) => (
+                <motion.div key={p.id} variants={fadeInUp}>
+                  <ProductCard
+                    product={p}
+                    onSelectGroup={(group) => {
+                      setModalProduct(p);
+                      setModalGroup(group);
+                      setModalOpen(true);
+                    }}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </div>
+      </motion.section>
 {/* GAMMES EDITORIAL CAROUSEL */}
 {gammes.length > 0 && (() => {
   const itemsPerPage = windowWidth < 640 ? 2 : windowWidth < 1024 ? 3 : 5;
@@ -700,47 +740,7 @@ return (
         </div>
       </motion.section>
 
-      {/* CHOISISSEZ VOTRE MATELAS */}
-      <motion.section
-        {...fadeInUp}
-        className="bg-muted/30 py-14 sm:py-20"
-      >
-        <div className="max-w-7xl mx-auto px-4">
-          <motion.div
-            {...fadeInUp}
-            className="text-center mb-8 sm:mb-12"
-          >
-            <span className="text-xs font-bold text-primary uppercase tracking-widest">Nos Gammes</span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mt-1">Choisissez votre matelas</h2>
-            <p className="text-muted-foreground text-sm mt-1">Sélectionnez le format souhaité et commandez en quelques clics</p>
-          </motion.div>
 
-          {productsLoading ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>
-          ) : (
-            <motion.div
-              variants={staggerContainer}
-              initial="initial"
-              whileInView="whileInView"
-              viewport={{ once: true }}
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6"
-            >
-              {(products || []).filter(p => p.sizes && p.sizes.length > 0).map((p) => (
-                <motion.div key={p.id} variants={fadeInUp}>
-                  <ProductCard
-                    product={p}
-                    onSelectGroup={(group) => {
-                      setModalProduct(p);
-                      setModalGroup(group);
-                      setModalOpen(true);
-                    }}
-                  />
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
-        </div>
-      </motion.section>
 
       {/* 3D SHOWCASE */}
       <ThreeDShowcase features={trustBadges} />
