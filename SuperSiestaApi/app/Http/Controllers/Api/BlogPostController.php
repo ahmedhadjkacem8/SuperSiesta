@@ -11,8 +11,8 @@ class BlogPostController extends BaseController
     public function index(Request $request): JsonResponse
     {
         $query = BlogPost::query();
-
-        if (!$request->user() || !$request->user()->roles()->where('role', 'admin')->exists()) {
+        $user = $request->user('sanctum'); 
+        if (!$user || !$user->roles()->where('role', 'admin')->exists()) {
             $query->published();
         }
 

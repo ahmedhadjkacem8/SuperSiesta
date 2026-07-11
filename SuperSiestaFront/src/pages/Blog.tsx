@@ -1,15 +1,28 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, Calendar, Tag, ArrowRight } from "lucide-react";
+import { Loader2, Calendar, Tag, ArrowRight, ChevronRight, ChevronLeft, Star } from "lucide-react";
+import { motion } from "framer-motion";
 import useEmblaCarousel from "embla-carousel-react";
-import { ChevronRight, ChevronLeft } from "lucide-react";
 import { getImageUrl } from "@/utils/imageUtils";
 import { useBlogPosts } from "@/hooks/useBlog";
+
+const fadeInUp = {
+  initial: { opacity: 0, y: 24 },
+  whileInView: { opacity: 1, y: 0 },
+  transition: { duration: 0.5 },
+};
+
+const staggerContainer = {
+  initial: {},
+  whileInView: {
+    transition: { staggerChildren: 0.08 },
+  },
+};
 
 export default function Blog() {
   const [filter, setFilter] = useState<"all" | "blog" | "conseil">("all");
   const { data: posts = [], isLoading } = useBlogPosts();
-  
+
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
 
   const scrollPrev = () => emblaApi && emblaApi.scrollPrev();
@@ -36,21 +49,53 @@ export default function Blog() {
               <div className="overflow-hidden" ref={emblaRef}>
                 <div className="flex">
                   {posts.filter(p => p.is_favorite).map(post => (
-                    <div key={post.id} className="flex-[0_0_100%] md:flex-[0_0_50%] lg:flex-[0_0_33.33%] min-w-0 pl-4">
-                      <Link to={`/blog/${post.slug}`} className="group block h-full bg-card border border-border rounded-2xl overflow-hidden hover:shadow-xl transition-all">
-                        <div className="aspect-square bg-muted overflow-hidden relative">
-                          {post.image_url ? (
-                            <img src={getImageUrl(post.image_url)} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-accent text-3xl">⭐</div>
-                          )}
-                          <div className="absolute top-2 left-2 flex gap-1">
-                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-yellow-500 text-white">★ Favori</span>
+                    <div key={post.id} className="flex-[0_0_85%] sm:flex-[0_0_60%] md:flex-[0_0_50%] lg:flex-[0_0_33.33%] min-w-0 pl-4">
+                      <Link
+                        to={`/blog/${post.slug}`}
+                        className="group flex flex-col h-full overflow-hidden rounded-3xl bg-card border border-border shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+                      >
+                        {/* IMAGE */}
+                        <div className="relative overflow-hidden">
+                          <div className="aspect-[4/3] md:aspect-square">
+                            {post.image_url ? (
+                              <img
+                                src={getImageUrl(post.image_url)}
+                                alt={post.title}
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-muted flex items-center justify-center">
+                                <Star className="w-10 h-10 text-muted-foreground opacity-20" />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Badges */}
+                          <div className="absolute top-3 left-3 flex gap-2">
+                            <span className="rounded-full bg-yellow-500 px-3 py-1 text-[9px] md:text-[10px] font-black uppercase text-white shadow">
+                              ★ Favori
+                            </span>
                           </div>
                         </div>
-                        <div className="p-4">
-                          <h3 className="font-bold text-lg mb-2 group-hover:text-primary transition-colors line-clamp-2">{post.title}</h3>
-                          {post.excerpt && <p className="text-sm text-muted-foreground line-clamp-2">{post.excerpt}</p>}
+
+                        {/* CONTENU */}
+                        <div className="flex flex-col flex-1 p-4 md:p-8">
+                          <h3 className="font-black text-sm md:text-xl leading-snug md:leading-tight break-words group-hover:text-primary transition-colors">
+                            {post.title}
+                          </h3>
+                          {post.excerpt && (
+                            <p className="mt-3 text-[11px] md:text-sm leading-relaxed text-muted-foreground line-clamp-3">
+                              {post.excerpt}
+                            </p>
+                          )}
+
+                          {/* Bouton */}
+                          <div className="mt-auto pt-5">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-2 md:px-5 md:py-2.5 text-[11px] md:text-sm font-bold text-primary transition-all group-hover:bg-primary group-hover:text-white">
+                              <span>Lire l'article</span>
+                              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                            </div>
+                          </div>
                         </div>
                       </Link>
                     </div>
@@ -93,46 +138,83 @@ export default function Blog() {
         ) : filtered.length === 0 ? (
           <p className="text-center text-muted-foreground py-10">Aucun article pour le moment.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div
+            variants={staggerContainer}
+            initial="initial"
+            whileInView="whileInView"
+            viewport={{ once: true }}
+            className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8"
+          >
             {filtered.map((post) => (
-              <Link key={post.id} to={`/blog/${post.slug}`} className="group bg-card border border-border rounded-2xl overflow-hidden hover:shadow-xl transition-all">
-                <div className="aspect-square bg-muted overflow-hidden">
-                  {post.image_url ? (
-                    <img src={getImageUrl(post.image_url)} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-accent">
-                      <span className="text-4xl">{post.category === "conseil" ? "💡" : "📰"}</span>
+              <motion.div key={post.id} variants={fadeInUp}>
+                <Link
+                  to={`/blog/${post.slug}`}
+                  className="group flex flex-col h-full overflow-hidden rounded-3xl bg-card border border-border shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+                >
+                  {/* IMAGE */}
+                  <div className="relative overflow-hidden">
+                    <div className="aspect-[4/3] md:aspect-square">
+                      {post.image_url ? (
+                        <img
+                          src={getImageUrl(post.image_url)}
+                          alt={post.title}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
+                          <Star className="w-10 h-10 text-muted-foreground opacity-20" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div className="p-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${post.category === "conseil" ? "bg-accent text-accent-foreground" : "bg-secondary/10 text-secondary"}`}>
-                      {post.category === "conseil" ? "Conseil" : "Actualité"}
-                    </span>
+
+                    {/* Catégorie */}
+                    <div className="absolute top-3 left-3">
+                      <span className="rounded-full bg-white/95 backdrop-blur-md px-3 py-1 text-[9px] md:text-[10px] font-black uppercase text-primary shadow">
+                        {post.category === "conseil" ? "Conseil" : "Actualité"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* CONTENU */}
+                  <div className="flex flex-col flex-1 p-4 md:p-8">
+                    <h3 className="font-black text-sm md:text-xl leading-snug md:leading-tight break-words group-hover:text-primary transition-colors">
+                      {post.title}
+                    </h3>
+                    {post.excerpt && (
+                      <p className="mt-3 text-[11px] md:text-sm leading-relaxed text-muted-foreground line-clamp-3">
+                        {post.excerpt}
+                      </p>
+                    )}
+
                     {post.published_at && (
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <span className="mt-3 text-[10px] md:text-xs text-muted-foreground flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {new Date(post.published_at).toLocaleDateString("fr-FR")}
                       </span>
                     )}
-                  </div>
-                  <h3 className="font-bold text-lg mb-2 group-hover:text-primary transition-colors">{post.title}</h3>
-                  {post.excerpt && <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{post.excerpt}</p>}
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-1">
-                      {(post.tags || []).slice(0, 2).map((t) => (
-                        <span key={t} className="text-xs bg-muted px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <Tag className="w-3 h-3" />{t}
-                        </span>
-                      ))}
+
+                    {post.tags && post.tags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {post.tags.slice(0, 2).map((t) => (
+                          <span key={t} className="text-[10px] md:text-xs bg-muted px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Tag className="w-3 h-3" />{t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Bouton */}
+                    <div className="mt-auto pt-5">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-2 md:px-5 md:py-2.5 text-[11px] md:text-sm font-bold text-primary transition-all group-hover:bg-primary group-hover:text-white">
+                        <span>Lire l'article</span>
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </div>
                     </div>
-                    <span className="text-primary text-sm font-bold flex items-center gap-1">Lire <ArrowRight className="w-3 h-3" /></span>
                   </div>
-                </div>
-              </Link>
+                </Link>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </section>
     </main>

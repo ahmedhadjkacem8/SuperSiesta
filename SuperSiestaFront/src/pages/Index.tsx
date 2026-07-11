@@ -1058,56 +1058,92 @@ return (
         </div>
       </section>
 
-      {/* LATEST BLOG POSTS CARDS */}
-      {blogPosts.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 py-20">
-          <motion.div
-            {...fadeInUp}
-            className="flex items-center justify-between mb-12"
+{/* LATEST BLOG POSTS CARDS */}
+{blogPosts.length > 0 && (
+  <section className="max-w-7xl mx-auto px-4 py-12 md:py-20">
+    <motion.div
+      {...fadeInUp}
+      className="flex items-end justify-between mb-8 md:mb-12"
+    >
+      <div>
+        <span className="text-[10px] md:text-xs font-bold text-primary uppercase tracking-widest">
+          Le Mag Super Siesta
+        </span>
+
+        <h2 className="text-2xl md:text-4xl font-black mt-1">
+          Derniers Conseils & Actualités
+        </h2>
+      </div>
+
+      <Link
+        to="/blog"
+        className="flex items-center gap-1 text-xs md:text-sm font-bold text-primary hover:underline whitespace-nowrap"
+      >
+        Voir tout
+        <ChevronRight className="w-4 h-4" />
+      </Link>
+    </motion.div>
+
+    <motion.div
+      variants={staggerContainer}
+      initial="initial"
+      whileInView="whileInView"
+      viewport={{ once: true }}
+      className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8"
+    >
+      {blogPosts.map((post) => (
+        <motion.div key={post.id} variants={fadeInUp}>
+          <Link
+            to={`/blog/${post.slug}`}
+            className="group flex flex-col h-full overflow-hidden rounded-3xl bg-card border border-border shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
           >
-            <div>
-              <span className="text-xs font-bold text-primary uppercase tracking-widest">Le Mag Super Siesta</span>
-              <h2 className="text-4xl font-black mt-1">Derniers Conseils & Actualités</h2>
+            {/* IMAGE */}
+            <div className="relative overflow-hidden">
+              <div className="aspect-[4/3] md:aspect-square">
+                {post.image_url ? (
+                  <img
+                    src={getImageUrl(post.image_url)}
+                    alt={post.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center">
+                    <Star className="w-10 h-10 text-muted-foreground opacity-20" />
+                  </div>
+                )}
+              </div>
+
+              {/* Catégorie */}
+              <div className="absolute top-3 left-3">
+                <span className="rounded-full bg-white/95 backdrop-blur-md px-3 py-1 text-[9px] md:text-[10px] font-black uppercase text-primary shadow">
+                  {post.category}
+                </span>
+              </div>
             </div>
-            <Link to="/blog" className="flex items-center gap-1 text-sm font-bold text-primary hover:underline">
-              Voir tout <ChevronRight className="w-4 h-4" />
-            </Link>
-          </motion.div>
-          <motion.div
-            variants={staggerContainer}
-            initial="initial"
-            whileInView="whileInView"
-            viewport={{ once: true }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-10"
-          >
-            {blogPosts.map((post) => (
-              <motion.div key={post.id} variants={fadeInUp}>
-                <Link to={`/blog/${post.slug}`} className="group block bg-card border border-border rounded-[2.5rem] overflow-hidden hover:shadow-2xl transition-all hover:-translate-y-2 h-full">
-                  <div className="aspect-square overflow-hidden relative">
-                    {post.image_url ? (
-                      <img src={getImageUrl(post.image_url)} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                    ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <Star className="w-12 h-12 text-muted-foreground opacity-10" />
-                      </div>
-                    )}
-                    <div className="absolute top-4 left-4">
-                      <span className="text-[10px] font-black text-primary uppercase bg-white/90 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-sm">{post.category}</span>
-                    </div>
-                  </div>
-                  <div className="p-8">
-                    <h3 className="font-black text-xl mt-1 group-hover:text-primary transition-colors line-clamp-2 leading-tight">{post.title}</h3>
-                    <p className="text-muted-foreground text-sm mt-4 line-clamp-3 leading-relaxed">{post.excerpt}</p>
-                    <div className="flex items-center gap-2 text-sm font-black text-primary mt-6 group-hover:gap-3 transition-all">
-                      Lire l'article <ArrowRight className="w-5 h-5" />
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </motion.div>
-        </section>
-      )}
+
+            {/* CONTENU */}
+            <div className="flex flex-col flex-1 p-4 md:p-8">
+              <h3 className="font-black text-sm md:text-xl leading-snug md:leading-tight break-words group-hover:text-primary transition-colors">
+                {post.title}
+              </h3>
+              <p className="mt-3 text-[11px] md:text-sm leading-relaxed text-muted-foreground line-clamp-3">
+                {post.excerpt}
+              </p>
+
+              {/* Bouton */}
+              <div className="mt-auto pt-5">
+                <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-2 md:px-5 md:py-2.5 text-[11px] md:text-sm font-bold text-primary transition-all group-hover:bg-primary group-hover:text-white">
+                  <span>Lire l'article</span>
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </div>
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+      ))}
+    </motion.div>
+  </section>
+)}
 
       {/* NEWSLETTER */}
       <motion.section
