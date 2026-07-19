@@ -27,6 +27,7 @@ class Order extends Model
         'latitude',
         'longitude',
         'notes',
+        'bl_contact',
         'subtotal',
         'total',
     ];

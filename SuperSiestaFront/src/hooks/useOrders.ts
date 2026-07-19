@@ -30,6 +30,7 @@ export interface Order {
   };
   quote_id: string | null;
   notes?: string | null;
+  bl_contact?: string | null;
 }
 
 export interface OrderItem {

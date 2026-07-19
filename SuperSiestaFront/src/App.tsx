@@ -46,6 +46,7 @@ import Register from "./pages/Register";
 import Showrooms from "./pages/Showrooms";
 import ProtectedRoute from "@/components/admin/ProtectedRoute";
 import React from "react";
+import SeoPanel from "./pages/admin/SeoPanel";
 
 const queryClient = new QueryClient();
 
@@ -118,6 +119,8 @@ const App = () => (
                       <Route path="/newsletter" element={<AdminNewsletter />} />
                       <Route path="/administrateurs" element={<AdminAdministrateurs />} />
                       <Route path="/prospects" element={<AdminProspects />} />
+                      <Route path="/Seo" element={<SeoPanel />} />
+
                     </Routes>
                   </AdminNotificationProvider>
                 </ProtectedRoute>

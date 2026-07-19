@@ -78,6 +78,10 @@ export default function Commander() {
   });
   const [locating, setLocating] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [lastOrderId, setLastOrderId] = useState<string | number | null>(null);
+  const [blContact, setBlContact] = useState("");
+  const [blSent, setBlSent] = useState(false);
+  const [blSending, setBlSending] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -205,19 +209,87 @@ export default function Commander() {
     );
   }
 
+  const handleSendBlContact = async () => {
+    if (!blContact.trim() || !lastOrderId) return;
+    setBlSending(true);
+    try {
+      await api.put(`/orders/${lastOrderId}/bl-contact`, { bl_contact: blContact.trim() });
+      setBlSent(true);
+    } catch {
+      // silent — non-blocking
+      setBlSent(true);
+    } finally {
+      setBlSending(false);
+    }
+  };
+
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <div className="w-20 h-20 bg-accent rounded-full flex items-center justify-center mx-auto mb-6"><Check className="w-10 h-10 text-primary" /></div>
-          <h1 className="text-3xl font-black mb-3">Commande confirmée !</h1>
-          <p className="text-muted-foreground mb-2">Merci <strong>{form.full_name}</strong> pour votre commande !</p>
-          <p className="text-muted-foreground mb-6">Notre équipe vous contactera au <strong>{form.telephone}</strong> {form.telephone2 ? `ou au ${form.telephone2}` : ""} pour confirmer la livraison.</p>
-          <div className="bg-accent rounded-2xl p-4 mb-6 text-sm text-accent-foreground">✅ Paiement à la livraison — Livraison gratuite</div>
-          {user && (
-            <button onClick={() => navigate("/mon-compte")} className="bg-secondary text-secondary-foreground font-bold px-7 py-3 rounded-2xl hover:bg-secondary/80 transition-colors mr-3 mb-3">Voir mes commandes</button>
-          )}
-          <button onClick={() => navigate("/")} className="bg-primary text-primary-foreground font-bold px-7 py-3.5 rounded-2xl hover:bg-primary/90 transition-colors">Retour à l'accueil</button>
+      <div className="min-h-screen flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md space-y-5">
+          {/* Success card */}
+          <div className="text-center bg-card border border-border rounded-3xl p-8 shadow-sm">
+            <div className="w-20 h-20 bg-accent rounded-full flex items-center justify-center mx-auto mb-6">
+              <Check className="w-10 h-10 text-primary" />
+            </div>
+            <h1 className="text-3xl font-black mb-3">Commande confirmée !</h1>
+            <p className="text-muted-foreground mb-2">
+              Merci <strong>{form.full_name}</strong> pour votre commande !
+            </p>
+            <p className="text-muted-foreground mb-6">
+              Notre équipe vous contactera au <strong>{form.telephone}</strong>{form.telephone2 ? ` ou au ${form.telephone2}` : ""} pour confirmer la livraison.
+            </p>
+            <div className="bg-accent rounded-2xl p-4 mb-6 text-sm text-accent-foreground">✅ Paiement à la livraison — Livraison gratuite</div>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {user && (
+                <button onClick={() => navigate("/mon-compte")} className="bg-secondary text-secondary-foreground font-bold px-6 py-3 rounded-2xl hover:bg-secondary/80 transition-colors">
+                  Voir mes commandes
+                </button>
+              )}
+              <button onClick={() => navigate("/")} className="bg-primary text-primary-foreground font-bold px-6 py-3 rounded-2xl hover:bg-primary/90 transition-colors">
+                Retour à l'accueil
+              </button>
+            </div>
+          </div>
+
+          {/* BL provisoire card */}
+          <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <span className="text-lg">📄</span>
+              </div>
+              <div>
+                <p className="font-bold text-sm">Recevoir votre BL provisoire</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Entrez votre numéro WhatsApp ou email pour recevoir un bon de livraison provisoire.
+                </p>
+              </div>
+            </div>
+            {blSent ? (
+              <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold rounded-xl px-4 py-3">
+                <Check className="w-4 h-4 flex-shrink-0" />
+                Enregistré ! Vous recevrez votre BL prochainement.
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="WhatsApp ou Email"
+                  value={blContact}
+                  onChange={(e) => setBlContact(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendBlContact()}
+                  className="flex-1 px-4 py-2.5 border-2 border-border rounded-xl bg-background text-sm focus:outline-none focus:border-primary transition-colors"
+                />
+                <button
+                  onClick={handleSendBlContact}
+                  disabled={!blContact.trim() || blSending}
+                  className="px-4 py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 flex-shrink-0"
+                >
+                  {blSending ? "..." : "Envoyer"}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -305,6 +377,8 @@ export default function Commander() {
       if (response.token) {
         localStorage.setItem("auth_token", response.token);
       }
+      const orderId = response?.order?.id || response?.id;
+      if (orderId) setLastOrderId(orderId);
       setSubmitted(true);
       clearCart();
       clearFormStorage();

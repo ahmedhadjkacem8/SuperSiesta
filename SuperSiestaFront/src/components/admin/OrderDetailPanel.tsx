@@ -481,25 +481,38 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
             </CardHeader>
             <CardContent className="pt-4 space-y-4">
               {/* Delivery Note */}
-              <div className="group relative">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Truck className={`w-4 h-4 ${order.delivery_note_id ? 'text-indigo-600' : 'text-muted-foreground opacity-40'}`} />
+<div className="group relative">
+
+                {order.bl_contact && (
+                  <div className="mb-3 p-3 rounded-lg bg-emerald-50/50 border border-emerald-100 flex flex-col gap-1.5 text-xs text-emerald-800">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-base shrink-0">📄</span>
+                      <span className="font-bold shrink-0 whitespace-nowrap">Contact BL Provisoire :</span>
+                    </div>
+                    <span className="font-medium bg-emerald-100/50 px-2 py-1 rounded break-words">
+                      {order.bl_contact}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between mb-2 gap-2">
+
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Truck className={`w-4 h-4 shrink-0 ${order.delivery_note_id ? 'text-indigo-600' : 'text-muted-foreground opacity-40'}`} />
                     <span className="text-xs font-bold uppercase">Bon de livraison</span>
                   </div>
                   {order.delivery_note_id ? (
-                    <Badge variant="secondary" className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100 h-5 px-1.5 text-[10px]">Prêt</Badge>
+                    <Badge variant="secondary" className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100 h-5 px-1.5 text-[10px] shrink-0">Prêt</Badge>
                   ) : (
-                    <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-dashed">Non généré</Badge>
+                    <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-dashed shrink-0">Non généré</Badge>
                   )}
                 </div>
-                
+
                 {hasDeliveryNoteReady() ? (
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700">
-                    <CheckCircle2 className="w-5 h-5" />
-                    <div className="flex flex-col">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700">
+                    <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+                    <div className="flex flex-col min-w-0">
                       <span className="text-[11px] font-bold uppercase">BL Généré avec succès</span>
-                      <span className="text-[10px] opacity-80">À imprimer depuis la section Bons de Livraison</span>
+                      <span className="text-[10px] opacity-80 leading-tight">À imprimer depuis la section Bons de Livraison</span>
                     </div>
                   </div>
                   ) : (
@@ -514,8 +527,8 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
                   >
                     {generating === 'delivery' ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                        GÉNÉRATION...
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin shrink-0" />
+                        <span>GÉNÉRATION...</span>
                       </>
                     ) : (
                       'GÉNÉRER MAINTENANT'
@@ -523,8 +536,8 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
                   </Button>
                 )}
                 {!canGenerateDeliveryNote() && !order.delivery_note_id && (
-                  <div className="mt-2 flex items-center gap-1.5 px-2 py-1 rounded bg-muted/50 border border-border">
-                    <Info className="w-3 h-3 text-muted-foreground" />
+                  <div className="mt-2 flex items-start gap-1.5 px-2 py-1 rounded bg-muted/50 border border-border">
+                    <Info className="w-3 h-3 text-muted-foreground shrink-0 mt-0.5" />
                     <span className="text-[9px] text-muted-foreground leading-tight italic">
                       Génération impossible pour une commande annulée.
                     </span>

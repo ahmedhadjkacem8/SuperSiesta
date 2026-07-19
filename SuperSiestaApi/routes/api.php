@@ -104,6 +104,7 @@ Route::middleware('api')->group(function () {
 
     // Orders checkout (Public)
     Route::post('/orders', [OrderController::class, 'store']);
+    Route::put('/orders/{order}/bl-contact', [OrderController::class, 'updateBlContact']);
 
     // Reviews & Contact Messages
     Route::get('/published-reviews', [ReviewController::class, 'published']);
@@ -122,6 +123,11 @@ Route::middleware('api')->group(function () {
     Route::get('/files/{path}', [FileController::class, 'serve'])
         ->where('path', '.*')
         ->name('files.serve');
+
+
+    // Public SEO endpoint (fetch meta for a page by identifier)
+    Route::get('seo/page/{identifier}', 'App\\Http\\Controllers\\Api\\SeoController@getByPage');
+
 });
 
 // Protected routes (authentication required)
@@ -348,4 +354,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Get signed temporary URLs for files (1 hour validity)
     Route::post('/files/signed-url', [FileController::class, 'getSignedUrl']);
+
+        // SEO Management
+    Route::get('seo/stats', 'App\\Http\\Controllers\\Api\\SeoController@stats');
+    Route::post('seo/analyze-bulk', 'App\\Http\\Controllers\\Api\\SeoController@analyzeBulk');
+    Route::post('seo/resync', 'App\\Http\\Controllers\\Api\\SeoController@resync');
+    Route::post('seo/{id}/analyze', 'App\\Http\\Controllers\\Api\\SeoController@analyze');
+    Route::get('seo/{id}/history', 'App\\Http\\Controllers\\Api\\SeoController@scoreHistory');
+    Route::apiResource('seo', 'App\\Http\\Controllers\\Api\\SeoController');
+
 });

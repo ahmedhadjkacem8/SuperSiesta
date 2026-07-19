@@ -10,6 +10,7 @@
  */
 
 const API_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
+const API_ROOT = (import.meta.env.VITE_API_ROOT || (API_URL.startsWith('http') ? API_URL.replace(/\/api$/, '') : '')).replace(/\/+$/, '')
 const isDevelopment = import.meta.env.DEV
 
 interface ApiResponse<T> {
@@ -270,6 +271,17 @@ class SecureApiService {
     return this.rateLimitInfo
   }
 
+  /**
+   * Construit l'URL publique d'un fichier stocké (image OG/Twitter, uploads, etc.)
+   */
+  getFileUrl(path: string | null | undefined): string {
+    if (!path) return ''
+    if (path.startsWith('http')) return path
+    const cleanedPath = path.replace(/^\/+/, '')
+    if (!API_ROOT) return `/${cleanedPath}`
+    return `${API_ROOT}/${cleanedPath}`
+  }
+
   // Products
   getProducts(params?: { categorie?: string; fermete?: string; gamme?: string; in_promo?: boolean; per_page?: number }) {
     const query = new URLSearchParams()
@@ -332,6 +344,60 @@ class SecureApiService {
 
   getBlogPost(id: string) {
     return this.get(`/blog-posts/${id}`)
+  }
+
+  // SEO Management (admin)
+  getSeoMetas(params?: { per_page?: number; q?: string; type?: string }) {
+    const query = new URLSearchParams();
+
+    query.append('per_page', String(params?.per_page || 100));
+
+    if (params?.q) query.append('q', params.q);
+    if (params?.type) query.append('type', params.type);
+
+    return this.get(`/seo?${query.toString()}`);
+  }
+
+  getSeoStats() {
+    return this.get('/seo/stats')
+  }
+
+  getSeoMeta(id: number | string) {
+    return this.get(`/seo/${id}`)
+  }
+
+  createSeoMeta(data: any) {
+    return this.post('/seo', data)
+  }
+
+  updateSeoMeta(id: number | string, data: any) {
+    return this.put(`/seo/${id}`, data)
+  }
+
+  deleteSeoMeta(id: number | string) {
+    return this.delete(`/seo/${id}`)
+  }
+
+  analyzeSeoMeta(id: number | string) {
+    return this.post(`/seo/${id}/analyze`, {})
+  }
+
+  analyzeSeoMetaBulk(ids?: (number | string)[]) {
+    return this.post('/seo/analyze-bulk', { ids: ids ?? [] })
+  }
+
+  getSeoScoreHistory(id: number | string) {
+    return this.get(`/seo/${id}/history`)
+  }
+
+  /** Trigger the seo:sync-all command on the server to re-generate all auto-managed JSON-LD entries */
+  resyncSeoEntities(options?: { type?: 'products' | 'categories' | 'showrooms' | 'blog'; force?: boolean }) {
+    return this.post('/seo/resync', options ?? {})
+  }
+
+  // Public : SEO résolu pour une page donnée (fallback inclus côté backend)
+  getSeoByPage(identifier: string) {
+    return this.get(`/seo/page/${encodeURIComponent(identifier)}`)
   }
 
   // Showrooms

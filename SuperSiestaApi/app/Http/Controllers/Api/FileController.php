@@ -67,14 +67,22 @@ class FileController extends BaseController
         // Get the full file path for streaming
         $file = Storage::disk('public')->path($path);
 
+        // SEO/OG images are public assets — apply an aggressive public cache so
+        // Googlebot, the Facebook scraper and other crawlers can cache them
+        // efficiently (30 days, immutable because we use content-addressed filenames).
+        $isSeoImage = str_starts_with($path, 'seo/');
+        $cacheControl = $isSeoImage
+            ? 'public, max-age=2592000, immutable'   // 30 days — SEO / OG images
+            : 'private, max-age=86400';               // 1 day  — authenticated assets
+
         // Return file response with proper headers
         return response()->file($file, [
-            'Content-Type' => $mimeType,
-            'Content-Length' => $fileSize,
-            'Cache-Control' => 'private, max-age=86400',
-            'Content-Disposition' => ResponseHeaderBag::DISPOSITION_INLINE,
+            'Content-Type'           => $mimeType,
+            'Content-Length'         => $fileSize,
+            'Cache-Control'          => $cacheControl,
+            'Content-Disposition'    => ResponseHeaderBag::DISPOSITION_INLINE,
             'X-Content-Type-Options' => 'nosniff',
-            'Access-Control-Allow-Origin' => '*',
+            'Access-Control-Allow-Origin'  => '*',
             'Access-Control-Allow-Methods' => 'GET, OPTIONS',
         ]);
     }

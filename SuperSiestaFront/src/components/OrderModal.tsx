@@ -106,6 +106,10 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
   const [qty, setQty] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [lastOrderId, setLastOrderId] = useState<string | number | null>(null);
+  const [blContact, setBlContact] = useState("");
+  const [blSent, setBlSent] = useState(false);
+  const [blSending, setBlSending] = useState(false);
   const [form, setForm] = useState({
     full_name: "",
     telephone: "",
@@ -118,6 +122,9 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
   useEffect(() => {
     if (open) {
       setSuccess(false);
+      setLastOrderId(null);
+      setBlContact("");
+      setBlSent(false);
       setStep(1);
       setQty(1);
       setForm({ full_name: "", telephone: "", ville: "", adresse: "", notes: "" });
@@ -150,7 +157,7 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
     setSubmitting(true);
 
     try {
-      await api.createOrder({
+      const response: any = await api.createOrder({
         full_name: form.full_name,
         phone: form.telephone,
         address: form.adresse || "",
@@ -166,6 +173,8 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
           },
         ],
       });
+      const orderId = response?.order?.id || response?.id;
+      if (orderId) setLastOrderId(orderId);
       setSuccess(true);
     } catch (error: any) {
       toast.error(`Erreur lors de l'envoi de la commande : ${error?.message || "Veuillez réessayer"}`);
@@ -198,33 +207,75 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
           </div>
 
           {success ? (
-            <div className="px-6 pb-8 pt-4 text-center">
-              <div className="w-20 h-20 bg-accent rounded-full flex items-center justify-center mx-auto mb-5">
-                <Check className="w-10 h-10 text-primary" />
+            <div className="px-6 pb-8 pt-4">
+              {/* Success card */}
+              <div className="text-center mb-5">
+                <div className="w-20 h-20 bg-accent rounded-full flex items-center justify-center mx-auto mb-5">
+                  <Check className="w-10 h-10 text-primary" />
+                </div>
+                <h3 className="text-2xl font-black mb-3">Commande confirmée !</h3>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Merci <strong>{form.full_name}</strong> pour votre commande !
+                </p>
+                <p className="text-sm text-muted-foreground mb-5">
+                  Notre équipe vous contactera au <strong>{form.telephone}</strong> pour confirmer la livraison.
+                </p>
+                <div className="bg-accent rounded-2xl p-3 mb-5 text-sm text-accent-foreground font-medium">
+                  ✅ Paiement à la livraison — Livraison gratuite
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => { onOpenChange(false); navigate("/boutique"); }}
+                    className="w-full bg-primary text-primary-foreground py-3 rounded-2xl font-bold hover:bg-primary/90 transition-colors"
+                  >
+                    Continuer mes achats
+                  </button>
+                  <button
+                    onClick={() => { onOpenChange(false); navigate("/"); }}
+                    className="w-full border border-border py-3 rounded-2xl font-bold text-sm hover:bg-muted transition-colors"
+                  >
+                    Retour à l'accueil
+                  </button>
+                </div>
               </div>
-              <h3 className="text-2xl font-black mb-3">Commande confirmée !</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                Merci <strong>{form.full_name}</strong> pour votre commande !
-              </p>
-              <p className="text-sm text-muted-foreground mb-5">
-                Notre équipe vous contactera au <strong>{form.telephone}</strong> pour confirmer la livraison.
-              </p>
-              <div className="bg-accent rounded-2xl p-3 mb-6 text-sm text-accent-foreground font-medium">
-                ✅ Paiement à la livraison — Livraison gratuite
-              </div>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => { onOpenChange(false); navigate("/boutique"); }}
-                  className="w-full bg-primary text-primary-foreground py-3 rounded-2xl font-bold hover:bg-primary/90 transition-colors"
-                >
-                  Continuer mes achats
-                </button>
-                <button
-                  onClick={() => { onOpenChange(false); navigate("/"); }}
-                  className="w-full border border-border py-3 rounded-2xl font-bold text-sm hover:bg-muted transition-colors"
-                >
-                  Retour à l'accueil
-                </button>
+
+              {/* BL provisoire card */}
+              <div className="bg-muted/40 border border-border rounded-2xl p-5">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg">📄</span>
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm">Recevoir votre BL provisoire</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Entrez votre numéro WhatsApp ou email pour recevoir un bon de livraison provisoire.
+                    </p>
+                  </div>
+                </div>
+                {blSent ? (
+                  <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold rounded-xl px-4 py-3">
+                    <Check className="w-4 h-4 flex-shrink-0" />
+                    Enregistré ! Vous recevrez votre BL prochainement.
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="WhatsApp ou Email"
+                      value={blContact}
+                      onChange={(e) => setBlContact(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && blContact.trim() && lastOrderId) { setBlSending(true); api.put(`/orders/${lastOrderId}/bl-contact`, { bl_contact: blContact.trim() }).finally(() => { setBlSending(false); setBlSent(true); }); } }}
+                      className="flex-1 px-4 py-2.5 border-2 border-border rounded-xl bg-background text-sm focus:outline-none focus:border-primary transition-colors"
+                    />
+                    <button
+                      onClick={() => { if (!blContact.trim() || !lastOrderId) return; setBlSending(true); api.put(`/orders/${lastOrderId}/bl-contact`, { bl_contact: blContact.trim() }).finally(() => { setBlSending(false); setBlSent(true); }); }}
+                      disabled={!blContact.trim() || blSending}
+                      className="px-4 py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 flex-shrink-0"
+                    >
+                      {blSending ? "..." : "Envoyer"}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ) : (

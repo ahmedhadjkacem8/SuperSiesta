@@ -423,4 +423,20 @@ class OrderController extends BaseController
 
         return $this->sendResponse($item, 'Order item updated successfully');
     }
+
+    /**
+     * Public method to allow guests to update BL contact info for an order.
+     */
+    public function updateBlContact(Request $request, Order $order): JsonResponse
+    {
+        $validated = $request->validate([
+            'bl_contact' => 'required|string|max:255',
+        ]);
+
+        $order->update([
+            'bl_contact' => $validated['bl_contact']
+        ]);
+
+        return $this->sendResponse($order, 'BL contact updated successfully');
+    }
 }

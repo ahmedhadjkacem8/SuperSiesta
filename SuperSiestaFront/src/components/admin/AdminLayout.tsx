@@ -45,6 +45,8 @@ const navGroups = [
       { label: "À Propos", path: "/admin/a-propos", icon: Info },
       { label: "Paramétrages", path: "/admin/settings", icon: Settings },
       { label: "Administrateurs", path: "/admin/administrateurs", icon: Shield },
+      { label: "Seo", path: "/admin/Seo", icon: Shield }
+
     ]
   }
 ];
