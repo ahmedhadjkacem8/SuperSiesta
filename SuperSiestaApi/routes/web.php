@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Response;
 use App\Models\SeoMeta;
+use App\Http\Controllers\SeoRenderController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -76,3 +77,9 @@ Route::get('/sitemap.xml', function () {
         'Access-Control-Allow-Methods' => 'GET, OPTIONS',
     ]);
 });
+
+Route::get('/boutique', [SeoRenderController::class, 'render'])->name('seo.boutique');
+Route::get('/produit/{slug}', [SeoRenderController::class, 'render'])->name('seo.produit');
+Route::get('/boutique/{slug}', [SeoRenderController::class, 'render'])->name('seo.categorie');
+Route::get('/blog/{slug}', [SeoRenderController::class, 'render'])->name('seo.blog');
+Route::get('/showrooms', [SeoRenderController::class, 'render'])->name('seo.showrooms');
