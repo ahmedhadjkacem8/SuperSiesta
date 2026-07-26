@@ -14,12 +14,17 @@ class SeoRenderController extends Controller
         $routeName = $request->route()->getName(); // ex: 'seo.produit'
 
         $identifier = match ($routeName) {
-            'seo.produit'   => 'product_' . $slug,
-            'seo.categorie' => 'categorie_' . $slug,
-            'seo.blog'      => 'blog_' . $slug,
-            'seo.showrooms' => 'showrooms',
-            'seo.boutique'  => 'boutique',
-            default         => 'global',
+            'seo.home'       => 'home',
+            'seo.about'      => 'a-propos',
+            'seo.contact'    => 'contact',
+            'seo.blog_index' => 'blog',
+            'seo.faq'        => 'faq',
+            'seo.produit'    => 'product_' . $slug,
+            'seo.categorie'  => 'categorie_' . $slug,
+            'seo.blog'       => 'blog_' . $slug,
+            'seo.showrooms'  => 'showrooms',
+            'seo.boutique'   => 'boutique',
+            default          => 'global',
         };
 
         // og:type par défaut selon le type de page (surchargé plus bas si l'entrée en base en définit un)
@@ -42,18 +47,21 @@ class SeoRenderController extends Controller
         }
 
         // Fallback si aucune entrée trouvée (pages statiques sans entrée SEO configurée)
-        $title       = $seo->og_title ?? 'Super Siesta';
-        $description = $seo->og_description ?? 'Super Siesta matelas';
-        $image       = $seo->og_image ?? url('/default-og-image.jpg');
-        $ogType      = $seo->og_type ?? $defaultOgType;
-        $ogLocale    = $seo->og_locale ?? 'fr_FR';
-        $robots      = $seo->meta_robots ?? 'index, follow';
-        $url         = $request->fullUrl();
+        $title       = $seo?->og_title ?? 'Super Siesta';
+        $description = $seo?->og_description ?? 'Super Siesta matelas';
+        $image       = $seo?->og_image ?? '/default-og-image.jpg';
+        $ogType      = $seo?->og_type ?? $defaultOgType;
+        $ogLocale    = $seo?->og_locale ?? 'fr_FR';
+        $robots      = $seo?->meta_robots ?? 'index, follow';
+
+        // Build the public frontend URL using FRONTEND_URL from env, falling back to request host
+        $frontUrl = rtrim(env('FRONTEND_URL', $request->getSchemeAndHttpHost()), '/');
+        $url      = $frontUrl . $request->getPathInfo();
 
         // Bug fix : og_image / twitter_image stockés en base sont souvent des chemins
         // relatifs ("/storage/seo/xxx.jpg") — Facebook/Twitter exigent une URL absolue.
         if ($image && !str_starts_with($image, 'http')) {
-            $image = url($image);
+            $image = $frontUrl . '/' . ltrim($image, '/');
         }
 
         // Sécurité : échapper le contenu injecté dans le HTML

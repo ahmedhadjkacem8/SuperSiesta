@@ -5,9 +5,7 @@ use Illuminate\Support\Facades\Response;
 use App\Models\SeoMeta;
 use App\Http\Controllers\SeoRenderController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [SeoRenderController::class, 'render'])->name('seo.home');
 
 /**
  * Serve robots.txt dynamically with Access-Control-Allow-Origin header
@@ -36,12 +34,23 @@ Route::get('/sitemap.xml', function () {
     $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
     $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
 
-    // Add home page
-    $xml .= "  <url>\n";
-    $xml .= "    <loc>{$frontUrl}/</loc>\n";
-    $xml .= "    <priority>1.0</priority>\n";
-    $xml .= "    <changefreq>daily</changefreq>\n";
-    $xml .= "  </url>\n";
+    // Check if a custom home page entry exists in DB
+    $hasHomeEntry = false;
+    foreach ($entries as $entry) {
+        if ($entry->page_identifier === 'home') {
+            $hasHomeEntry = true;
+            break;
+        }
+    }
+
+    // Add default home page only if no custom "home" entry is configured in DB
+    if (!$hasHomeEntry) {
+        $xml .= "  <url>\n";
+        $xml .= "    <loc>{$frontUrl}/</loc>\n";
+        $xml .= "    <priority>1.0</priority>\n";
+        $xml .= "    <changefreq>daily</changefreq>\n";
+        $xml .= "  </url>\n";
+    }
 
     foreach ($entries as $entry) {
         if ($entry->page_identifier === 'global') {
@@ -49,7 +58,9 @@ Route::get('/sitemap.xml', function () {
         }
 
         $pathStr = $entry->page_identifier;
-        if (str_starts_with($pathStr, 'product_')) {
+        if ($pathStr === 'home') {
+            $pathStr = '';
+        } elseif (str_starts_with($pathStr, 'product_')) {
             $pathStr = 'produit/' . substr($pathStr, 8);
         } elseif (str_starts_with($pathStr, 'categorie_')) {
             $pathStr = 'boutique?categorie=' . urlencode(substr($pathStr, 10));
@@ -78,8 +89,15 @@ Route::get('/sitemap.xml', function () {
     ]);
 });
 
-Route::get('/boutique', [SeoRenderController::class, 'render'])->name('seo.boutique');
-Route::get('/produit/{slug}', [SeoRenderController::class, 'render'])->name('seo.produit');
-Route::get('/boutique/{slug}', [SeoRenderController::class, 'render'])->name('seo.categorie');
-Route::get('/blog/{slug}', [SeoRenderController::class, 'render'])->name('seo.blog');
+// ── Pages statiques ──
+Route::get('/boutique',  [SeoRenderController::class, 'render'])->name('seo.boutique');
 Route::get('/showrooms', [SeoRenderController::class, 'render'])->name('seo.showrooms');
+Route::get('/a-propos',  [SeoRenderController::class, 'render'])->name('seo.about');
+Route::get('/contact',   [SeoRenderController::class, 'render'])->name('seo.contact');
+Route::get('/blog',      [SeoRenderController::class, 'render'])->name('seo.blog_index');
+Route::get('/faq',       [SeoRenderController::class, 'render'])->name('seo.faq');
+
+// ── Pages dynamiques (avec slug) ──
+Route::get('/produit/{slug}',  [SeoRenderController::class, 'render'])->name('seo.produit');
+Route::get('/boutique/{slug}', [SeoRenderController::class, 'render'])->name('seo.categorie');
+Route::get('/blog/{slug}',     [SeoRenderController::class, 'render'])->name('seo.blog');

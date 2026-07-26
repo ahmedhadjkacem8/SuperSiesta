@@ -118,12 +118,13 @@ const TWITTER_CARDS = ["summary", "summary_large_image"];
 const JSON_LD_TYPES = ["WebPage", "Product", "Organization", "LocalBusiness", "CollectionPage", "ContactPage", "FAQPage"];
 
 const PAGE_TEMPLATES = [
-  { value: "home", label: "Page d'Accueil" },
-  { value: "boutique", label: "Boutique / Catalogue" },
-  { value: "showrooms", label: "Showrooms" },
-  { value: "blog", label: "Blog" },
-  { value: "a-propos", label: "À Propos" },
-  { value: "contact", label: "Contact" },
+  { value: "home", label: "Page d'Accueil (/)" },
+  { value: "boutique", label: "Boutique / Catalogue (/boutique)" },
+  { value: "showrooms", label: "Showrooms (/showrooms)" },
+  { value: "blog", label: "Blog (/blog)" },
+  { value: "a-propos", label: "À Propos (/a-propos)" },
+  { value: "contact", label: "Contact (/contact)" },
+  { value: "faq", label: "FAQ (/faq)" },
   { value: "global", label: "Paramètres Globaux (Fallback)" },
 ];
 
