@@ -13,6 +13,39 @@ import SeoImageUploader from "@/components/admin/SeoImageUploader";
 
 const API_ROOT = (import.meta.env.VITE_API_ROOT || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "") : "")).replace(/\/+$/, "");
 
+const getPagePath = (identifier: string): string => {
+  if (!identifier) return "/";
+  if (identifier === "home") return "/";
+  if (identifier === "global") return "/";
+  if (identifier === "boutique") return "/boutique";
+  if (identifier === "showrooms") return "/showrooms";
+  if (identifier === "blog") return "/blog";
+  if (identifier === "a-propos") return "/a-propos";
+  if (identifier === "contact") return "/contact";
+  if (identifier === "faq") return "/faq";
+
+  if (identifier.startsWith("product_")) {
+    return `/produit/${identifier.replace("product_", "")}`;
+  }
+  if (identifier.startsWith("categorie_")) {
+    return `/boutique?categorie=${identifier.replace("categorie_", "")}`;
+  }
+  if (identifier.startsWith("blog_")) {
+    return `/blog/${identifier.replace("blog_", "")}`;
+  }
+  if (identifier.startsWith("showroom_")) {
+    return `/showrooms?showroom=${identifier}`;
+  }
+
+  return `/${identifier}`;
+};
+
+const getTargetUrl = (identifier: string): string => {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const path = getPagePath(identifier);
+  return `${origin}${path}`;
+};
+
 // ─── Types ───
 interface SeoEntry {
   id?: number;
@@ -162,38 +195,51 @@ const CharCounter = ({ value, max, optimal }: { value: string; max: number; opti
 };
 
 // ─── SERP Preview ───
-const SerpPreview = ({ title, description }: { title: string; description: string }) => (
-  <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-border">
-    <p className="text-xs text-muted-foreground mb-2 font-medium">Aperçu Google SERP</p>
-    <div className="space-y-0.5">
-      <p className="text-[#1a0dab] dark:text-[#8ab4f8] text-base font-medium truncate cursor-pointer hover:underline">
-        {title || "Titre de la page — Super Siesta"}
+const SerpPreview = ({ title, description, url }: { title: string; description: string; url?: string }) => {
+  const displayUrl = url ? url.replace(/^https?:\/\//, "") : "SiestaOfficiel - page";
+  return (
+    <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-border">
+      <p className="text-xs text-muted-foreground mb-2 font-medium flex items-center justify-between">
+        <span>Aperçu Google SERP</span>
+        {url && <span className="text-[10px] font-mono text-emerald-500 truncate max-w-[150px]">{url}</span>}
       </p>
-      <p className="text-[#006621] dark:text-[#bdc1c6] text-xs">SiestaOfficiel - page</p>
-      <p className="text-[#545454] dark:text-[#bdc1c6] text-sm leading-relaxed line-clamp-2">
-        {description || "La description de votre page apparaîtra ici dans les résultats de recherche Google..."}
-      </p>
+      <div className="space-y-0.5">
+        <p className="text-[#1a0dab] dark:text-[#8ab4f8] text-base font-medium truncate cursor-pointer hover:underline">
+          {title || "Titre de la page — Super Siesta"}
+        </p>
+        <p className="text-[#006621] dark:text-[#bdc1c6] text-xs font-mono truncate">{displayUrl}</p>
+        <p className="text-[#545454] dark:text-[#bdc1c6] text-sm leading-relaxed line-clamp-2">
+          {description || "La description de votre page apparaîtra ici dans les résultats de recherche Google..."}
+        </p>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ─── Social Preview ───
-const SocialPreview = ({ title, description, image, type }: { title: string; description: string; image?: string; type: "og" | "twitter" }) => (
-  <div className="bg-white dark:bg-zinc-900 rounded-lg border border-border overflow-hidden">
-    <p className="text-xs text-muted-foreground px-3 pt-3 pb-1 font-medium flex items-center gap-1.5">
-      {type === "og" ? <><Share2 className="w-3 h-3" /> Aperçu Facebook/LinkedIn</> : <><MessageSquare className="w-3 h-3" /> Aperçu Twitter</>}
-    </p>
-    {image && (
-      <div className="mx-3 mt-1 h-32 rounded-lg overflow-hidden bg-muted">
-        <img src={api.getFileUrl(image)} alt="" className="w-full h-full object-cover" />
+const SocialPreview = ({ title, description, image, url, type }: { title: string; description: string; image?: string; url?: string; type: "og" | "twitter" }) => {
+  const domain = url ? url.replace(/^https?:\/\//, "").split('/')[0].toUpperCase() : "SIESTAOFFICIEL.COM";
+  return (
+    <div className="bg-white dark:bg-zinc-900 rounded-lg border border-border overflow-hidden">
+      <p className="text-xs text-muted-foreground px-3 pt-3 pb-1 font-medium flex items-center justify-between">
+        <span className="flex items-center gap-1.5">
+          {type === "og" ? <><Share2 className="w-3 h-3" /> Aperçu Facebook/LinkedIn</> : <><MessageSquare className="w-3 h-3" /> Aperçu Twitter</>}
+        </span>
+        <span className="text-[10px] font-mono text-muted-foreground">{domain}</span>
+      </p>
+      {image && (
+        <div className="mx-3 mt-1 h-32 rounded-lg overflow-hidden bg-muted">
+          <img src={api.getFileUrl(image)} alt="" className="w-full h-full object-cover" />
+        </div>
+      )}
+      <div className="p-3">
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">{domain}</p>
+        <p className="font-semibold text-sm text-foreground truncate">{title || "Titre"}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{description || "Description..."}</p>
       </div>
-    )}
-    <div className="p-3">
-      <p className="font-semibold text-sm text-foreground truncate">{title || "Titre"}</p>
-      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{description || "Description..."}</p>
     </div>
-  </div>
-);
+  );
+};
 
 // ─── Recommendation Badge ───
 const PriorityBadge = ({ priority }: { priority: "high" | "medium" | "low" }) => {
@@ -649,6 +695,31 @@ const SeoPanel = () => {
                     </div>
                   </div>
 
+                  {/* Targeted URL Banner */}
+                  {editing.page_identifier && (
+                    <div className="bg-accent/5 border border-accent/20 rounded-lg p-3 space-y-1">
+                      <div className="flex items-center justify-between text-xs flex-wrap gap-1">
+                        <span className="font-medium text-foreground flex items-center gap-1.5">
+                          <Globe className="w-3.5 h-3.5 text-accent" /> URL ciblée par le SEO :
+                        </span>
+                        <a
+                          href={getTargetUrl(editing.page_identifier)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-accent hover:underline font-mono text-xs flex items-center gap-1 font-semibold bg-accent/10 px-2 py-0.5 rounded border border-accent/20"
+                        >
+                          {getTargetUrl(editing.page_identifier)}
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                      {editing.page_identifier.startsWith("showroom_") && (
+                        <p className="text-[11px] text-muted-foreground pt-0.5">
+                          📍 Ce showroom est structuré en données <strong>LocalBusiness</strong> sur la page unique <code className="bg-muted px-1 py-0.5 rounded text-foreground font-mono">/showrooms</code>.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Meta Title */}
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
@@ -961,17 +1032,19 @@ const SeoPanel = () => {
                 </div>
               </div>
             )}
-            <SerpPreview title={editing.meta_title} description={editing.meta_description} />
+            <SerpPreview title={editing.meta_title} description={editing.meta_description} url={getTargetUrl(editing.page_identifier)} />
             <SocialPreview
               title={editing.og_title || editing.meta_title}
               description={editing.og_description || editing.meta_description}
               image={editing.og_image}
+              url={getTargetUrl(editing.page_identifier)}
               type="og"
             />
             <SocialPreview
               title={editing.twitter_title || editing.og_title || editing.meta_title}
               description={editing.twitter_description || editing.og_description || editing.meta_description}
               image={editing.twitter_image || editing.og_image}
+              url={getTargetUrl(editing.page_identifier)}
               type="twitter"
             />
 
@@ -1108,7 +1181,22 @@ const SeoPanel = () => {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground font-mono">{entry.page_identifier}</p>
+                          <div className="flex items-center gap-2 flex-wrap text-xs">
+                            <span className="text-muted-foreground font-mono bg-muted/60 px-1.5 py-0.5 rounded border border-border/40 text-[11px]">
+                              {entry.page_identifier}
+                            </span>
+                            <a
+                              href={getTargetUrl(entry.page_identifier)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-accent hover:underline font-mono text-[11px] bg-accent/10 px-1.5 py-0.5 rounded border border-accent/20 font-medium"
+                              title="Ouvrir l'URL ciblée par le SEO dans un nouvel onglet"
+                            >
+                              <Globe className="w-3 h-3" />
+                              {getPagePath(entry.page_identifier)}
+                              <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                            </a>
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">

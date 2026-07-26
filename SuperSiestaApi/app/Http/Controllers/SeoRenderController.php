@@ -27,6 +27,21 @@ class SeoRenderController extends Controller
             default          => 'global',
         };
 
+        // Support deep-linking for specific showrooms via query parameters (e.g. ?showroom=showroom_oran or ?id=uuid)
+        // Enables social crawlers and SEO debug tools to test/preview individual showroom metadata.
+        if ($routeName === 'seo.showrooms' && ($request->has('showroom') || $request->has('id'))) {
+            $param = $request->query('showroom') ?? $request->query('id');
+            $targetId = str_starts_with($param, 'showroom_') ? $param : 'showroom_' . \Illuminate\Support\Str::slug($param);
+
+            $specificSeo = SeoMeta::where('page_identifier', $targetId)
+                ->orWhere('seoable_id', $param)
+                ->first();
+
+            if ($specificSeo) {
+                $identifier = $specificSeo->page_identifier;
+            }
+        }
+
         // og:type par défaut selon le type de page (surchargé plus bas si l'entrée en base en définit un)
         $defaultOgType = match ($routeName) {
             'seo.produit' => 'product',

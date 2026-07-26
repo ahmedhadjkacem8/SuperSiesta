@@ -156,8 +156,25 @@ export default function Showrooms() {
       });
 
       setShowrooms(processed);
-    } catch (err: any) {
-      toast.error('Erreur lors du chargement des showrooms');
+
+      // Check query param for showroom deep-linking (e.g. ?showroom=showroom_oran or ?id=123)
+      const params = new URLSearchParams(window.location.search);
+      const showroomParam = params.get('showroom') || params.get('id');
+      if (showroomParam && processed.length > 0) {
+        const queryTerm = showroomParam.replace('showroom_', '').replace(/-/g, ' ').toLowerCase();
+        const found = processed.find(s =>
+          String(s.id) === showroomParam ||
+          s.name?.toLowerCase().includes(queryTerm) ||
+          s.city?.toLowerCase().includes(queryTerm)
+        );
+        if (found) {
+          setActiveShowroom(found.id);
+        } else {
+          setActiveShowroom(processed[0]?.id ?? null);
+        }
+      } else if (processed.length > 0) {
+        setActiveShowroom(processed[0]?.id ?? null);
+      }
       console.error(err);
     } finally {
       setLoading(false);
