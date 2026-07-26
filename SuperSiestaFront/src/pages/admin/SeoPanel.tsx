@@ -706,7 +706,7 @@ const SeoPanel = () => {
                           href={getTargetUrl(editing.page_identifier)}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-accent hover:underline font-mono text-xs flex items-center gap-1 font-semibold bg-accent/10 px-2 py-0.5 rounded border border-accent/20"
+                          className="text-primary hover:underline font-mono text-xs flex items-center gap-1 font-semibold bg-primary/10 px-2 py-0.5 rounded border border-primary/20"
                         >
                           {getTargetUrl(editing.page_identifier)}
                           <ExternalLink className="w-3 h-3" />
@@ -1189,7 +1189,7 @@ const SeoPanel = () => {
                               href={getTargetUrl(entry.page_identifier)}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-1 text-accent hover:underline font-mono text-[11px] bg-accent/10 px-1.5 py-0.5 rounded border border-accent/20 font-medium"
+                              className="inline-flex items-center gap-1 text-primary hover:underline font-mono text-[11px] bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20 font-medium"
                               title="Ouvrir l'URL ciblée par le SEO dans un nouvel onglet"
                             >
                               <Globe className="w-3 h-3" />
