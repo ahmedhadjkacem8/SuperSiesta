@@ -56,6 +56,12 @@ Route::get('/sitemap.xml', function () {
         if ($entry->page_identifier === 'global') {
             continue;
         }
+        // Skip individual showroom entries — they all map to /showrooms
+        // and would create duplicate <url> entries. The page-level entry
+        // "showrooms" already covers the unique /showrooms URL.
+        if (str_starts_with($entry->page_identifier, 'showroom_')) {
+            continue;
+        }
 
         $pathStr = $entry->page_identifier;
         if ($pathStr === 'home') {

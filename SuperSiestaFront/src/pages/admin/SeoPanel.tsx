@@ -6,7 +6,7 @@ import {
   Globe, Eye, EyeOff, FileText,
   TrendingUp, AlertTriangle, CheckCircle, Tag, Image as ImageIcon,
   Share2, MessageSquare, Code, Settings, ArrowLeft, Zap, ExternalLink,
-  ChevronUp, ChevronDown, Info, Clock, Link, Bot, Layers
+  ChevronUp, ChevronDown, Info, Clock, Link, Bot, Layers, Copy, ClipboardCheck
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SeoImageUploader from "@/components/admin/SeoImageUploader";
@@ -127,6 +127,81 @@ const PAGE_TEMPLATES = [
   { value: "faq", label: "FAQ (/faq)" },
   { value: "global", label: "Paramètres Globaux (Fallback)" },
 ];
+
+// ─── Frontend URL builder ───
+const FRONTEND_URL = (import.meta.env.VITE_FRONTEND_URL || window.location.origin).replace(/\/+$/, "");
+
+/** Maps a page_identifier to its public frontend URL */
+const buildSeoUrl = (pageId: string): string | null => {
+  if (!pageId) return null;
+  if (pageId === "global") return null;
+  if (pageId === "home") return `${FRONTEND_URL}/`;
+  if (pageId === "boutique") return `${FRONTEND_URL}/boutique`;
+  if (pageId === "showrooms") return `${FRONTEND_URL}/showrooms`;
+  if (pageId === "blog") return `${FRONTEND_URL}/blog`;
+  if (pageId === "a-propos") return `${FRONTEND_URL}/a-propos`;
+  if (pageId === "contact") return `${FRONTEND_URL}/contact`;
+  if (pageId === "faq") return `${FRONTEND_URL}/faq`;
+  if (pageId.startsWith("product_")) return `${FRONTEND_URL}/produit/${pageId.slice(8)}`;
+  if (pageId.startsWith("categorie_")) return `${FRONTEND_URL}/boutique/${pageId.slice(10)}`;
+  if (pageId.startsWith("blog_")) return `${FRONTEND_URL}/blog/${pageId.slice(5)}`;
+  if (pageId.startsWith("showroom_")) return `${FRONTEND_URL}/showrooms`;
+  return `${FRONTEND_URL}/${pageId}`;
+};
+
+// ─── SeoUrlDisplay Component ───
+const SeoUrlDisplay = ({ url }: { url: string }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="bg-muted/40 border border-border/80 rounded-lg p-3 my-2">
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+          <Globe className="w-3.5 h-3.5 text-accent" /> URL canonique générée
+        </span>
+        <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">URL SEO</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <code className="flex-1 bg-background border border-border px-3 py-1.5 rounded text-xs font-mono text-foreground truncate select-all">
+          {url}
+        </code>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-accent-foreground rounded text-xs font-medium hover:opacity-90 transition-opacity shrink-0 cursor-pointer"
+          title="Copier l'URL dans le presse-papier"
+        >
+          {copied ? (
+            <>
+              <ClipboardCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Copié !</span>
+            </>
+          ) : (
+            <>
+              <Copy className="w-3.5 h-3.5" />
+              <span>Copier</span>
+            </>
+          )}
+        </button>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-1.5 bg-background border border-border text-muted-foreground hover:text-foreground rounded transition-colors shrink-0 flex items-center justify-center"
+          title="Ouvrir la page dans un nouvel onglet"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+        </a>
+      </div>
+    </div>
+  );
+};
 
 // ─── Score Badge ───
 const ScoreBadge = ({ score }: { score: number }) => {
@@ -649,6 +724,11 @@ const SeoPanel = () => {
                     </div>
                   </div>
 
+                  {/* Generated SEO URL */}
+                  {editing.page_identifier && buildSeoUrl(editing.page_identifier) && (
+                    <SeoUrlDisplay url={buildSeoUrl(editing.page_identifier)!} />
+                  )}
+
                   {/* Meta Title */}
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
@@ -1107,8 +1187,30 @@ const SeoPanel = () => {
                                 <Bot className="w-2.5 h-2.5" /> {entityTypeLabel(entry)}
                               </span>
                             )}
-                          </div>
-                          <p className="text-xs text-muted-foreground font-mono">{entry.page_identifier}</p>
+                          {(() => {
+                            const entryUrl = buildSeoUrl(entry.page_identifier);
+                            return (
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
+                                <span className="truncate max-w-[240px]" title={entryUrl || entry.page_identifier}>
+                                  {entryUrl || entry.page_identifier}
+                                </span>
+                                {entryUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigator.clipboard.writeText(entryUrl);
+                                      toast({ title: "URL copiée !", description: entryUrl });
+                                    }}
+                                    className="p-1 text-muted-foreground hover:text-accent hover:bg-muted rounded transition-colors"
+                                    title="Copier l'URL canonique"
+                                  >
+                                    <Copy className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </td>
                       <td className="px-4 py-3">

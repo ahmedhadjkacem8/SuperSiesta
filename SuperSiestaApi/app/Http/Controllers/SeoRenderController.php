@@ -73,9 +73,16 @@ class SeoRenderController extends Controller
         $robots      = e($robots);
         $url         = e($url);
 
-        // JSON-LD (Schema.org) — permet les rich snippets Google (prix, stock, avis, breadcrumb...)
+        // ──────────────────────────────────────────────────────────────────
+        // JSON-LD — special handling for /showrooms : ItemList of LocalBusiness
+        // Google rich results recognise ItemList + LocalBusiness to index
+        // multiple physical locations from a single page.
+        // ──────────────────────────────────────────────────────────────────
         $jsonLdScript = '';
-        if ($seo && $seo->json_ld_data) {
+
+        if ($routeName === 'seo.showrooms') {
+            $jsonLdScript = $this->buildShowroomsJsonLd($frontUrl);
+        } elseif ($seo && $seo->json_ld_data) {
             $jsonLd = json_encode(
                 $seo->json_ld_data,
                 JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
@@ -114,5 +121,98 @@ class SeoRenderController extends Controller
 HTML;
 
         return response($html, 200)->header('Content-Type', 'text/html; charset=UTF-8');
+    }
+
+    /**
+     * Build a JSON-LD ItemList containing every showroom as a LocalBusiness.
+     * Cached for 10 minutes to avoid querying the showroom table on every bot hit.
+     */
+    protected function buildShowroomsJsonLd(string $frontUrl): string
+    {
+        $showrooms = Cache::remember('seo_render:showrooms_list', 600, function () {
+            return \App\Models\Showroom::orderBy('sort_order')->get();
+        });
+
+        if ($showrooms->isEmpty()) {
+            return '';
+        }
+
+        $storageUrl = rtrim(config('app.url'), '/') . '/storage';
+
+        $items = [];
+        $position = 0;
+
+        foreach ($showrooms as $sr) {
+            $position++;
+
+            $business = [
+                '@type'   => 'LocalBusiness',
+                'name'    => $sr->name ?? 'Super Siesta Showroom',
+                'url'     => "{$frontUrl}/showrooms",
+                'address' => [
+                    '@type'           => 'PostalAddress',
+                    'streetAddress'   => $sr->address ?? '',
+                    'addressLocality' => $sr->city ?? '',
+                    'addressCountry'  => 'DZ',
+                ],
+            ];
+
+            if (!empty($sr->phone)) {
+                $business['telephone'] = $sr->phone;
+            }
+            if (!empty($sr->email)) {
+                $business['email'] = $sr->email;
+            }
+            if (!empty($sr->lat) && !empty($sr->lng)) {
+                $business['geo'] = [
+                    '@type'     => 'GeoCoordinates',
+                    'latitude'  => (float) $sr->lat,
+                    'longitude' => (float) $sr->lng,
+                ];
+            }
+            if (!empty($sr->google_maps_url)) {
+                $business['hasMap'] = $sr->google_maps_url;
+            }
+
+            // Opening hours
+            $days = is_array($sr->opening_days) ? $sr->opening_days : [];
+            if (!empty($days) && (!empty($sr->opening_hours_from) || !empty($sr->opening_hours_until))) {
+                $opens  = $sr->opening_hours_from  ?? '09:00';
+                $closes = $sr->opening_hours_until ?? '18:00';
+                $business['openingHoursSpecification'] = array_map(fn($day) => [
+                    '@type'     => 'OpeningHoursSpecification',
+                    'dayOfWeek' => "https://schema.org/{$day}",
+                    'opens'     => $opens,
+                    'closes'    => $closes,
+                ], $days);
+            }
+
+            // Image
+            if (!empty($sr->image_url)) {
+                $img = $sr->image_url;
+                if (!str_starts_with($img, 'http')) {
+                    $img = $storageUrl . '/' . ltrim($img, '/');
+                }
+                $business['image'] = $img;
+            }
+
+            $items[] = [
+                '@type'    => 'ListItem',
+                'position' => $position,
+                'item'     => $business,
+            ];
+        }
+
+        $itemList = [
+            '@context'        => 'https://schema.org',
+            '@type'           => 'ItemList',
+            'name'            => 'Nos Showrooms — Super Siesta',
+            'numberOfItems'   => count($items),
+            'itemListElement' => $items,
+        ];
+
+        $json = json_encode($itemList, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        return "<script type=\"application/ld+json\">{$json}</script>";
     }
 } 
