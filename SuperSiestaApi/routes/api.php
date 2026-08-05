@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\NewsletterController;
 use App\Http\Controllers\Api\AdminUserController;
+use App\Http\Controllers\Api\MetaTestController;
 use App\Http\Controllers\Api\ProspectController;
 
 // Public routes (no authentication required)
@@ -124,6 +125,10 @@ Route::middleware('api')->group(function () {
         ->where('path', '.*')
         ->name('files.serve');
 
+
+    // Temporary Meta API Testing Endpoints
+    Route::get('/meta-test/config', [MetaTestController::class, 'getConfig']);
+    Route::post('/meta-test/send-capi', [MetaTestController::class, 'testCapi']);
 
     // Public SEO endpoint (fetch meta for a page by identifier)
     Route::get('seo/page/{identifier}', 'App\\Http\\Controllers\\Api\\SeoController@getByPage');

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
 import { formatPrice } from "@/lib/utils";
 import { getImageUrl } from "@/utils/imageUtils";
+import { generateEventId, trackInitiateCheckout, trackPurchase, getFbpCookie, getFbcCookie } from "@/services/metaPixel";
 
 const villes = [
   "Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan",
@@ -91,6 +92,20 @@ export default function Commander() {
   const prospectIdRef = useRef<string | null>(sessionStorage.getItem("current_prospect_id"));
   const isSavingProspect = useRef(false);
   const [isProspectSaved, setIsProspectSaved] = useState(false);
+  const purchaseEventIdRef = useRef<string>(generateEventId());
+
+  // Track Meta Pixel InitiateCheckout on mount
+  useEffect(() => {
+    if (items.length > 0) {
+      const checkoutItems = items.map((i) => ({
+        id: i.product.id,
+        name: i.product.name,
+        price: i.size.price,
+        quantity: i.quantity,
+      }));
+      trackInitiateCheckout(checkoutItems, total);
+    }
+  }, []);
 
   // Auto-fill from profile when logged in
   useEffect(() => {
@@ -171,18 +186,13 @@ export default function Commander() {
           status: 'nouveau'
         };
 
-        if (currentId) {
-          // Update existing prospect (PUT)
-          await api.put<any>(`/prospects/${currentId}`, payload);
-        } else {
-          // Create new prospect (POST) — only once
-          const res = await api.post<any>("/prospects", payload);
-          if (res && res.id) {
-            // Update ref synchronously to block any concurrent POST
-            prospectIdRef.current = res.id;
-            setProspectId(res.id);
-            sessionStorage.setItem("current_prospect_id", res.id);
-          }
+        // Always use POST — the store endpoint handles upsert via the `id` field
+        const res = await api.post<any>("/prospects", payload);
+        if (res && res.id && !currentId) {
+          // Update ref synchronously to block any concurrent POST
+          prospectIdRef.current = res.id;
+          setProspectId(res.id);
+          sessionStorage.setItem("current_prospect_id", res.id);
         }
         setIsProspectSaved(true);
       } catch (err) {
@@ -363,11 +373,31 @@ export default function Commander() {
           quantity: item.quantity,
           total: item.size.price * item.quantity,
         })),
-        free_gifts: allGifts.length > 0 ? allGifts : undefined
+        free_gifts: allGifts.length > 0 ? allGifts : undefined,
+        meta_event_id: purchaseEventIdRef.current,
+        event_source_url: typeof window !== "undefined" ? window.location.href : undefined,
+        fbp: getFbpCookie(),
+        fbc: getFbcCookie(),
       };
 
       const response = await api.post<any>("/orders", payload);
       
+      // Track Meta Pixel Purchase client-side (deduplicated by meta_event_id)
+      const orderId = response?.order?.id || response?.id || orderNumber;
+      trackPurchase(
+        {
+          orderId: String(orderId),
+          value: total,
+          items: items.map((i) => ({
+            id: i.product.id,
+            name: i.product.name,
+            price: i.size.price,
+            quantity: i.quantity,
+          })),
+        },
+        purchaseEventIdRef.current
+      );
+
       // Mark prospect as converted if it exists
       if (prospectId) {
         api.put(`/prospects/${prospectId}`, { status: 'converti' }).catch(() => {});
@@ -377,7 +407,6 @@ export default function Commander() {
       if (response.token) {
         localStorage.setItem("auth_token", response.token);
       }
-      const orderId = response?.order?.id || response?.id;
       if (orderId) setLastOrderId(orderId);
       setSubmitted(true);
       clearCart();

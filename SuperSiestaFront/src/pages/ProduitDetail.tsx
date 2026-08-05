@@ -17,8 +17,7 @@ import { useAuth } from "@/hooks/useAuthSecure";
 import { Star, Shield, Truck, CreditCard, ChevronLeft, Plus, Minus, Check, Loader2, Play, Gift } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { getImageUrl } from "@/utils/imageUtils";
-import { api } from '@/lib/apiClient'
-import { useSettings } from "@/hooks/useSettings";
+import { trackViewContent, trackAddToCart } from "@/services/metaPixel";
 import LucideIcon from "@/components/common/LucideIcon";
 import OrderModal, { OrderSizeGroup } from "@/components/OrderModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -119,6 +118,17 @@ export default function ProduitDetail() {
     const nbPlacesParam = normalizeNbPlacesValue(searchParams.get("nbPlaces"));
     setSelectedNbPlaces(nbPlacesParam);
   }, [searchParams]);
+
+  // Track Meta Pixel ViewContent
+  useEffect(() => {
+    if (!product) return;
+    trackViewContent({
+      id: product.id,
+      name: product.name,
+      price: selectedSize?.price ?? (product.sizes?.[0]?.price || 0),
+      category: product.category,
+    });
+  }, [product?.id]);
 
   // Set default size when product loads
   useEffect(() => {

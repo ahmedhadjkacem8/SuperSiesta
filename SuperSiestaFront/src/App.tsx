@@ -50,6 +50,29 @@ import SeoPanel from "./pages/admin/SeoPanel";
 
 const queryClient = new QueryClient();
 
+import { usePageViewTracking } from "@/hooks/usePageViewTracking";
+import { initAdvancedMatching } from "@/services/metaPixel";
+import { useAuth } from "@/hooks/useAuthSecure";
+
+function PageViewTracker() {
+  usePageViewTracking();
+  const { user } = useAuth();
+
+  React.useEffect(() => {
+    if (user) {
+      const nameParts = (user.name || "").split(" ");
+      initAdvancedMatching({
+        email: user.email,
+        phone: user.profile?.phone,
+        firstName: nameParts[0],
+        lastName: nameParts.slice(1).join(" "),
+      });
+    }
+  }, [user]);
+
+  return null;
+}
+
 function PublicLayout({ children }: { children: React.ReactNode }) {
   // Ensure we scroll to top on each navigation so the user doesn't stay stuck at footer
   const loc = useLocation();
@@ -79,6 +102,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <PageViewTracker />
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<PublicLayout><Index /></PublicLayout>} />

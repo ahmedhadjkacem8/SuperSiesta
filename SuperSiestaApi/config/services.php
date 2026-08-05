@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'meta' => [
+        'pixel_id' => env('META_PIXEL_ID', '4619085544994909'),
+        'access_token' => env('META_CAPI_ACCESS_TOKEN'),
+        'test_event_code' => env('META_TEST_EVENT_CODE'),
+    ],
+
 ];

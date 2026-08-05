@@ -259,6 +259,49 @@ class OrderController extends BaseController
             // Ne pas empêcher la création de la commande si la notification échoue
         }
 
+        // Dispatch Meta Conversions API Purchase event (async queue job)
+        try {
+            $metaEventId = $request->input('meta_event_id');
+            if ($metaEventId) {
+                // Capture HTTP request context variables during the request lifecycle
+                $clientIp = $request->header('CF-Connecting-IP')
+                    ?: ($request->header('X-Forwarded-For') ? trim(explode(',', $request->header('X-Forwarded-For'))[0]) : null)
+                    ?: $request->ip();
+
+                $clientUserAgent = $request->userAgent();
+                $eventSourceUrl = $request->input('event_source_url')
+                    ?: $request->headers->get('referer')
+                    ?: config('app.url', 'http://localhost');
+
+                \App\Jobs\SendMetaCapiEventJob::dispatch(
+                    'Purchase',
+                    [
+                        'email'             => $validated['email'] ?? null,
+                        'phone'             => $validated['phone'],
+                        'full_name'         => $validated['full_name'],
+                        'city'              => $validated['city'] ?? null,
+                        'fbp'               => $request->input('fbp'),
+                        'fbc'               => $request->input('fbc'),
+                        'client_ip_address' => $clientIp,
+                        'client_user_agent' => $clientUserAgent,
+                    ],
+                    [
+                        'value'        => (float) $subtotal,
+                        'currency'     => 'TND',
+                        'content_type' => 'product',
+                        'content_ids'  => collect($validated['items'])->pluck('product_id')->map(fn($id) => (string) $id)->toArray(),
+                        'num_items'    => collect($validated['items'])->sum('quantity'),
+                        'order_id'     => (string) $order->order_number,
+                    ],
+                    $metaEventId,
+                    $eventSourceUrl,
+                );
+            }
+        } catch (\Throwable $e) {
+            // Never block the order flow if Meta CAPI dispatch fails
+            \Illuminate\Support\Facades\Log::warning('Meta CAPI dispatch failed silently', ['error' => $e->getMessage()]);
+        }
+
         $responseData = [
             'order' => $order->load('items'),
         ];

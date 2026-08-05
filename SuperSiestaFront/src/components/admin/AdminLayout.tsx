@@ -2,11 +2,12 @@ import { ReactNode, useEffect, useState, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuthSecure";
-import { LayoutDashboard, Package, Users, FileText, Receipt, Wallet, LogOut, PenSquare, Image, Newspaper, MapPin, ShoppingCart, SlidersHorizontal, Layers, Truck, Settings, Bell, Info, Mail, Shield, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Package, Users, FileText, Receipt, Wallet, LogOut, PenSquare, Image, Newspaper, MapPin, ShoppingCart, SlidersHorizontal, Layers, Truck, Settings, Bell, Info, Mail, Shield, TrendingUp, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/apiClient";
 import { toast } from "sonner";
 import AdminNotificationsPanel from "./AdminNotificationsPanel";
+import MetaApiTesterModal from "./MetaApiTesterModal";
 import logo from "@/assets/logo.png";
 
 const navGroups = [
@@ -60,6 +61,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const [isMetaTesterOpen, setIsMetaTesterOpen] = useState(false);
 
   const handleSignOut = async () => {
     await logout();
@@ -119,6 +121,18 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         <div className="p-6 md:p-8 max-w-[1600px] mx-auto min-h-full">
           {children}
         </div>
+
+        {/* Floating Provisoire Meta API Tester Button */}
+        <button
+          onClick={() => setIsMetaTesterOpen(true)}
+          className="fixed bottom-5 right-5 z-50 bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-full shadow-2xl flex items-center gap-2 text-xs font-semibold border border-indigo-400/30 transition-transform hover:scale-105 active:scale-95 group"
+          title="Ouvrir la Console de Test Meta API (Provisoire)"
+        >
+          <Activity className="w-4 h-4 animate-pulse text-amber-300" />
+          <span className="hidden sm:inline">Test Meta API (Provisoire)</span>
+        </button>
+
+        <MetaApiTesterModal open={isMetaTesterOpen} onOpenChange={setIsMetaTesterOpen} />
       </main>
     </div>
   );

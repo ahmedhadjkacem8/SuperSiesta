@@ -47,6 +47,8 @@ function saveCartToStorage(items: CartItem[]) {
   } catch {}
 }
 
+import { trackAddToCart } from "@/services/metaPixel";
+
 const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
@@ -66,6 +68,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return [...prev, { product, size, quantity: qty }];
     });
+
+    // Track Meta Pixel AddToCart
+    trackAddToCart({
+      id: product.id,
+      name: product.name,
+      price: size.price,
+      quantity: qty,
+    });
+
     setIsOpen(true);
   };
 

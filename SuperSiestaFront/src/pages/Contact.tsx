@@ -7,6 +7,7 @@ import { useSocialNetworks } from "@/hooks/useSocialNetworks";
 import LucideIcon from "@/components/common/LucideIcon";
 import { useAuth } from "@/hooks/useAuthSecure";
 import CachedImage from "@/components/CachedImage";
+import { trackLead } from "@/services/metaPixel";
 
 interface Showroom {
   id: string;
@@ -72,6 +73,7 @@ export default function Contact() {
     setSending(true);
     try {
       await api.post("/reviews", { ...form, rating });
+      trackLead("Contact Form");
       toast.success("Message envoyé ! Merci pour votre avis.");
       setForm(prev => ({ ...prev, message: "", city: "" }));
       setRating(5);

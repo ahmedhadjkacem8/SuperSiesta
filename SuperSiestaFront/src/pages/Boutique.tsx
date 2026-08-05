@@ -6,8 +6,8 @@ import ProductCard from "@/components/ProductCard";
 import LoadMore from "@/components/LoadMore";
 import { SlidersHorizontal, Loader2, ChevronDown, Check, X } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
-
 import { api } from "@/lib/apiClient";
+import { trackSearch } from "@/services/metaPixel";
 
 // ------------------------------------------------------------------
 // Composants définis EN DEHORS de Boutique() : leur identité ne change
@@ -228,6 +228,17 @@ export default function Boutique() {
     if (fermetes.length > 0 && !fermetes.includes("Tous")) filters.fermete = fermetes;
     if (gammes.length > 0 && !gammes.includes("Tous")) filters.gamme = gammes;
     if (dimensions.length > 0 && !dimensions.includes("Tous")) filters.dimension = dimensions[0];
+
+    // Track Meta Pixel Search
+    const searchTerms = [
+      filters.categorie ? `Catégorie: ${categories.join(",")}` : "",
+      filters.gamme ? `Gamme: ${gammes.join(",")}` : "",
+      filters.dimension ? `Dimension: ${dimensions[0]}` : "",
+    ].filter(Boolean).join(" | ");
+
+    if (searchTerms) {
+      trackSearch(searchTerms);
+    }
 
     // Update URL params to reflect active filters
     const sp = new URLSearchParams();
