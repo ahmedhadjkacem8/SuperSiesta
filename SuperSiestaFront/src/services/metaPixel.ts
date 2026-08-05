@@ -14,7 +14,7 @@ declare global {
   }
 }
 
-export const META_PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID || "4619085544994909";
+export const META_PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID || "1012351344935449";
 export const META_CURRENCY = "TND"; // Fixed currency for Super Siesta
 
 const isDebug = import.meta.env.VITE_META_PIXEL_DEBUG === "true";

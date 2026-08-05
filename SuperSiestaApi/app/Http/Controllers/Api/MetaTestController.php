@@ -13,7 +13,7 @@ class MetaTestController extends BaseController
      */
     public function getConfig(): JsonResponse
     {
-        $pixelId = (string) config('services.meta.pixel_id', '4619085544994909');
+        $pixelId = (string) config('services.meta.pixel_id', '1012351344935449');
         $accessToken = config('services.meta.access_token');
         $testEventCode = config('services.meta.test_event_code');
 
