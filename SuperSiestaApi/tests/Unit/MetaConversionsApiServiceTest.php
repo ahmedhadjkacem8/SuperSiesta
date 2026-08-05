@@ -15,7 +15,7 @@ class MetaConversionsApiServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Config::set('services.meta.pixel_id', '4619085544994909');
+        Config::set('services.meta.pixel_id', '1012351344935449');
         Config::set('services.meta.access_token', 'test_access_token');
         Config::set('services.meta.test_event_code', 'TEST12345');
 
@@ -157,7 +157,7 @@ class MetaConversionsApiServiceTest extends TestCase
             $userDataPayload = $event['user_data'] ?? [];
             $customDataPayload = $event['custom_data'] ?? [];
 
-            return str_contains($request->url(), 'graph.facebook.com/v18.0/4619085544994909/events')
+            return str_contains($request->url(), 'graph.facebook.com/v18.0/1012351344935449/events')
                 && $event['event_name'] === 'Purchase'
                 && $event['event_id'] === $eventId
                 && $event['action_source'] === 'website'
