@@ -21,7 +21,7 @@ class MetaConversionsApiService
 
     public function __construct()
     {
-        $this->pixelId = (string) config('services.meta.pixel_id', '1012351344935449');
+        $this->pixelId = (string) config('services.meta.pixel_id', '4619085544994909');
         $this->accessToken = config('services.meta.access_token');
         $this->testEventCode = config('services.meta.test_event_code');
     }
