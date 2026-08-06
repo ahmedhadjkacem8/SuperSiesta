@@ -14,6 +14,8 @@ import { useProduct } from "@/hooks/useProducts";
 import { useGammes } from "@/hooks/useGammes";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/hooks/useAuthSecure";
+import { useSettings } from "@/hooks/useSettings";
+import { api } from "@/lib/apiClient";
 import { Star, Shield, Truck, CreditCard, ChevronLeft, Plus, Minus, Check, Loader2, Play, Gift } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { getImageUrl } from "@/utils/imageUtils";
