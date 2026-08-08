@@ -55,6 +55,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 const TOKEN_KEY = "auth_token";
 const CSRF_TOKEN_KEY = "csrf_token";
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const API_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -113,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       api.setToken(token);
 
       // Get current user from API
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/user`, {
+      const response = await fetch(`${API_URL}/auth/user`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -234,7 +235,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           headers["X-CSRF-Token"] = csrfToken;
         }
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
+        const response = await fetch(`${API_URL}/auth/register`, {
           method: "POST",
           headers,
           body: JSON.stringify({
@@ -315,7 +316,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           headers["X-CSRF-Token"] = csrfToken;
         }
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
+        const response = await fetch(`${API_URL}/auth/login`, {
           method: "POST",
           headers,
           body: JSON.stringify({ email, password }),
@@ -359,7 +360,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const token = localStorage.getItem(TOKEN_KEY);
       if (token) {
-        await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
+        await fetch(`${API_URL}/auth/logout`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,

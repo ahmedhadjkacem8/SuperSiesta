@@ -150,7 +150,8 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
         : `/delivery-notes/${order?.delivery_note_id}/pdf`;
       
       const token = localStorage.getItem('auth_token') || '';
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${url}`, {
+      const baseUrl = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+      const response = await fetch(`${baseUrl}${url}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -4,7 +4,7 @@
  * Utilitaires pour gérer les URLs d'images dans l'application
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
 
 /**
  * Normalise un chemin URL : si c'est une URL absolue, extrait seulement le path.
@@ -28,17 +28,31 @@ function toRelativePath(url: string): string {
 export function getImageUrl(imagePath: string | null | undefined): string {
   if (!imagePath) return ''
 
-  // Nettoyer les anciennes URLs avec IP hardcodées en DB
+  // Nettoyer les anciennes URLs avec IP / port 8000 hardcodés en DB
+  imagePath = imagePath.replace(/^https?:\/\/[^\/]+:8000/, '')
   imagePath = imagePath.replace(/^http:\/\/135\.125\.202\.39:8000/, '')
 
   // Si c'est une URL absolue (http/https), extraire uniquement le chemin
-  // pour le rendre indépendant du domaine
+  // si elle pointe vers nos dossiers statiques ou contient un port dev
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    imagePath = toRelativePath(imagePath)
+    const relative = toRelativePath(imagePath)
+    if (relative.startsWith('/storage/') || relative.startsWith('/uploads/') || relative.startsWith('/videos/') || relative.startsWith('/images/')) {
+      imagePath = relative
+    } else if (!imagePath.startsWith('https://')) {
+      // Forcer HTTPS pour toute autre URL externe HTTP si la page courante est HTTPS
+      if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+        imagePath = imagePath.replace(/^http:\/\//i, 'https://')
+      }
+    }
   }
 
-  // Chemin relatif vers /storage/ ou /uploads/ → servi directement par Nginx
-  if (imagePath.startsWith('/storage/') || imagePath.startsWith('/uploads/')) {
+  // Chemin relatif vers /storage/, /uploads/, /videos/ ou /images/ → servi directement par Nginx
+  if (
+    imagePath.startsWith('/storage/') ||
+    imagePath.startsWith('/uploads/') ||
+    imagePath.startsWith('/videos/') ||
+    imagePath.startsWith('/images/')
+  ) {
     if (API_URL.startsWith('http://') || API_URL.startsWith('https://')) {
       const base = API_URL.replace(/\/api\/?$/, '')
       return `${base}${imagePath}`
@@ -47,18 +61,13 @@ export function getImageUrl(imagePath: string | null | undefined): string {
     return imagePath
   }
 
-  // Ancien format /videos/... (données de seeder)
-  // → redirige vers /storage/... via le proxy API pour correspondre à l'alias Nginx
-  if (imagePath.startsWith('/videos/') || imagePath.startsWith('/images/')) {
-    if (API_URL.startsWith('http://') || API_URL.startsWith('https://')) {
-      const base = API_URL.replace(/\/api\/?$/, '')
-      return `${base}${imagePath}`
-    }
-    return imagePath
+  // Par défaut, considère que c'est un nom de fichier seul dans storage
+  const cleaned = imagePath.replace(/^\/+/, '')
+  if (API_URL.startsWith('http://') || API_URL.startsWith('https://')) {
+    const base = API_URL.replace(/\/api\/?$/, '')
+    return `${base}/storage/${cleaned}`
   }
-
-  // Par défaut, considère que c'est un nom de fichier seul
-  return `${API_URL}/storage/${imagePath}`
+  return `/storage/${cleaned}`
 }
 
 /**

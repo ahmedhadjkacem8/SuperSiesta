@@ -64,7 +64,8 @@ export default function AdminCommandes() {
 
   const downloadInvoice = async (invoiceId: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/invoices/${invoiceId}/preview`, {
+      const baseUrl = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+      const response = await fetch(`${baseUrl}/invoices/${invoiceId}/preview`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
         },
