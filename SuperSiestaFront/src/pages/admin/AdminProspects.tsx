@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Search, Eye, XCircle, Clock, CheckCircle, User, Loader2, RefreshCw, Package, Phone, Mail, MapPin, Trash2 } from "lucide-react";
+import { Search, Eye, XCircle, Clock, CheckCircle, User, Loader2, RefreshCw, Package, Phone, Mail, MapPin, Trash2, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
 import { confirmDelete } from "@/lib/swal";
@@ -41,6 +41,9 @@ export default function AdminProspects() {
   const isUpdatingRef = useRef(false);
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [perPage, setPerPage] = useState<number>(25);
+  const [page, setPage] = useState<number>(1);
+  const [pagination, setPagination] = useState<any>(null);
 
   const fetchProspects = useCallback(async (silent = false) => {
     if (silent && isUpdatingRef.current) return; // Don't overwrite optimistic state while updating
@@ -48,11 +51,14 @@ export default function AdminProspects() {
     try {
       const params = {
         status: filterStatus,
-        search: search
+        search: search,
+        per_page: perPage,
+        page: page,
+        raw: true
       };
       
       const res = await api.getProspects(params);
-      const newData = Array.isArray(res) ? res : ((res as any).data || []);
+      const newData = res?.data ? res.data : (Array.isArray(res) ? res : []);
       
       setProspects(prev => {
         if (silent && newData.length > prev.length) {
@@ -66,11 +72,17 @@ export default function AdminProspects() {
         }
         return newData;
       });
+      setPagination(res?.current_page ? res : null);
     } catch (err: any) {
       if (!silent) toast.error("Erreur lors de la récupération des prospects");
     } finally {
       if (!silent) setLoading(false);
     }
+  }, [filterStatus, search, perPage, page]);
+
+  // Reset page when filter/search changes
+  useEffect(() => {
+    setPage(1);
   }, [filterStatus, search]);
 
   // Initial load + auto-refresh every 10 seconds
@@ -162,8 +174,21 @@ export default function AdminProspects() {
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Rafraîchir
           </Button>
-          <Badge variant="outline">{prospects.length} prospect{prospects.length > 1 ? "s" : ""}</Badge>
+          <Badge variant="outline">{pagination?.total ?? prospects.length} prospect{(pagination?.total ?? prospects.length) > 1 ? "s" : ""}</Badge>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <label className="flex items-center gap-2 rounded-2xl border border-border bg-background px-4 py-2 text-sm shadow-sm shadow-slate-900/5">
+          <span className="text-sm text-muted-foreground">Afficher</span>
+          <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }} className="bg-transparent text-sm font-semibold outline-none appearance-none pr-8">
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+          <span className="text-sm text-muted-foreground">/ page</span>
+        </label>
+        <div className="text-sm text-muted-foreground">Page {pagination ? pagination.current_page : page} sur {pagination ? pagination.last_page : '-'}</div>
       </div>
 
       <div className="flex flex-wrap gap-3 mb-4">
@@ -183,7 +208,15 @@ export default function AdminProspects() {
               !filterStatus ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border hover:bg-accent"
             }`}
           >
-            Tous
+            Actifs
+          </button>
+          <button 
+            onClick={() => setFilterStatus("all")} 
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+              filterStatus === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border hover:bg-accent"
+            }`}
+          >
+            Tous (y compris convertis)
           </button>
           {STATUSES.map((s) => (
             <button 
@@ -233,16 +266,25 @@ export default function AdminProspects() {
                 const StatusIcon = si.icon;
                 return (
                   <TableRow key={p.id} className="hover:bg-accent/30 transition-colors">
-                    <TableCell className="text-[11px] text-muted-foreground whitespace-nowrap">
-                      {new Date(p.created_at).toLocaleDateString("fr-FR", { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    <TableCell className="whitespace-nowrap">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1.5 text-xs font-black text-foreground">
+                          <Calendar className="w-3.5 h-3.5 text-muted-foreground/80" />
+                          <span>{new Date(p.created_at).toLocaleDateString("fr-FR", { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                        </div>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-gradient-to-r from-primary/15 via-primary/10 to-primary/5 text-primary border border-primary/30 shadow-sm w-fit tracking-wide">
+                          <Clock className="w-3 h-3 text-primary shrink-0" />
+                          <span>{new Date(p.created_at).toLocaleTimeString("fr-FR", { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <p className="font-bold text-sm">{p.full_name || "Anonyme"}</p>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col gap-0.5">
-                        {p.phone && <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Phone className="w-3 h-3" /> {p.phone}</div>}
-                        {p.email && <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Mail className="w-3 h-3" /> {p.email}</div>}
+                      <div className="flex flex-col gap-1">
+                        {p.phone && <div className="flex items-center gap-1.5 text-sm font-bold text-foreground"><Phone className="w-3.5 h-3.5 text-muted-foreground shrink-0" /> {p.phone}</div>}
+                        {p.email && <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"><Mail className="w-3.5 h-3.5 shrink-0" /> {p.email}</div>}
                       </div>
                     </TableCell>
                     <TableCell className="text-xs font-medium">{p.city || "—"}</TableCell>
@@ -280,6 +322,27 @@ export default function AdminProspects() {
               })}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {pagination && !loading && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 px-2 py-3 rounded-b-lg border border-t-0 border-border bg-background">
+          <div className="text-sm text-muted-foreground">Affichage {pagination.from || 0} - {pagination.to || 0} sur {pagination.total || 0}</div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={pagination.current_page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="rounded border border-border bg-background px-3 py-1 text-sm transition hover:bg-muted/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >Précédent</button>
+            <span className="text-sm text-muted-foreground">Page {pagination.current_page} / {pagination.last_page}</span>
+            <button
+              type="button"
+              disabled={pagination.current_page >= pagination.last_page}
+              onClick={() => setPage((p) => Math.min(pagination.last_page, p + 1))}
+              className="rounded border border-border bg-background px-3 py-1 text-sm transition hover:bg-muted/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >Suivant</button>
+          </div>
         </div>
       )}
 

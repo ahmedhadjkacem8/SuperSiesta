@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Search, Eye, Printer, Trash2, RefreshCw } from "lucide-react";
+import { Search, Eye, Printer, Trash2, RefreshCw, Calendar, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
 import { confirmDelete } from "@/lib/swal";
@@ -563,7 +563,18 @@ export default function AdminBonLivraison() {
                       {si.label}
                     </button>
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{new Date(n.created_at).toLocaleDateString("fr-FR")}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-xs font-black text-foreground">
+                        <Calendar className="w-3.5 h-3.5 text-muted-foreground/80" />
+                        <span>{new Date(n.created_at).toLocaleDateString("fr-FR", { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                      </div>
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-gradient-to-r from-primary/15 via-primary/10 to-primary/5 text-primary border border-primary/30 shadow-sm w-fit tracking-wide">
+                        <Clock className="w-3 h-3 text-primary shrink-0" />
+                        <span>{new Date(n.created_at).toLocaleTimeString("fr-FR", { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
                       <Button variant="ghost" size="icon" onClick={() => viewDetail(n)}><Eye className="w-4 h-4" /></Button>

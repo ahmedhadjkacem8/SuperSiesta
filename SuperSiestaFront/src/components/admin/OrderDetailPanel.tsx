@@ -224,7 +224,7 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
               <Calendar className="w-3.5 h-3.5" />
-              <span>Le {new Date(order.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+              <span>Le {new Date(order.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
             </div>
           </div>
         </div>

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Search, Eye, XCircle, Clock, CheckCircle, Truck, Receipt, Navigation, Loader2, RefreshCw, Package, Plus } from "lucide-react";
+import { Search, Eye, XCircle, Clock, CheckCircle, Truck, Receipt, Navigation, Loader2, RefreshCw, Package, Plus, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
 import { confirmDelete } from "@/lib/swal";
@@ -261,8 +261,17 @@ export default function AdminCommandes() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-[11px] text-muted-foreground whitespace-nowrap">
-                      {new Date(o.created_at).toLocaleDateString("fr-FR", { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                    <TableCell className="whitespace-nowrap">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1.5 text-xs font-black text-foreground">
+                          <Calendar className="w-3.5 h-3.5 text-muted-foreground/80" />
+                          <span>{new Date(o.created_at).toLocaleDateString("fr-FR", { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                        </div>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-gradient-to-r from-primary/15 via-primary/10 to-primary/5 text-primary border border-primary/30 shadow-sm w-fit tracking-wide">
+                          <Clock className="w-3 h-3 text-primary shrink-0" />
+                          <span>{new Date(o.created_at).toLocaleTimeString("fr-FR", { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">

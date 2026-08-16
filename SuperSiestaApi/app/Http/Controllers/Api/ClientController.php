@@ -14,14 +14,21 @@ class ClientController extends BaseController
 
         $query = Client::query();
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->search;
-            $query->where('full_name', 'like', "%$search%")
-                ->orWhere('email', 'like', "%$search%")
-                ->orWhere('phone', 'like', "%$search%");
+            $query->where(function($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%");
+            });
         }
 
-        $clients = $query->paginate($request->get('per_page', 15));
+        if ($request->filled('tag')) {
+            $tag = $request->tag;
+            $query->whereJsonContains('tags', $tag);
+        }
+
+        $clients = $query->orderBy('created_at', 'desc')->paginate($request->get('per_page', 25));
 
         return $this->sendResponse($clients, 'Clients retrieved successfully');
     }

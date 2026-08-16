@@ -453,13 +453,29 @@ class SecureApiService {
   }
 
   // Prospects
-  getProspects(params?: { status?: string; search?: string }): Promise<any> {
+  getProspects(params?: { status?: string; search?: string; per_page?: number; page?: number; raw?: boolean }): Promise<any> {
     const query = new URLSearchParams()
     if (params?.status) query.append('status', params.status)
     if (params?.search) query.append('search', params.search)
+    if (params?.per_page) query.append('per_page', String(params.per_page))
+    if (params?.page) query.append('page', String(params.page))
+    if (params?.raw) query.append('_raw', '1')
     query.append('_t', String(Date.now())) // cache-buster
 
     return this.get(`/prospects?${query.toString()}`)
+  }
+
+  // Clients
+  getClients(params?: { tag?: string; search?: string; per_page?: number; page?: number; raw?: boolean }): Promise<any> {
+    const query = new URLSearchParams()
+    if (params?.tag) query.append('tag', params.tag)
+    if (params?.search) query.append('search', params.search)
+    if (params?.per_page) query.append('per_page', String(params.per_page))
+    if (params?.page) query.append('page', String(params.page))
+    if (params?.raw) query.append('_raw', '1')
+    query.append('_t', String(Date.now())) // cache-buster
+
+    return this.get(`/clients?${query.toString()}`)
   }
 }
 

@@ -15,14 +15,16 @@ class ProspectController extends BaseController
     {
         $query = Prospect::query();
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        if ($request->filled('status')) {
+            if ($request->status !== 'all') {
+                $query->where('status', $request->status);
+            }
         } else {
-            // Par défaut, ne pas afficher les prospects déjà convertis
+            // Par défaut (comme dans l'ancienne version), ne pas afficher les prospects déjà convertis
             $query->where('status', '!=', 'converti');
         }
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('full_name', 'like', "%{$search}%")
@@ -31,7 +33,7 @@ class ProspectController extends BaseController
             });
         }
 
-        $prospects = $query->orderBy('created_at', 'desc')->paginate($request->get('per_page', 15));
+        $prospects = $query->orderBy('created_at', 'desc')->paginate($request->get('per_page', 25));
 
         return $this->sendResponse($prospects, 'Prospects retrieved successfully');
     }

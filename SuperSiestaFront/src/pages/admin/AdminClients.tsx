@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Pencil, Search, ShieldCheck, Star } from "lucide-react";
+import { Plus, Trash2, Pencil, Search, ShieldCheck, Star, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/apiClient";
@@ -36,11 +36,15 @@ const TAG_COLORS: Record<string, string> = {
 
 export default function AdminClients() {
   const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
   const [form, setForm] = useState({ full_name: "", email: "", phone: "", address: "", city: "", notes: "", tags: [] as string[] });
   const [search, setSearch] = useState("");
   const [filterTag, setFilterTag] = useState("");
+  const [perPage, setPerPage] = useState<number>(25);
+  const [page, setPage] = useState<number>(1);
+  const [pagination, setPagination] = useState<any>(null);
   const [history, setHistory] = useState<{ quotes: any[]; invoices: any[]; orders: any[]; reviews: any[] } | null>(null);
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
 
@@ -51,14 +55,29 @@ export default function AdminClients() {
 
   const load = async () => {
     try {
-      const data = await api.get<Client[]>("/clients");
+      setLoading(true);
+      const res = await api.getClients({
+        tag: filterTag,
+        search: search,
+        per_page: perPage,
+        page: page,
+        raw: true
+      });
+      const data = res?.data ? res.data : (Array.isArray(res) ? res : []);
       setClients(data || []);
+      setPagination(res?.current_page ? res : null);
     } catch (err: any) {
       toast.error("Erreur lors du chargement des clients");
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    setPage(1);
+  }, [filterTag, search]);
+
+  useEffect(() => { load(); }, [page, perPage, filterTag, search]);
 
   const resetForm = () => { setForm({ full_name: "", email: "", phone: "", address: "", city: "", notes: "", tags: [] }); setEditing(null); };
 
@@ -141,17 +160,24 @@ export default function AdminClients() {
     setB2bCreating(false);
   };
 
-  const filtered = clients.filter((c) => {
-    const matchSearch = !search || c.full_name.toLowerCase().includes(search.toLowerCase()) || (c.email || "").toLowerCase().includes(search.toLowerCase()) || (c.phone || "").includes(search);
-    const matchTag = !filterTag || (c.tags || []).includes(filterTag);
-    return matchSearch && matchTag;
-  });
+  const filtered = clients; // Backend handles searching and filtering now
 
   return (
     <AdminLayout>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
         <h1 className="text-2xl font-bold">Clients (CRM)</h1>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => load()}
+            disabled={loading}
+            className="gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Rafraîchir
+          </Button>
+          <Badge variant="outline">{pagination?.total ?? clients.length} client{(pagination?.total ?? clients.length) > 1 ? "s" : ""}</Badge>
           <Dialog open={b2bOpen} onOpenChange={setB2bOpen}>
             <DialogTrigger asChild>
               <Button size="sm" variant="secondary"><ShieldCheck className="w-4 h-4 mr-1" /> Créer compte B2B</Button>
@@ -199,6 +225,19 @@ export default function AdminClients() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <label className="flex items-center gap-2 rounded-2xl border border-border bg-background px-4 py-2 text-sm shadow-sm shadow-slate-900/5">
+          <span className="text-sm text-muted-foreground">Afficher</span>
+          <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }} className="bg-transparent text-sm font-semibold outline-none appearance-none pr-8">
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+          <span className="text-sm text-muted-foreground">/ page</span>
+        </label>
+        <div className="text-sm text-muted-foreground">Page {pagination ? pagination.current_page : page} sur {pagination ? pagination.last_page : '-'}</div>
+      </div>
+
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -211,42 +250,69 @@ export default function AdminClients() {
         </div>
       </div>
 
-      <div className="bg-card rounded-lg border border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nom</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Téléphone</TableHead>
-              <TableHead>Ville</TableHead>
-              <TableHead>Tags</TableHead>
-              <TableHead className="w-28">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Aucun client</TableCell></TableRow>}
-            {filtered.map((c) => (
-              <TableRow key={c.id}>
-                <TableCell className="font-medium"><button onClick={() => showHistory(c)} className="hover:underline text-left">{c.full_name}</button></TableCell>
-                <TableCell className="text-sm">{c.email || "—"}</TableCell>
-                <TableCell className="text-sm">{c.phone || "—"}</TableCell>
-                <TableCell className="text-sm">{c.city || "—"}</TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {(c.tags || []).map((tag) => (<span key={tag} className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${TAG_COLORS[tag] || "bg-muted text-muted-foreground"}`}>{tag}</span>))}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(c)}><Pencil className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
-                  </div>
-                </TableCell>
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nom</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Téléphone</TableHead>
+                <TableHead>Ville</TableHead>
+                <TableHead>Tags</TableHead>
+                <TableHead className="w-28">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Aucun client</TableCell></TableRow>}
+              {filtered.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell className="font-medium"><button onClick={() => showHistory(c)} className="hover:underline text-left">{c.full_name}</button></TableCell>
+                  <TableCell className="text-sm">{c.email || "—"}</TableCell>
+                  <TableCell className="text-sm">{c.phone || "—"}</TableCell>
+                  <TableCell className="text-sm">{c.city || "—"}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {(c.tags || []).map((tag) => (<span key={tag} className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${TAG_COLORS[tag] || "bg-muted text-muted-foreground"}`}>{tag}</span>))}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(c)}><Pencil className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {pagination && !loading && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 px-2 py-3 rounded-b-lg border border-t-0 border-border bg-background">
+          <div className="text-sm text-muted-foreground">Affichage {pagination.from || 0} - {pagination.to || 0} sur {pagination.total || 0}</div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={pagination.current_page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="rounded border border-border bg-background px-3 py-1 text-sm transition hover:bg-muted/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >Précédent</button>
+            <span className="text-sm text-muted-foreground">Page {pagination.current_page} / {pagination.last_page}</span>
+            <button
+              type="button"
+              disabled={pagination.current_page >= pagination.last_page}
+              onClick={() => setPage((p) => Math.min(pagination.last_page, p + 1))}
+              className="rounded border border-border bg-background px-3 py-1 text-sm transition hover:bg-muted/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >Suivant</button>
+          </div>
+        </div>
+      )}
 
       {/* History Dialog */}
       <Dialog open={!!historyClient} onOpenChange={(v) => { if (!v) { setHistoryClient(null); setHistory(null); } }}>
