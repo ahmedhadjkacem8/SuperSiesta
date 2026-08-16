@@ -89,7 +89,7 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
   };
 
 return (
-  <section className="relative overflow-hidden h-[400px] sm:h-[500px] md:h-[600px] w-full">
+  <section className="relative overflow-hidden h-[450px] sm:h-[530px] md:h-[650px] w-full">
     <AnimatePresence initial={false} custom={direction}>
       <motion.div
         key={current}
@@ -220,8 +220,6 @@ return (
       </div>
     )}
 
-    {/* Decorative Gradient Overlay at bottom */}
-    <div className="absolute bottom-0 left-0 w-full h-20 sm:h-32 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
-  </section>
+<div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10 sm:bg-gradient-to-r sm:from-black/80 sm:via-black/40 sm:to-transparent md:from-black/70 md:via-black/30 md:to-transparent" />  </section>
 );
 }
