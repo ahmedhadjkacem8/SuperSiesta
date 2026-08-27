@@ -42,7 +42,7 @@
     s.parentNode.insertBefore(t,s)}(window, document,'script',
     'https://connect.facebook.net/en_US/fbevents.js');
     fbq('init', '1012351344935449');
-    fbq('track', 'PageView');
+    // PageView is tracked by React via usePageViewTracking hook (with eventID for CAPI deduplication)
     </script>
     <!-- End Meta Pixel Code -->
 

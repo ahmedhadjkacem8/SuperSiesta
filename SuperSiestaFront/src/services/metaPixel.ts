@@ -320,3 +320,20 @@ export function trackLead(formType = "Contact Form", eventId?: string): string {
   }
   return eid;
 }
+
+/**
+ * Track Subscribe (Newsletter subscription)
+ */
+export function trackSubscribe(email?: string, eventId?: string): string {
+  const eid = eventId || generateEventId();
+  const payload: Record<string, any> = {
+    content_name: "Newsletter",
+    currency: META_CURRENCY,
+  };
+
+  if (typeof window !== "undefined" && window.fbq) {
+    window.fbq("track", "Subscribe", payload, { eventID: eid });
+    logDebug("Subscribe", payload, eid);
+  }
+  return eid;
+}

@@ -18,6 +18,7 @@ import { useHeroSlides } from "@/hooks/useHeroSlides";
 import { getImageUrl } from "@/utils/imageUtils";
 import { useSettings } from "@/hooks/useSettings";
 import { useNewsletters } from "@/hooks/useNewsletters";
+import { trackSubscribe } from "@/services/metaPixel";
 import { useSocialNetworks } from "@/hooks/useSocialNetworks";
 import LucideIcon from "@/components/common/LucideIcon";
 import { useBlogPosts } from "@/hooks/useBlog";
@@ -259,6 +260,8 @@ export default function Index() {
 
     try {
       await subscribe(newsletterEmail);
+      // Track Meta Pixel Subscribe
+      trackSubscribe(newsletterEmail);
       toast.success("Succès !", {
         description: "Vous êtes maintenant inscrit à notre newsletter."
       });

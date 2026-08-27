@@ -130,6 +130,9 @@ Route::middleware('api')->group(function () {
     Route::get('/meta-test/config', [MetaTestController::class, 'getConfig']);
     Route::post('/meta-test/send-capi', [MetaTestController::class, 'testCapi']);
 
+    // Meta Conversions API relay: mirrors browser Pixel events server-side for deduplication
+    Route::post('/meta/event', [\App\Http\Controllers\Api\MetaEventController::class, 'relay']);
+
     // Public SEO endpoint (fetch meta for a page by identifier)
     Route::get('seo/page/{identifier}', 'App\\Http\\Controllers\\Api\\SeoController@getByPage');
 
