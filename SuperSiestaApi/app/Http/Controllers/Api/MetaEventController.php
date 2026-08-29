@@ -33,7 +33,8 @@ class MetaEventController extends BaseController
      *   event_source_url: string  (optional — current page URL)
      *   fbp:              string  (optional — _fbp cookie)
      *   fbc:              string  (optional — _fbc cookie)
-     *   custom_data:      object  (optional — value, content_ids, etc.)
+     *   custom_data:      object  (optional — value, content_ids, currency, etc.)
+     *   user_data:        object  (optional — email, phone, full_name, etc.)
      * }
      */
     public function relay(Request $request): JsonResponse
@@ -41,13 +42,14 @@ class MetaEventController extends BaseController
         $request->validate([
             'event_name'       => 'required|string|max:100',
             'event_id'         => 'required|string|max:200',
-            'event_source_url' => 'nullable|url|max:500',
+            'event_source_url' => 'nullable|string|max:1000',
             'fbp'              => 'nullable|string|max:200',
             'fbc'              => 'nullable|string|max:200',
             'custom_data'      => 'nullable|array',
+            'user_data'        => 'nullable|array',
         ]);
 
-        // Block Purchase events — handled by OrderController with full PII for deduplication integrity
+        // Block Purchase events — handled by OrderController with full checkout PII for deduplication integrity
         if (strtolower($request->input('event_name')) === 'purchase') {
             return $this->sendError('Purchase events must be sent via /api/orders endpoint.', [], 422);
         }
@@ -61,13 +63,36 @@ class MetaEventController extends BaseController
             ?: $request->headers->get('referer')
             ?: config('app.url', 'http://localhost');
 
-        // User data: no PII collected for these public events — only browser context identifiers
+        $inputUserData = $request->input('user_data', []);
+
+        // Base user data: browser identifiers + IP/User-Agent
         $userData = [
-            'fbp'               => $request->input('fbp'),
-            'fbc'               => $request->input('fbc'),
+            'fbp'               => $request->input('fbp') ?: ($inputUserData['fbp'] ?? null),
+            'fbc'               => $request->input('fbc') ?: ($inputUserData['fbc'] ?? null),
             'client_ip_address' => $clientIp,
             'client_user_agent' => $request->userAgent(),
         ];
+
+        // Merge any available user PII (email, phone, name, city) for high Event Match Quality (EMQ)
+        if (is_array($inputUserData)) {
+            if (!empty($inputUserData['email'])) {
+                $userData['email'] = $inputUserData['email'];
+            }
+            if (!empty($inputUserData['phone'])) {
+                $userData['phone'] = $inputUserData['phone'];
+            }
+            if (!empty($inputUserData['full_name'])) {
+                $userData['full_name'] = $inputUserData['full_name'];
+            } elseif (!empty($inputUserData['name'])) {
+                $userData['full_name'] = $inputUserData['name'];
+            }
+            if (!empty($inputUserData['city'])) {
+                $userData['city'] = $inputUserData['city'];
+            }
+            if (!empty($inputUserData['country'])) {
+                $userData['country'] = $inputUserData['country'];
+            }
+        }
 
         $customData = $request->input('custom_data', []);
 

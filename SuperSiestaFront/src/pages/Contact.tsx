@@ -73,7 +73,12 @@ export default function Contact() {
     setSending(true);
     try {
       await api.post("/reviews", { ...form, rating });
-      trackLead("Contact Form");
+      trackLead("Contact Form", undefined, {
+        full_name: form.name,
+        email: form.email,
+        phone: form.phone,
+        city: form.city,
+      });
       toast.success("Message envoyé ! Merci pour votre avis.");
       setForm(prev => ({ ...prev, message: "", city: "" }));
       setRating(5);

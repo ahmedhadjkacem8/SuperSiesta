@@ -1,10 +1,14 @@
 /**
- * Meta Pixel Centralized Service (Client-Side Tracking)
+ * Meta Pixel & Conversions API (CAPI) Centralized Service
  * 
  * Configured strictly for Super Siesta with currency TND (Tunisian Dinar).
- * Handles PII normalization + SHA-256 hashing for Advanced Matching,
- * event_id generation for Meta Pixel & CAPI deduplication,
- * and standard e-commerce event payload structuring.
+ * 
+ * Features:
+ * - Shared UUIDv4 event_id generation for 100% Meta Pixel & CAPI deduplication
+ * - Simultaneous dual-dispatch: Browser Pixel (window.fbq) + Laravel CAPI relay (/api/meta/event)
+ * - PII normalization + SHA-256 hashing for Advanced Matching & high Event Match Quality (EMQ)
+ * - Automatic extraction of _fbp and _fbc cookies
+ * - Resilient fire-and-forget CAPI requests to ensure zero impact on user experience
  */
 
 declare global {
@@ -17,11 +21,23 @@ declare global {
 export const META_PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID || "1012351344935449";
 export const META_CURRENCY = "TND"; // Fixed currency for Super Siesta
 
-const isDebug = import.meta.env.VITE_META_PIXEL_DEBUG === "true";
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
+const isDebug = import.meta.env.VITE_META_PIXEL_DEBUG === "true" || import.meta.env.DEV;
+
+export interface MetaUserData {
+  email?: string;
+  phone?: string;
+  full_name?: string;
+  first_name?: string;
+  last_name?: string;
+  city?: string;
+  country?: string;
+  [key: string]: any;
+}
 
 function logDebug(eventName: string, data?: any, eventId?: string) {
   if (isDebug) {
-    console.log(`[MetaPixel Debug] Event: ${eventName}`, {
+    console.log(`[Meta Hybrid Tracking] [${eventName}]`, {
       eventId,
       currency: META_CURRENCY,
       data,
@@ -37,7 +53,7 @@ export function generateEventId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }
-  return 'event-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
+  return "event-" + Date.now() + "-" + Math.random().toString(36).substring(2, 11);
 }
 
 /**
@@ -69,7 +85,7 @@ export function normalizeEmail(email: string): string {
 /**
  * Normalize Phone Number according to Meta E.164 specifications:
  * - Remove spaces, dashes, parentheses, plus signs
- * - Ensure non-empty digit string
+ * - Ensure non-empty digit string with Tunisian +216 prefix default
  */
 export function normalizePhone(phone: string): string {
   if (!phone) return "";
@@ -153,19 +169,64 @@ export async function initAdvancedMatching(user: {
 }
 
 /**
- * Track PageView
+ * Asynchronously relays an event to Laravel backend for Server-Side CAPI tracking.
+ * Executed as fire-and-forget with native fetch to guarantee zero UI interruption.
  */
-export function trackPageView(eventId?: string): string {
+export async function sendCapiEvent(
+  eventName: string,
+  customData: Record<string, any> = {},
+  eventId?: string,
+  userData?: MetaUserData
+): Promise<void> {
+  const eid = eventId || generateEventId();
+  try {
+    const payload = {
+      event_name: eventName,
+      event_id: eid,
+      event_source_url: typeof window !== "undefined" ? window.location.href : undefined,
+      fbp: getFbpCookie(),
+      fbc: getFbcCookie(),
+      custom_data: {
+        ...customData,
+        currency: customData.currency || META_CURRENCY,
+      },
+      user_data: userData || {},
+    };
+
+    fetch(`${API_BASE_URL}/meta/event`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    }).catch((err) => {
+      if (isDebug) {
+        console.warn(`[Meta CAPI Relay] Error on ${eventName}:`, err);
+      }
+    });
+  } catch (err) {
+    if (isDebug) {
+      console.warn(`[Meta CAPI Relay] Unexpected error dispatching ${eventName}:`, err);
+    }
+  }
+}
+
+/**
+ * Track PageView (Dual: Pixel + CAPI)
+ */
+export function trackPageView(eventId?: string, userData?: MetaUserData): string {
   const eid = eventId || generateEventId();
   if (typeof window !== "undefined" && window.fbq) {
     window.fbq("track", "PageView", {}, { eventID: eid });
     logDebug("PageView", {}, eid);
   }
+  sendCapiEvent("PageView", {}, eid, userData);
   return eid;
 }
 
 /**
- * Track ViewContent (Product Details Page)
+ * Track ViewContent (Dual: Pixel + CAPI)
  */
 export function trackViewContent(
   product: {
@@ -174,7 +235,8 @@ export function trackViewContent(
     price: number;
     category?: string;
   },
-  eventId?: string
+  eventId?: string,
+  userData?: MetaUserData
 ): string {
   const eid = eventId || generateEventId();
   const payload = {
@@ -190,11 +252,12 @@ export function trackViewContent(
     window.fbq("track", "ViewContent", payload, { eventID: eid });
     logDebug("ViewContent", payload, eid);
   }
+  sendCapiEvent("ViewContent", payload, eid, userData);
   return eid;
 }
 
 /**
- * Track AddToCart
+ * Track AddToCart (Dual: Pixel + CAPI)
  */
 export function trackAddToCart(
   product: {
@@ -202,8 +265,10 @@ export function trackAddToCart(
     name: string;
     price: number;
     quantity?: number;
+    category?: string;
   },
-  eventId?: string
+  eventId?: string,
+  userData?: MetaUserData
 ): string {
   const eid = eventId || generateEventId();
   const qty = product.quantity || 1;
@@ -211,6 +276,7 @@ export function trackAddToCart(
     content_ids: [String(product.id)],
     content_name: product.name,
     content_type: "product",
+    content_category: product.category || "Matelas",
     value: (Number(product.price) || 0) * qty,
     currency: META_CURRENCY,
     num_items: qty,
@@ -220,11 +286,12 @@ export function trackAddToCart(
     window.fbq("track", "AddToCart", payload, { eventID: eid });
     logDebug("AddToCart", payload, eid);
   }
+  sendCapiEvent("AddToCart", payload, eid, userData);
   return eid;
 }
 
 /**
- * Track InitiateCheckout
+ * Track InitiateCheckout (Dual: Pixel + CAPI)
  */
 export function trackInitiateCheckout(
   items: Array<{
@@ -234,7 +301,8 @@ export function trackInitiateCheckout(
     quantity: number;
   }>,
   totalValue: number,
-  eventId?: string
+  eventId?: string,
+  userData?: MetaUserData
 ): string {
   const eid = eventId || generateEventId();
   const payload = {
@@ -249,11 +317,13 @@ export function trackInitiateCheckout(
     window.fbq("track", "InitiateCheckout", payload, { eventID: eid });
     logDebug("InitiateCheckout", payload, eid);
   }
+  sendCapiEvent("InitiateCheckout", payload, eid, userData);
   return eid;
 }
 
 /**
- * Track Purchase (Client-Side)
+ * Track Purchase (Client-Side Pixel)
+ * Note: CAPI Purchase is dispatched directly via Laravel OrderController with full checkout PII.
  */
 export function trackPurchase(
   order: {
@@ -286,9 +356,13 @@ export function trackPurchase(
 }
 
 /**
- * Track Search
+ * Track Search (Dual: Pixel + CAPI)
  */
-export function trackSearch(searchQuery: string, eventId?: string): string {
+export function trackSearch(
+  searchQuery: string,
+  eventId?: string,
+  userData?: MetaUserData
+): string {
   const eid = eventId || generateEventId();
   if (!searchQuery || !searchQuery.trim()) return eid;
 
@@ -301,13 +375,18 @@ export function trackSearch(searchQuery: string, eventId?: string): string {
     window.fbq("track", "Search", payload, { eventID: eid });
     logDebug("Search", payload, eid);
   }
+  sendCapiEvent("Search", payload, eid, userData);
   return eid;
 }
 
 /**
- * Track Lead (Contact form submission)
+ * Track Lead (Dual: Pixel + CAPI)
  */
-export function trackLead(formType = "Contact Form", eventId?: string): string {
+export function trackLead(
+  formType = "Contact Form",
+  eventId?: string,
+  userData?: MetaUserData
+): string {
   const eid = eventId || generateEventId();
   const payload = {
     content_name: formType,
@@ -318,22 +397,56 @@ export function trackLead(formType = "Contact Form", eventId?: string): string {
     window.fbq("track", "Lead", payload, { eventID: eid });
     logDebug("Lead", payload, eid);
   }
+  sendCapiEvent("Lead", payload, eid, userData);
   return eid;
 }
 
 /**
- * Track Subscribe (Newsletter subscription)
+ * Track Subscribe (Dual: Pixel + CAPI)
  */
-export function trackSubscribe(email?: string, eventId?: string): string {
+export function trackSubscribe(
+  email?: string,
+  eventId?: string,
+  userData?: MetaUserData
+): string {
   const eid = eventId || generateEventId();
   const payload: Record<string, any> = {
     content_name: "Newsletter",
     currency: META_CURRENCY,
   };
 
+  const userPayload = {
+    ...(userData || {}),
+    ...(email ? { email } : {}),
+  };
+
   if (typeof window !== "undefined" && window.fbq) {
     window.fbq("track", "Subscribe", payload, { eventID: eid });
     logDebug("Subscribe", payload, eid);
   }
+  sendCapiEvent("Subscribe", payload, eid, userPayload);
+  return eid;
+}
+
+/**
+ * Track Custom Event (Dual: Pixel + CAPI)
+ */
+export function trackCustom(
+  eventName: string,
+  customData: Record<string, any> = {},
+  eventId?: string,
+  userData?: MetaUserData
+): string {
+  const eid = eventId || generateEventId();
+  const payload = {
+    ...customData,
+    currency: customData.currency || META_CURRENCY,
+  };
+
+  if (typeof window !== "undefined" && window.fbq) {
+    window.fbq("trackCustom", eventName, payload, { eventID: eid });
+    logDebug(eventName, payload, eid);
+  }
+  sendCapiEvent(eventName, payload, eid, userData);
   return eid;
 }

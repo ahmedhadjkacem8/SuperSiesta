@@ -103,7 +103,12 @@ export default function Commander() {
         price: i.size.price,
         quantity: i.quantity,
       }));
-      trackInitiateCheckout(checkoutItems, total);
+      trackInitiateCheckout(
+        checkoutItems,
+        total,
+        undefined,
+        user ? { email: user.email, full_name: user.name } : undefined
+      );
     }
   }, []);
 
