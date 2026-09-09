@@ -3,6 +3,7 @@ import { Maximize2, Sparkles, ShieldCheck, Wind, Zap } from "lucide-react";
 
 
 import LucideIcon from "@/components/common/LucideIcon";
+import { useLanguage } from "@/context/LanguageContext";
 
 // Déclarer l'élément personnalisé pour TypeScript
 declare global {
@@ -30,6 +31,7 @@ export default function ThreeDShowcase({
   poster = "/images/tendresse.jpg",
   features = []
 }: ThreeDShowcaseProps) {
+  const { t, language } = useLanguage();
 
   const positions = [
     "top-[-5%] left-[10%]",
@@ -58,7 +60,13 @@ export default function ThreeDShowcase({
           whileInView={{ y: 0, opacity: 1 }}
           className="text-2xl md:text-3xl font-black text-slate-900"
         >
-          Expérience <span className="text-primary tracking-tighter">3D</span> Interactive
+          {language === 'ar' ? (
+            <>تجربة <span className="text-primary tracking-tighter">3D</span> تفاعلية</>
+          ) : language === 'en' ? (
+            <>Interactive <span className="text-primary tracking-tighter">3D</span> Experience</>
+          ) : (
+            <>Expérience <span className="text-primary tracking-tighter">3D</span> Interactive</>
+          )}
         </motion.h2>
       </div>
 

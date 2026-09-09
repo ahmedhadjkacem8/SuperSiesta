@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { CartProvider } from "@/context/CartContext";
+import { LanguageProvider, AdminLanguageProvider } from "@/context/LanguageContext";
 import { AuthProvider } from "@/hooks/useAuthSecure";
 import { AdminNotificationProvider } from "@/context/AdminNotificationContext";
 import Navbar from "@/components/Navbar";
@@ -97,11 +98,12 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <AuthProvider>
-        <CartProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+      <LanguageProvider>
+        <AuthProvider>
+          <CartProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
             <PageViewTracker />
             <Routes>
               {/* Public routes */}
@@ -122,32 +124,34 @@ const App = () => (
               {/* Admin routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/*" element={
-                <ProtectedRoute>
-                  <AdminNotificationProvider>
-                    <Routes>
-                      <Route path="/" element={<AdminDashboard />} />
-                      <Route path="/commandes" element={<AdminCommandes />} />
-                      <Route path="/produits" element={<AdminProduits />} />
-                      <Route path="/clients" element={<AdminClients />} />
-                      <Route path="/devis" element={<AdminDevis />} />
-                      <Route path="/cms" element={<AdminCMS />} />
-                      <Route path="/blog" element={<AdminBlog />} />
-                      <Route path="/showrooms" element={<AdminShowrooms />} />
-                      <Route path="/hero-slides" element={<AdminHeroSlides />} />
-                      <Route path="/gammes" element={<AdminGammes />} />
-                      <Route path="/a-propos" element={<AdminAPropos />} />
-                      <Route path="/bon-livraison" element={<AdminBonLivraison />} />
-                      <Route path="/livreurs" element={<AdminLivreurs />} />
-                      <Route path="/reviews" element={<AdminReviews />} />
-                      <Route path="/settings" element={<AdminSettings />} />
-                      <Route path="/newsletter" element={<AdminNewsletter />} />
-                      <Route path="/administrateurs" element={<AdminAdministrateurs />} />
-                      <Route path="/prospects" element={<AdminProspects />} />
-                      <Route path="/Seo" element={<SeoPanel />} />
+                <AdminLanguageProvider>
+                  <ProtectedRoute>
+                    <AdminNotificationProvider>
+                      <Routes>
+                        <Route path="/" element={<AdminDashboard />} />
+                        <Route path="/commandes" element={<AdminCommandes />} />
+                        <Route path="/produits" element={<AdminProduits />} />
+                        <Route path="/clients" element={<AdminClients />} />
+                        <Route path="/devis" element={<AdminDevis />} />
+                        <Route path="/cms" element={<AdminCMS />} />
+                        <Route path="/blog" element={<AdminBlog />} />
+                        <Route path="/showrooms" element={<AdminShowrooms />} />
+                        <Route path="/hero-slides" element={<AdminHeroSlides />} />
+                        <Route path="/gammes" element={<AdminGammes />} />
+                        <Route path="/a-propos" element={<AdminAPropos />} />
+                        <Route path="/bon-livraison" element={<AdminBonLivraison />} />
+                        <Route path="/livreurs" element={<AdminLivreurs />} />
+                        <Route path="/reviews" element={<AdminReviews />} />
+                        <Route path="/settings" element={<AdminSettings />} />
+                        <Route path="/newsletter" element={<AdminNewsletter />} />
+                        <Route path="/administrateurs" element={<AdminAdministrateurs />} />
+                        <Route path="/prospects" element={<AdminProspects />} />
+                        <Route path="/Seo" element={<SeoPanel />} />
 
-                    </Routes>
-                  </AdminNotificationProvider>
-                </ProtectedRoute>
+                      </Routes>
+                    </AdminNotificationProvider>
+                  </ProtectedRoute>
+                </AdminLanguageProvider>
               } />
 
               <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
@@ -155,8 +159,9 @@ const App = () => (
           </BrowserRouter>
         </CartProvider>
       </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+    </LanguageProvider>
+  </TooltipProvider>
+</QueryClientProvider>
 );
 
 export default App;

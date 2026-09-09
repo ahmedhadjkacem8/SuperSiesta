@@ -9,6 +9,7 @@ import { getImageUrl } from "@/utils/imageUtils";
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { api } from "@/lib/apiClient";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface ProductCardProps {
   product: Product;
@@ -59,6 +60,7 @@ function DimensionModal({
   onAdd: (size: ProductSize) => void;
   addedSize: string | null;
 }) {
+  const { t, isRTL } = useLanguage();
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [dimensions, setDimensions] = useState<any[]>([]);
@@ -124,9 +126,9 @@ function DimensionModal({
   };
 
   const PLACE_OPTIONS = [
-    { value: "1", label: "1 Place" },
-    { value: "1.5", label: "1 Place et Demi" },
-    { value: "2", label: "2 Places" },
+    { value: "1", label: t.home.onePlace },
+    { value: "1.5", label: t.home.placeAndHalf },
+    { value: "2", label: t.home.twoPlaces },
   ];
 
   const hasSizesForGroup = (groupValue: string) => {
@@ -166,14 +168,14 @@ function DimensionModal({
                   onClick={handleBack}
                   className="p-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
               )}
               <div>
                 <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-0.5">
-                  Ajouter au panier
+                  {t.product.addToCart}
                 </p>
                 <h3 className="text-base font-black leading-snug line-clamp-1">
                   {product.name}
@@ -212,7 +214,7 @@ function DimensionModal({
                   transition={{ duration: 0.2 }}
                 >
                   <p className="text-xs text-muted-foreground mb-4 text-center font-medium">
-                    Étape 1 — Choisissez votre nombre de places
+                    {t.shop.step1Places}
                   </p>
                   <div className="grid grid-cols-3 gap-3">
                     {PLACE_OPTIONS.map((option) => {
@@ -247,12 +249,12 @@ function DimensionModal({
                   transition={{ duration: 0.2 }}
                 >
                   <p className="text-xs text-muted-foreground mb-4 text-center font-medium">
-                    Étape 2 — Choisissez votre dimension
+                    {t.shop.step2Dimensions}
                   </p>
 
                   {sizesToShow.length === 0 ? (
                     <p className="text-sm text-muted-foreground italic text-center py-6">
-                      Aucune dimension disponible
+                      {t.shop.noDimensions}
                     </p>
                   ) : (
                     <div
@@ -300,11 +302,11 @@ function DimensionModal({
                               <>
                                 {isStandard ? (
                                   <span className="absolute top-0 left-0 bg-primary/10 text-primary text-[7px] font-black px-1.5 py-0.5 rounded-br-lg uppercase tracking-tighter">
-                                    Standard
+                                    {t.shop.standard}
                                   </span>
                                 ) : (
                                   <span className="absolute top-0 right-0 bg-amber-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-bl-lg uppercase tracking-tighter">
-                                    Spéciale
+                                    {t.shop.special}
                                   </span>
                                 )}
                               </>
@@ -312,7 +314,7 @@ function DimensionModal({
                             {isAdded ? (
                               <span className="flex flex-col items-center gap-1">
                                 <Check className="w-5 h-5" />
-                                <span className="text-xs">Ajouté !</span>
+                                <span className="text-xs">{t.product.added}</span>
                               </span>
                             ) : (
                               <>
@@ -324,7 +326,7 @@ function DimensionModal({
                                       ? "text-amber-700 group-hover:text-amber-900"
                                       : "text-primary group-hover:text-primary-foreground"
                                 }`}>
-                                  {isSurCommande ? "Sur commande" : formatPrice(size.price)}
+                                  {isSurCommande ? t.shop.onOrder : formatPrice(size.price)}
                                 </span>
                               </>
                             )}
@@ -355,6 +357,7 @@ export default function ProductCard({
   onSelectGroup,
   verticalPlaceButtons,
 }: ProductCardProps) {
+  const { t, isRTL } = useLanguage();
   const { addItem } = useCart();
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
@@ -514,9 +517,9 @@ export default function ProductCard({
               }`}
             >
               {[
-                { value: "1", label: "1 place", title: "Choisir la taille - 1 place" },
-                { value: "1.5", label: "1 place et demi", title: "Choisir la taille - 1 place et demi" },
-                { value: "2", label: "2 places", title: "Choisir la taille - 2 places" },
+                { value: "1", label: t.home.onePlace, title: t.home.onePlace },
+                { value: "1.5", label: t.home.placeAndHalf, title: t.home.placeAndHalf },
+                { value: "2", label: t.home.twoPlaces, title: t.home.twoPlaces },
               ].map((option) => (
                 <button
                   key={option.value}
@@ -539,7 +542,7 @@ export default function ProductCard({
                     {!(isSpecificDimension && displaySize.price === 0) ? (
                       <span className="text-base sm:text-xl font-black text-primary whitespace-nowrap">
                         {!isSpecificDimension && (
-                          <span className="text-xs sm:inline">à partir de </span>
+                          <span className="text-xs sm:inline">{t.shop.from} </span>
                         )}
                         {formatPrice(displaySize.price)}
                       </span>

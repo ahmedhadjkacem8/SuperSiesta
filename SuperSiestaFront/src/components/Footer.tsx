@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
-import { Phone, Mail, MapPin, Facebook, Instagram } from "lucide-react";
-
+import { Phone, Mail, MapPin } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 import { useSettings } from "@/hooks/useSettings";
 import { useSocialNetworks } from "@/hooks/useSocialNetworks";
 import LucideIcon from "@/components/common/LucideIcon";
 
 export default function Footer() {
+  const { t } = useLanguage();
   const { settings } = useSettings();
   const { socials } = useSocialNetworks();
 
@@ -17,7 +18,7 @@ export default function Footer() {
             <img src="/images/logo.png" alt="Super Siesta" className="h-10 w-auto" />
           </div>
           <p className="text-sm text-background/70 leading-relaxed">
-            {settings.footer_description || "Matelas N°1 en Tunisie depuis 1993. Qualité, confort et hygiène pour votre sommeil."}
+            {settings.footer_description || `${t.footer.tagline} ${t.footer.taglineSub}`}
           </p>
           <div className="flex gap-3 mt-4">
             {socials.filter(s => s.is_active).map((s) => (
@@ -27,38 +28,38 @@ export default function Footer() {
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="p-2 bg-background/10 rounded-xl transition-all hover:scale-110"
-                style={{ color: s.icon.hex_color || 'currentColor' }}
+                style={{ color: s.icon?.hex_color || 'currentColor' }}
               >
-                <LucideIcon name={s.icon.lucide_name} label={s.name} className="w-4 h-4" />
+                <LucideIcon name={s.icon?.lucide_name} label={s.name} className="w-4 h-4" />
               </a>
             ))}
           </div>
         </div>
 
         <div>
-          <h3 className="font-bold mb-4 text-background">Plan du site</h3>
+          <h3 className="font-bold mb-4 text-background">{t.footer.shop}</h3>
           <ul className="space-y-2 text-sm text-background/70">
             {[
-              { label: "Accueil", href: "/" },
-              { label: "Boutique", href: "/boutique" },
-              { label: "Nos Showrooms", href: "/showrooms" },
-              { label: "Blog & Actualités", href: "/blog" },
-              { label: "À Propos", href: "/a-propos" },
-              { label: "Contact", href: "/contact" },
+              { label: t.nav.home, href: "/" },
+              { label: t.nav.shop, href: "/boutique" },
+              { label: t.nav.showrooms, href: "/showrooms" },
+              { label: t.nav.blog, href: "/blog" },
+              { label: t.nav.about, href: "/a-propos" },
+              { label: t.nav.contact, href: "/contact" },
             ].map((l) => (
-              <li key={l.label}><Link to={l.href} className="hover:text-primary transition-colors">{l.label}</Link></li>
+              <li key={l.href}><Link to={l.href} className="hover:text-primary transition-colors">{l.label}</Link></li>
             ))}
           </ul>
         </div>
 
         <div>
-          <h3 className="font-bold mb-4 text-background">Mon Compte</h3>
+          <h3 className="font-bold mb-4 text-background">{t.nav.myAccount}</h3>
           <ul className="space-y-2 text-sm text-background/70">
             {[
-              { label: "Se connecter", href: "/connexion" },
-              { label: "Créer un compte", href: "/register" },
-              { label: "Mes Commandes", href: "/mon-compte" },
-              { label: "Panier", href: "#", onClick: (e: any) => { e.preventDefault(); (window as any).dispatchEvent(new CustomEvent('open-cart')); } },
+              { label: t.nav.login, href: "/connexion" },
+              { label: t.nav.register, href: "/register" },
+              { label: t.account.orders, href: "/mon-compte" },
+              { label: t.cart.myCart, href: "#", onClick: (e: any) => { e.preventDefault(); (window as any).dispatchEvent(new CustomEvent('open-cart')); } },
             ].map((l) => (
               <li key={l.label}>
                 <Link 
@@ -74,15 +75,15 @@ export default function Footer() {
         </div>
 
         <div>
-          <h3 className="font-bold mb-4 text-background">Contact</h3>
+          <h3 className="font-bold mb-4 text-background">{t.footer.contact}</h3>
           <ul className="space-y-3 text-sm text-background/70">
             <li className="flex items-center gap-2">
               <Phone className="w-4 h-4 text-primary flex-shrink-0" />
-              <span>{settings.contact_phone || "+216 71 000 000"}</span>
+              <span dir="ltr">{settings.contact_phone || "+216 71 000 000"}</span>
             </li>
             <li className="flex items-center gap-2">
               <Mail className="w-4 h-4 text-primary flex-shrink-0" />
-              <span>{settings.contact_email || "contact@supersiesta.tn"}</span>
+              <span dir="ltr">{settings.contact_email || "contact@supersiesta.tn"}</span>
             </li>
             <li className="flex items-start gap-2">
               <MapPin className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
@@ -93,7 +94,7 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-background/10 py-5 text-center text-xs text-background/40">
-        © {new Date().getFullYear()} Super Siesta Officiel. Tous droits réservés.
+        © {new Date().getFullYear()} {t.footer.copyright}
       </div>
     </footer>
   );

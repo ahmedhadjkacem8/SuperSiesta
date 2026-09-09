@@ -5,6 +5,7 @@ import { User, Mail, Phone, LogOut, Loader2, Save, Package, Clock, CheckCircle, 
 import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
 import { formatPrice } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   en_attente: { label: "En attente", color: "bg-amber-100 text-amber-800" },
@@ -33,6 +34,7 @@ interface OrderItem {
 }
 
 export default function MonCompte() {
+  const { t, isRTL } = useLanguage();
   const { user, isLoading, logout } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
@@ -99,13 +101,13 @@ export default function MonCompte() {
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-10">
-      <h1 className="text-3xl font-black mb-6">Mon Compte</h1>
+      <h1 className="text-3xl font-black mb-6">{t.account.title}</h1>
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-muted rounded-xl p-1">
-        <button onClick={() => setTab("profil")} className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors ${tab === "profil" ? "bg-card shadow text-foreground" : "text-muted-foreground"}`}>Profil</button>
+        <button onClick={() => setTab("profil")} className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors ${tab === "profil" ? "bg-card shadow text-foreground" : "text-muted-foreground"}`}>{t.account.profile}</button>
         <button onClick={() => setTab("commandes")} className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2 ${tab === "commandes" ? "bg-card shadow text-foreground" : "text-muted-foreground"}`}>
-          Commandes {orders.length > 0 && <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">{orders.length}</span>}
+          {t.account.orders} {orders.length > 0 && <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">{orders.length}</span>}
         </button>
       </div>
 
@@ -116,46 +118,46 @@ export default function MonCompte() {
               {(form.full_name || user.email || "U")[0].toUpperCase()}
             </div>
             <div>
-              <p className="font-bold text-lg">{form.full_name || "Mon profil"}</p>
+              <p className="font-bold text-lg">{form.full_name || t.account.myProfile}</p>
               <p className="text-sm text-muted-foreground">{user.email}</p>
-              {profile?.account_type === "btob" && <span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full font-bold mt-1 inline-block">Compte BtoB</span>}
+              {profile?.account_type === "btob" && <span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full font-bold mt-1 inline-block">{t.account.btobAccount}</span>}
             </div>
           </div>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-bold mb-1 block">Nom complet</label>
+              <label className="text-sm font-bold mb-1 block">{t.account.fullName}</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="w-full pl-10 pr-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                <User className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
               </div>
             </div>
             <div>
-              <label className="text-sm font-bold mb-1 block">Email</label>
+              <label className="text-sm font-bold mb-1 block">{t.account.email}</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input value={user.email || ""} disabled className="w-full pl-10 pr-4 py-2.5 border border-border rounded-xl bg-muted text-sm text-muted-foreground" />
+                <Mail className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input value={user.email || ""} disabled className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border border-border rounded-xl bg-muted text-sm text-muted-foreground" />
               </div>
             </div>
             <div>
-              <label className="text-sm font-bold mb-1 block">Téléphone</label>
+              <label className="text-sm font-bold mb-1 block">{t.account.phone}</label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full pl-10 pr-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="+216..." />
+                <Phone className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="+216..." />
               </div>
             </div>
             <div>
-              <label className="text-sm font-bold mb-1 block">Adresse</label>
+              <label className="text-sm font-bold mb-1 block">{t.checkout.address}</label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full pl-10 pr-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Rue, n°, immeuble..." />
+                <MapPin className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Rue, n°, immeuble..." />
               </div>
             </div>
             <div>
-              <label className="text-sm font-bold mb-1 block">Ville</label>
+              <label className="text-sm font-bold mb-1 block">{t.checkout.city}</label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <select value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full pl-10 pr-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                  <option value="">Sélectionner une ville...</option>
+                <MapPin className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <select value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option value="">{t.checkout.selectCity}</option>
                   {["Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan", "Bizerte", "Béja", "Jendouba", "Le Kef", "Siliana", "Sousse", "Monastir", "Mahdia", "Sfax", "Kairouan", "Kasserine", "Sidi Bouzid", "Gabès", "Médenine", "Tataouine", "Gafsa", "Tozeur", "Kébili"].map(v => (
                     <option key={v} value={v}>{v}</option>
                   ))}
@@ -165,10 +167,10 @@ export default function MonCompte() {
           </div>
           <div className="flex gap-3 pt-4">
             <button onClick={handleSave} disabled={saving} className="flex-1 bg-primary text-primary-foreground font-bold py-3 rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Enregistrer
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} {t.account.save}
             </button>
             <button onClick={handleLogout} className="bg-muted text-foreground font-bold py-3 px-6 rounded-xl hover:bg-destructive hover:text-destructive-foreground transition-colors flex items-center gap-2 text-sm">
-              <LogOut className="w-4 h-4" /> Déconnexion
+              <LogOut className="w-4 h-4 rtl:rotate-180" /> {t.account.logout}
             </button>
           </div>
         </div>
@@ -179,7 +181,7 @@ export default function MonCompte() {
           {orders.length === 0 && (
             <div className="bg-card border border-border rounded-2xl p-8 text-center">
               <Package className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-30" />
-              <p className="text-muted-foreground">Aucune commande pour le moment</p>
+              <p className="text-muted-foreground">{t.account.noOrders}</p>
             </div>
           )}
           {orders.map((o) => {

@@ -6,6 +6,7 @@ import { api } from "@/lib/apiClient";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatPrice } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
 
 export type OrderSizeGroup = "1 Place" | "1 Place et Demi" | "2 Places";
 
@@ -56,6 +57,7 @@ interface OrderModalProps {
 
 export default function OrderModal({ product, open, onOpenChange, sizeGroup }: OrderModalProps) {
   const navigate = useNavigate();
+  const { t, isRTL } = useLanguage();
   const [dimensions, setDimensions] = useState<any[]>([]);
 
   useEffect(() => {
@@ -145,9 +147,9 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
 
   const validateStep2 = () => {
     const nextErrors: Record<string, string> = {};
-    if (!form.full_name.trim()) nextErrors.full_name = "Nom complet requis";
-    if (!form.telephone.trim() || !/^\+?[\d\s]{8,}$/.test(form.telephone)) nextErrors.telephone = "Téléphone invalide";
-    if (!form.ville.trim()) nextErrors.ville = "Ville requise";
+    if (!form.full_name.trim()) nextErrors.full_name = t.checkout.nameRequired;
+    if (!form.telephone.trim() || !/^\+?[\d\s]{8,}$/.test(form.telephone)) nextErrors.telephone = t.checkout.invalidPhone;
+    if (!form.ville.trim()) nextErrors.ville = t.checkout.cityRequired;
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -189,13 +191,15 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl w-[95vw] max-h-[92vh] overflow-y-auto p-0">
-        <DialogTitle className="sr-only">Commande rapide — {product.name}</DialogTitle>
+        <DialogTitle className="sr-only">{t.checkout.title} — {product.name}</DialogTitle>
         <div className="relative bg-background rounded-[2rem] overflow-hidden shadow-2xl">
           <div className="flex items-center justify-between px-6 py-5 border-b border-border">
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-primary font-bold">Commande rapide</p>
+              <p className="text-xs uppercase tracking-[0.35em] text-primary font-bold">{t.checkout.title}</p>
               <h2 className="mt-2 text-2xl font-black">{product.name}</h2>
-              <p className="text-xs text-muted-foreground mt-1">{sizeGroup}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {sizeGroup === "1 Place" ? t.home.onePlace : sizeGroup === "1 Place et Demi" ? t.home.placeAndHalf : t.home.twoPlaces}
+              </p>
             </div>
           </div>
 
@@ -213,28 +217,28 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
                 <div className="w-20 h-20 bg-accent rounded-full flex items-center justify-center mx-auto mb-5">
                   <Check className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-2xl font-black mb-3">Commande confirmée !</h3>
+                <h3 className="text-2xl font-black mb-3">{t.checkout.orderConfirmed}</h3>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Merci <strong>{form.full_name}</strong> pour votre commande !
+                  {t.checkout.thankYou} <strong>{form.full_name}</strong> {t.checkout.forOrder}
                 </p>
                 <p className="text-sm text-muted-foreground mb-5">
-                  Notre équipe vous contactera au <strong>{form.telephone}</strong> pour confirmer la livraison.
+                  {t.checkout.teamContact} <strong>{form.telephone}</strong> {t.checkout.toConfirm}
                 </p>
                 <div className="bg-accent rounded-2xl p-3 mb-5 text-sm text-accent-foreground font-medium">
-                  ✅ Paiement à la livraison — Livraison gratuite
+                  {t.checkout.codBanner}
                 </div>
                 <div className="flex flex-col gap-2">
                   <button
                     onClick={() => { onOpenChange(false); navigate("/boutique"); }}
                     className="w-full bg-primary text-primary-foreground py-3 rounded-2xl font-bold hover:bg-primary/90 transition-colors"
                   >
-                    Continuer mes achats
+                    {t.checkout.viewProducts}
                   </button>
                   <button
                     onClick={() => { onOpenChange(false); navigate("/"); }}
                     className="w-full border border-border py-3 rounded-2xl font-bold text-sm hover:bg-muted transition-colors"
                   >
-                    Retour à l'accueil
+                    {t.checkout.backHome}
                   </button>
                 </div>
               </div>
@@ -283,12 +287,12 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
               {step === 1 && (
                 <div className="space-y-4">
                   <div>
-                    <p className="text-sm font-bold">Choisissez la dimension</p>
-                    <p className="text-xs text-muted-foreground">Sélectionnez la dimension correspondant à votre catégorie de places.</p>
+                    <p className="text-sm font-bold">{t.shop.step2Dimensions}</p>
+                    <p className="text-xs text-muted-foreground">{t.home.chooseDimensionSub}</p>
                   </div>
                   {availableSizes.length === 0 ? (
                     <div className="rounded-3xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900">
-                      Aucune dimension disponible pour cette catégorie de places.
+                      {t.shop.noDimensions}
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -298,8 +302,8 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
                         const dimensionMeta = dimensionByLabel.get(normalizedSizeLabel) || dimensions.find((dimension: any) => normalizeDimensionLabel(dimension?.label) === normalizedSizeLabel);
                         const isStandard = dimensionMeta ? normalizeBooleanValue(dimensionMeta.is_standard) : false;
                         const isSurCommande = size.price <= 0;
-                        const priceText = size.price > 0 ? formatPrice(size.price) : "Sur commande";
-                        const baseClass = "relative min-w-[120px] px-3 py-3 rounded-xl text-left border-2 transition-all";
+                        const priceText = size.price > 0 ? formatPrice(size.price) : t.shop.onOrder;
+                        const baseClass = "relative min-w-[120px] px-3 py-3 rounded-xl text-left rtl:text-right border-2 transition-all";
                         const selectedClass = "border-primary bg-primary text-primary-foreground";
                         const normalClass = "border-border hover:border-primary bg-card";
                         const surCommandeClass = "border-amber-200 bg-amber-50/30 hover:bg-amber-100 hover:border-amber-400";
@@ -341,7 +345,7 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
                                         : "bg-amber-100 text-amber-700"
                                       }`}
                                   >
-                                    {isStandard ? "Standard" : "Spéciale"}
+                                    {isStandard ? t.shop.standard : t.shop.special}
                                   </span>
                                 )}
                               </div>
@@ -370,14 +374,14 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
               {step === 2 && (
                 <div className="space-y-3">
                   <div className="mb-1">
-                    <p className="text-sm font-bold">Étape 2 — Vos coordonnées</p>
-                    <p className="text-xs text-muted-foreground mt-1">Nous vous contacterons pour confirmer</p>
+                    <p className="text-sm font-bold">{t.checkout.yourInfo}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t.checkout.teamContact} {t.checkout.toConfirm}</p>
                   </div>
 
                   <div>
                     <input
                       type="text"
-                      placeholder="Nom complet *"
+                      placeholder={`${t.checkout.fullName} *`}
                       value={form.full_name}
                       onChange={(e) => setForm({ ...form, full_name: e.target.value })}
                       className={`w-full px-4 py-3 border-2 rounded-xl bg-background focus:outline-none focus:border-primary transition-colors ${errors.full_name ? "border-destructive" : "border-border"}`}
@@ -388,7 +392,7 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
                   <div>
                     <input
                       type="tel"
-                      placeholder="Téléphone *"
+                      placeholder={`${t.checkout.phone} *`}
                       value={form.telephone}
                       onChange={(e) => setForm({ ...form, telephone: e.target.value })}
                       className={`w-full px-4 py-3 border-2 rounded-xl bg-background focus:outline-none focus:border-primary transition-colors ${errors.telephone ? "border-destructive" : "border-border"}`}
@@ -402,7 +406,7 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
                       onChange={(e) => setForm({ ...form, ville: e.target.value })}
                       className={`w-full px-4 py-3 border-2 rounded-xl bg-background focus:outline-none focus:border-primary transition-colors ${errors.ville ? "border-destructive" : "border-border"} ${!form.ville ? "text-muted-foreground" : ""}`}
                     >
-                      <option value="">Ville *</option>
+                      <option value="">{t.checkout.selectCity} *</option>
                       {REGIONS.map((r) => (
                         <option key={r} value={r} className="text-foreground">{r}</option>
                       ))}
@@ -411,14 +415,14 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
                   </div>
 
                   <input
-                    placeholder="Adresse (optionnel)"
+                    placeholder={`${t.checkout.address} (optionnel)`}
                     value={form.adresse}
                     onChange={(e) => setForm({ ...form, adresse: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-border rounded-xl bg-background focus:outline-none focus:border-primary transition-colors"
                   />
 
                   <textarea
-                    placeholder="Notes (optionnel)"
+                    placeholder={`${t.checkout.notes} (optionnel)`}
                     rows={2}
                     value={form.notes}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -430,14 +434,14 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
               {step === 3 && selectedSize && (
                 <div className="space-y-5">
                   <div>
-                    <p className="text-sm font-bold">Résumé de commande</p>
-                    <p className="text-xs text-muted-foreground">Vérifiez avant d’envoyer.</p>
+                    <p className="text-sm font-bold">{t.checkout.summary}</p>
+                    <p className="text-xs text-muted-foreground">{t.checkout.prefilledSub}</p>
                   </div>
                   <div className="rounded-[2rem] border border-border bg-muted p-5 space-y-4">
                     <div className="flex justify-between text-sm text-muted-foreground"><span>Produit</span><span>{product.name}</span></div>
-                    <div className="flex justify-between text-sm text-muted-foreground"><span>Catégorie</span><span>{sizeGroup}</span></div>
+                    <div className="flex justify-between text-sm text-muted-foreground"><span>Catégorie</span><span>{sizeGroup === "1 Place" ? t.home.onePlace : sizeGroup === "1 Place et Demi" ? t.home.placeAndHalf : t.home.twoPlaces}</span></div>
                     <div className="flex justify-between text-sm text-muted-foreground"><span>Dimension</span><span>{selectedSize.label}</span></div>
-                    <div className="flex justify-between text-sm text-muted-foreground items-center"><span>Quantité</span>
+                    <div className="flex justify-between text-sm text-muted-foreground items-center"><span>{t.product.quantity}</span>
                       <div className="flex items-center gap-2">
                         <button type="button" onClick={() => setQty(Math.max(1, qty - 1))} className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-sm">-</button>
                         <span className="w-8 text-center font-bold">{qty}</span>
@@ -445,20 +449,20 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
                       </div>
                     </div>
                     <div className="border-t border-border pt-3 flex justify-between items-center text-base font-black">
-                      <span>Total</span>
+                      <span>{t.cart.total}</span>
                       {isSurCommande ? (
                         <span className="flex items-center gap-2">
-                          <span className="text-amber-600 font-black">Sur commande</span>
+                          <span className="text-amber-600 font-black">{t.shop.onOrder}</span>
                           <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
                             × {qty}
                           </span>
                         </span>
                       ) : (
-                        <span className="text-primary">{totalPrice.toLocaleString()} DT</span>
+                        <span className="text-primary">{formatPrice(totalPrice)}</span>
                       )}
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">Paiement à la livraison • Livraison gratuite</p>
+                  <p className="text-xs text-muted-foreground">{t.checkout.codBanner}</p>
                 </div>
               )}
 
@@ -469,7 +473,7 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
                     onClick={() => setStep(step - 1)}
                     className="flex-1 rounded-2xl border border-border px-4 py-3 font-bold text-sm hover:bg-muted transition-colors"
                   >
-                    <ArrowLeft className="w-4 h-4 inline-block mr-2" /> Retour
+                    <ArrowLeft className="w-4 h-4 inline-block mr-2 rtl:rotate-180" /> {t.common.back}
                   </button>
                 )}
                 {step < 3 && (
@@ -482,7 +486,7 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
                     disabled={step === 1 && !selectedSize}
                     className="flex-1 rounded-2xl bg-primary text-primary-foreground font-bold px-4 py-3 text-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
                   >
-                    Continuer <ArrowRight className="w-4 h-4 inline-block ml-2" />
+                    {t.common.seeMore} <ArrowRight className="w-4 h-4 inline-block ml-2 rtl:rotate-180" />
                   </button>
                 )}
                 {step === 3 && (
@@ -492,7 +496,7 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
                     disabled={submitting}
                     className="flex-1 rounded-2xl bg-primary text-primary-foreground font-black px-4 py-3 text-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
                   >
-                    {submitting ? <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Envoi…</span> : "Passer la commande"}
+                    {submitting ? <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> {t.checkout.sending}</span> : t.checkout.confirmOrder}
                   </button>
                 )}
               </div>

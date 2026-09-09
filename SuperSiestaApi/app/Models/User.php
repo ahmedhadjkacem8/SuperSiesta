@@ -65,6 +65,11 @@ class User extends Authenticatable
         return $this->hasMany(Order::class);
     }
 
+    public function pushTokens(): HasMany
+    {
+        return $this->hasMany(PushToken::class);
+    }
+
     public function isAdmin(): bool
     {
         return $this->roles()->where('role', 'admin')->exists();

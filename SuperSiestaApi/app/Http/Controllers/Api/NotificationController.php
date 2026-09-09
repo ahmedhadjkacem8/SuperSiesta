@@ -21,6 +21,8 @@ class NotificationController extends BaseController
      */
     public function adminIndex(Request $request): JsonResponse
     {
+        abort_unless($request->user()?->isAdmin(), 403, 'Admin access required.');
+
         $query = Notification::forAdmin()
             ->orderBy('created_at', 'desc');
 
@@ -123,6 +125,8 @@ class NotificationController extends BaseController
      */
     public function markAllAdminAsRead(): JsonResponse
     {
+        abort_unless(request()->user()?->isAdmin(), 403, 'Admin access required.');
+
         Notification::forAdmin()
             ->unread()
             ->update([
@@ -235,6 +239,8 @@ class NotificationController extends BaseController
      */
     public function cleanAllAdmin(): JsonResponse
     {
+        abort_unless(request()->user()?->isAdmin(), 403, 'Admin access required.');
+
         // Autoriser seulement les admins (utiliser la règle 'create' qui vérifie isAdmin)
         $this->authorize('create', Notification::class);
 

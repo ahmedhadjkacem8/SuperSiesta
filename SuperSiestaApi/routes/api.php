@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\IconController;
 use App\Http\Controllers\Api\SocialNetworkController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PushTokenController;
 use App\Http\Controllers\Api\NewsletterController;
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\MetaTestController;
@@ -323,6 +324,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/compteurs/{id}', [\App\Http\Controllers\Api\CompteurController::class, 'update']);
 
     // Notifications Management
+    Route::post('/admin/push-tokens', [PushTokenController::class, 'store']);
+    Route::delete('/admin/push-tokens/{pushToken}', [PushTokenController::class, 'destroy']);
+
     Route::prefix('/admin/notifications')->group(function () {
         Route::get('/', [NotificationController::class, 'adminIndex']);
         Route::post('/', [NotificationController::class, 'store']);
