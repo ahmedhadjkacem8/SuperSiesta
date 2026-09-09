@@ -82,8 +82,10 @@ class MetaConversionsApiService
                 ->post($endpoint, $requestBody);
 
             if ($response->successful()) {
-                Log::warning("Meta CAPI: Event [{$eventName}] sent successfully.", [
+                Log::warning("META_CAPI_SUCCESS_TEST", [
+                    'event_name' => $eventName,
                     'event_id' => $eventId,
+                    'status_code' => $response->status(),
                     'response' => $response->json(),
                 ]);
                 return ['status' => 'success', 'data' => $response->json()];
