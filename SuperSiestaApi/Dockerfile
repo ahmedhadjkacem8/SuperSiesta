@@ -38,6 +38,7 @@ LABEL description="SuperSiesta API - Laravel 12 backend"
 RUN apk add --no-cache \
     bash \
     curl \
+    curl-dev \
     libpng-dev \
     libzip-dev \
     zip \
@@ -56,6 +57,7 @@ RUN docker-php-ext-configure gd \
     && docker-php-ext-install -j$(nproc) \
         pdo \
         pdo_mysql \
+        curl \
         mbstring \
         exif \
         pcntl \

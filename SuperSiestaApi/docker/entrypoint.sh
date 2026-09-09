@@ -29,5 +29,10 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
+if [ "${CONTAINER_ROLE:-app}" = "queue" ]; then
+    echo "✅ [entrypoint] Lancement du worker de notifications..."
+    exec php artisan queue:work database --sleep=3 --tries=3 --timeout=90
+fi
+
 echo "✅ [entrypoint] Prêt. Lancement PHP-FPM..."
 exec "$@"

@@ -26,6 +26,26 @@ services:
       - api_storage_public:/var/www/html/storage/app/public
       - api_logs:/var/www/html/storage/logs
 
+  # 1.5. LARAVEL QUEUE WORKER (Meta CAPI & Async Jobs)
+  api-queue:
+    build:
+      context:    ./SuperSiestaApi
+      dockerfile: Dockerfile
+      target:     production
+    container_name: supersiesta_api_queue
+    restart: unless-stopped
+    environment:
+      - CONTAINER_ROLE=queue
+    env_file: ./SuperSiestaApi/.env.docker
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - api_storage_public:/var/www/html/storage/app/public
+      - api_logs:/var/www/html/storage/logs
+
 
   # 2. NGINX FOR API
   api-nginx:
