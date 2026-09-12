@@ -26,17 +26,34 @@ class SendAdminPushNotificationJob implements ShouldQueue
 
     public function handle(PushNotificationService $pushNotifications): void
     {
+        Log::info('[PUSH_JOB] JOB_STARTED', [
+            'timestamp' => now()->toIso8601String(),
+            'notification_id' => $this->notificationId,
+            'attempt' => $this->attempts(),
+        ]);
+
         $notification = Notification::query()->find($this->notificationId);
         if (!$notification || $notification->user_id !== null) {
+            Log::warning('[PUSH_JOB] NOTIFICATION_NOT_FOUND_OR_NOT_ADMIN', [
+                'timestamp' => now()->toIso8601String(),
+                'notification_id' => $this->notificationId,
+            ]);
             return;
         }
 
         $pushNotifications->sendToNotification($notification);
+
+        Log::info('[PUSH_JOB] JOB_COMPLETED', [
+            'timestamp' => now()->toIso8601String(),
+            'notification_id' => $this->notificationId,
+        ]);
     }
 
     public function failed(Throwable $exception): void
     {
         Log::error('Admin push notification failed.', [
+            'timestamp' => now()->toIso8601String(),
+            'event' => 'JOB_FAILED',
             'notification_id' => $this->notificationId,
             'error' => $exception->getMessage(),
         ]);

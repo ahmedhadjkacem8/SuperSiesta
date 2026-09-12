@@ -7,6 +7,7 @@ use App\Models\Notification;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class NotificationController extends BaseController
 {
@@ -65,6 +66,11 @@ class NotificationController extends BaseController
     {
         abort_unless($request->user()?->isAdmin(), 403, 'Admin access required.');
 
+        Log::info('[PUSH_TEST] TEST_REQUEST', [
+            'timestamp' => now()->toIso8601String(),
+            'user_id' => $request->user()->id,
+        ]);
+
         $notification = $this->notificationService->notifyAdmin(
             title: 'Test notification Super Siesta',
             message: 'La notification push fonctionne correctement.',
@@ -74,7 +80,17 @@ class NotificationController extends BaseController
             duration: 5,
         );
 
+        Log::info('[PUSH_TEST] NOTIFICATION_CREATED', [
+            'timestamp' => now()->toIso8601String(),
+            'notification_id' => $notification->id,
+        ]);
+
         SendAdminPushNotificationJob::dispatch($notification->id);
+
+        Log::info('[PUSH_TEST] JOB_DISPATCHED', [
+            'timestamp' => now()->toIso8601String(),
+            'notification_id' => $notification->id,
+        ]);
 
         return response()->json([
             'success' => true,

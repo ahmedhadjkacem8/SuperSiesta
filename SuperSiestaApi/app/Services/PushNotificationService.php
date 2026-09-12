@@ -17,14 +17,43 @@ class PushNotificationService
             ->whereHas('user', fn ($query) => $query->whereHas('roles', fn ($roles) => $roles->where('role', 'admin')))
             ->get();
 
+        Log::info('[PUSH_SERVICE] TOKENS_FOUND', [
+            'timestamp' => now()->toIso8601String(),
+            'notification_id' => $notification->id,
+            'count' => $tokens->count(),
+        ]);
+
         foreach ($tokens as $token) {
             try {
+                Log::info('[PUSH_SERVICE] TOKEN_SEND_STARTED', [
+                    'timestamp' => now()->toIso8601String(),
+                    'notification_id' => $notification->id,
+                    'push_token_id' => $token->id,
+                    'platform' => $token->platform,
+                ]);
+
                 if ($token->platform === 'android') {
                     $this->sendFcm($token->token, $notification);
                 } elseif ($token->platform === 'ios') {
                     $this->sendApns($token->token, $notification);
                 }
+
+                Log::info('[PUSH_SERVICE] TOKEN_SEND_COMPLETED', [
+                    'timestamp' => now()->toIso8601String(),
+                    'notification_id' => $notification->id,
+                    'push_token_id' => $token->id,
+                    'platform' => $token->platform,
+                ]);
             } catch (RuntimeException $exception) {
+                Log::error('[PUSH_SERVICE] TOKEN_SEND_FAILED', [
+                    'timestamp' => now()->toIso8601String(),
+                    'notification_id' => $notification->id,
+                    'push_token_id' => $token->id,
+                    'platform' => $token->platform,
+                    'status' => $exception->getCode(),
+                    'error' => $exception->getMessage(),
+                ]);
+
                 if ($this->isInvalidToken($exception->getCode())) {
                     $token->update(['revoked_at' => now()]);
                     Log::warning('Revoked invalid push token.', ['push_token_id' => $token->id]);
@@ -43,7 +72,7 @@ class PushNotificationService
         $privateKey = str_replace('\\n', "\n", (string) config('services.push.firebase.private_key'));
 
         if ($projectId === '' || $clientEmail === '' || $privateKey === '') {
-            Log::warning('FCM is not configured; Android push was skipped.');
+            Log::warning('[PUSH_FCM] CONFIG_MISSING', ['timestamp' => now()->toIso8601String()]);
             return;
         }
 
@@ -66,6 +95,11 @@ class PushNotificationService
         if (!$accessToken) {
             throw new RuntimeException('FCM access token was not returned.');
         }
+
+        Log::info('[PUSH_FCM] ACCESS_TOKEN_CREATED', [
+            'timestamp' => now()->toIso8601String(),
+            'project_id' => $projectId,
+        ]);
 
         $response = $this->curlJson(
             "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send",
@@ -93,6 +127,11 @@ class PushNotificationService
         if ($response['status'] >= 400) {
             throw new RuntimeException('FCM rejected the push.', $response['status']);
         }
+
+        Log::info('[PUSH_FCM] RESPONSE_SUCCESS', [
+            'timestamp' => now()->toIso8601String(),
+            'status' => $response['status'],
+        ]);
     }
 
     private function sendApns(string $token, Notification $notification): void
@@ -103,7 +142,7 @@ class PushNotificationService
         $bundleId = (string) config('services.push.apns.bundle_id');
 
         if ($teamId === '' || $keyId === '' || $privateKey === '' || $bundleId === '') {
-            Log::warning('APNs is not configured; iOS push was skipped.');
+            Log::warning('[PUSH_APNS] CONFIG_MISSING', ['timestamp' => now()->toIso8601String()]);
             return;
         }
 
@@ -139,6 +178,12 @@ class PushNotificationService
         if ($response['status'] >= 400) {
             throw new RuntimeException('APNs rejected the push.', $response['status']);
         }
+
+        Log::info('[PUSH_APNS] RESPONSE_SUCCESS', [
+            'timestamp' => now()->toIso8601String(),
+            'status' => $response['status'],
+            'sandbox' => (bool) config('services.push.apns.sandbox'),
+        ]);
     }
 
     private function curlJson(string $url, array $payload, array $headers, bool $http2 = false): array
