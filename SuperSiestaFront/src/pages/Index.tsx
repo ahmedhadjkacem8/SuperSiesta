@@ -145,7 +145,7 @@ export default function Index() {
   useEffect(() => {
     const fetchGammes = async () => {
       try {
-        const data = await api.get<any[]>("/gammes");
+        const data = await api.get<any[]>(`/gammes?per_page=20&t=${Date.now()}`);
         const sorted = (data || []).sort((a: any, b: any) => a.sort_order - b.sort_order);
         setGammes(sorted);
       } catch (err) {
