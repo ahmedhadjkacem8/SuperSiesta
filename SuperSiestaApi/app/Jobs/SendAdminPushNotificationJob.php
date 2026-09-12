@@ -18,10 +18,10 @@ class SendAdminPushNotificationJob implements ShouldQueue
 
     public int $tries = 3;
     public int $timeout = 60;
-    public bool $afterCommit = true;
 
     public function __construct(public string $notificationId)
     {
+        $this->afterCommit = true;
     }
 
     public function handle(PushNotificationService $pushNotifications): void
