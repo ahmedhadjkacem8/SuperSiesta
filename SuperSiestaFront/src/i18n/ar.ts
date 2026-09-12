@@ -43,7 +43,7 @@ export const ar = {
 
   // Index / Home
   home: {
-    tipsAndSleep: "نصائح ونوم",
+    tipsAndSleep: "نصائح و اخبار",
     latestArticles: "آخر النصائح والأخبار",
     ourTips: "نصائحنا",
     allArticles: "كل المقالات",
@@ -61,12 +61,12 @@ export const ar = {
     supportSub: "+216 71 000 000",
     quickGuide: "دليل سريع",
     chooseDimension: "اختار المقاس متاعك",
-    chooseDimensionSub: "اختار حجم المطرح باش تشوف الموديلات المتوفّرة",
+    chooseDimensionSub: "اختار حجم الجراية باش تشوف الموديلات المتوفّرة",
     models: "موديل",
     showMore: "أكثر",
     showLess: "أقلّ",
     ourRanges: "مجموعاتنا",
-    chooseYourMattress: "اختار المطرح متاعك",
+    chooseYourMattress: "اختار الجراية متاعك",
     chooseYourMattressSub: "اختار القياس واطلب في ضغطات قليلة",
     exclusiveRanges: "مجموعاتنا الحصرية",
     exclusiveRangesSub: "قمة الراحة مع سوبر سييستا",
@@ -100,9 +100,9 @@ export const ar = {
     threeDShowcaseTitle: "اكتشف المطارح بتقنية 3D",
     threeDShowcaseSub: "تفحّص المطارح من كل الزوايا بتجربة تفاعلية ثلاثية الأبعاد",
     reviews: [
-      { name: "سنية ب.", city: "تونس", text: "المطرح Tendresse وصل في 24 ساعة، جودة فوق العادة! نرقد كيف الطفل الصغير." },
-      { name: "كريم م.", city: "سوسة", text: "المطرح Médico خفّفلي وجع ظهري بالكامل. فرحان برشا بالشراء متاعي." },
-      { name: "فاطمة ل.", city: "صفاقس", text: "خدمة حرفاء ممتازة و توصيل سريع. المطرح مريح جداً ويناسب العايلة الكلّ." },
+      { name: "سنية ب.", city: "تونس", text: "الجراية Tendresse وصل في 24 ساعة، جودة فوق العادة! نرقد كيف الطفل الصغير." },
+      { name: "كريم م.", city: "سوسة", text: "الجراية Médico خفّفلي وجع ظهري بالكامل. فرحان برشا بالشراء متاعي." },
+      { name: "فاطمة ل.", city: "صفاقس", text: "خدمة حرفاء ممتازة و توصيل سريع. الجراية مريحة جداً ويناسب العايلة الكلّ." },
     ],
   },
 
@@ -293,7 +293,7 @@ export const ar = {
     notesPlaceholder: "أي تعليمات خاصة للتوصيل...",
     paymentMode: "طريقة الخلاص",
     cod: "خلاص عند التوصيل (Cash on Delivery)",
-    codDesc: "تخلص نقداً عند استلام المطرح في باب دارك",
+    codDesc: "تخلص نقداً عند استلام الجراية في باب دارك",
     confirmOrder: "← تأكيد الطلبية",
     sending: "جاري تأكيد الطلبية...",
     summary: "ملخّص الطلبية",
