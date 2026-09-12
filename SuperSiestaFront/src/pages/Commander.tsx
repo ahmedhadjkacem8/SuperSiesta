@@ -9,6 +9,7 @@ import { api } from "@/lib/apiClient";
 import { formatPrice } from "@/lib/utils";
 import { getImageUrl } from "@/utils/imageUtils";
 import { generateEventId, trackInitiateCheckout, trackPurchase, getFbpCookie, getFbcCookie } from "@/services/metaPixel";
+import { useLanguage } from "@/context/LanguageContext";
 
 const villes = [
   "Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan",
@@ -55,6 +56,7 @@ function generateOrderNumber() {
 
 export default function Commander() {
   const navigate = useNavigate();
+  const { t, isRTL } = useLanguage();
   const { items, total, clearCart } = useCart();
   const { user } = useAuth();
 
@@ -217,8 +219,8 @@ export default function Commander() {
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
           <Package className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-30" />
-          <p className="text-lg font-medium mb-4">Votre panier est vide.</p>
-          <button onClick={() => navigate("/boutique")} className="bg-primary text-primary-foreground font-bold px-6 py-3 rounded-2xl hover:bg-primary/90 transition-colors">Voir nos produits</button>
+          <p className="text-lg font-medium mb-4">{t.checkout.emptyCart}</p>
+          <button onClick={() => navigate("/boutique")} className="bg-primary text-primary-foreground font-bold px-6 py-3 rounded-2xl hover:bg-primary/90 transition-colors">{t.checkout.viewProducts}</button>
         </div>
       </div>
     );
@@ -247,22 +249,22 @@ export default function Commander() {
             <div className="w-20 h-20 bg-accent rounded-full flex items-center justify-center mx-auto mb-6">
               <Check className="w-10 h-10 text-primary" />
             </div>
-            <h1 className="text-3xl font-black mb-3">Commande confirmée !</h1>
+            <h1 className="text-3xl font-black mb-3">{t.checkout.orderConfirmed}</h1>
             <p className="text-muted-foreground mb-2">
-              Merci <strong>{form.full_name}</strong> pour votre commande !
+              {t.checkout.thankYou} <strong>{form.full_name}</strong> {t.checkout.forOrder}
             </p>
             <p className="text-muted-foreground mb-6">
-              Notre équipe vous contactera au <strong>{form.telephone}</strong>{form.telephone2 ? ` ou au ${form.telephone2}` : ""} pour confirmer la livraison.
+              {t.checkout.teamContact} <strong>{form.telephone}</strong>{form.telephone2 ? ` / ${form.telephone2}` : ""} {t.checkout.toConfirm}
             </p>
-            <div className="bg-accent rounded-2xl p-4 mb-6 text-sm text-accent-foreground">✅ Paiement à la livraison — Livraison gratuite</div>
+            <div className="bg-accent rounded-2xl p-4 mb-6 text-sm text-accent-foreground">{t.checkout.codBanner}</div>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               {user && (
                 <button onClick={() => navigate("/mon-compte")} className="bg-secondary text-secondary-foreground font-bold px-6 py-3 rounded-2xl hover:bg-secondary/80 transition-colors">
-                  Voir mes commandes
+                  {t.checkout.viewOrders}
                 </button>
               )}
               <button onClick={() => navigate("/")} className="bg-primary text-primary-foreground font-bold px-6 py-3 rounded-2xl hover:bg-primary/90 transition-colors">
-                Retour à l'accueil
+                {t.checkout.backHome}
               </button>
             </div>
           </div>
@@ -312,16 +314,16 @@ export default function Commander() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.full_name.trim()) e.full_name = "Nom complet requis";
+    if (!form.full_name.trim()) e.full_name = t.checkout.nameRequired;
     
     if (form.createAccount && (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))) {
       e.email = "Email requis pour créer un compte";
     } else if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      e.email = "Email invalide";
+      e.email = t.checkout.invalidPhone ? "Email invalide" : "Invalid email";
     }
     
-    if (!form.telephone.trim() || !/^\+?[\d\s]{8,}$/.test(form.telephone)) e.telephone = "Numéro de téléphone requis (invalide)";
-    if (!form.ville) e.ville = "Ville requise";
+    if (!form.telephone.trim() || !/^\+?[\d\s]{8,}$/.test(form.telephone)) e.telephone = t.checkout.invalidPhone;
+    if (!form.ville) e.ville = t.checkout.cityRequired;
     
     if (form.createAccount && (!form.password || form.password.length < 8)) e.password = "Le mot de passe doit faire au moins 8 caractères";
     return e;
@@ -473,16 +475,19 @@ export default function Commander() {
 
   return (
     <main className="max-w-5xl mx-auto px-4 py-10">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-6 transition-colors"><ChevronLeft className="w-4 h-4" />Retour</button>
-      <h1 className="text-3xl font-black mb-8">Finaliser la commande</h1>
+      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-6 transition-colors">
+        <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
+        {t.checkout.back}
+      </button>
+      <h1 className="text-3xl font-black mb-8">{t.checkout.title}</h1>
 
       {/* Saved info banner */}
       {user && useSaved && profileLoaded && (
         <div className="bg-accent border border-primary/20 rounded-2xl p-4 mb-6 flex items-center gap-3 animate-fade-in">
           <Check className="w-5 h-5 text-primary flex-shrink-0" />
           <div className="flex-1">
-            <p className="text-sm font-bold text-accent-foreground">Informations pré-remplies depuis votre compte</p>
-            <p className="text-xs text-muted-foreground">Vérifiez et modifiez si nécessaire avant de confirmer.</p>
+            <p className="text-sm font-bold text-accent-foreground">{t.checkout.prefilled}</p>
+            <p className="text-xs text-muted-foreground">{t.checkout.prefilledSub}</p>
           </div>
         </div>
       )}
@@ -490,15 +495,15 @@ export default function Commander() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         <form onSubmit={handleSubmit} className="lg:col-span-3 space-y-4">
           <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-            <h2 className="font-bold text-lg mb-5 flex items-center gap-2 text-primary"><User className="w-5 h-5" />Informations personnelles</h2>
+            <h2 className="font-bold text-lg mb-5 flex items-center gap-2 text-primary"><User className="w-5 h-5" />{t.checkout.yourInfo}</h2>
             <div className="space-y-4">
-              {field("full_name", "Nom & Prénom", <User className="w-4 h-4" />, { placeholder: "Entrez votre nom complet" }, true)}
+              {field("full_name", t.checkout.fullName, <User className="w-4 h-4" />, { placeholder: t.auth.namePlaceholder }, true)}
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {field("telephone", "Téléphone", <Phone className="w-4 h-4" />, { placeholder: "XX XXX XXX", type: "tel" }, true)}
-                {field("telephone2", "2ème Téléphone (Optionnel)", <Phone className="w-4 h-4" />, { placeholder: "XX XXX XXX", type: "tel" }, false)}
+                {field("telephone", t.checkout.phone, <Phone className="w-4 h-4" />, { placeholder: "XX XXX XXX", type: "tel" }, true)}
+                {field("telephone2", `${t.checkout.phone} 2 (Optionnel)`, <Phone className="w-4 h-4" />, { placeholder: "XX XXX XXX", type: "tel" }, false)}
               </div>
-              <div>{field("email", "E-mail", <Mail className="w-4 h-4" />, { placeholder: "votre@email.com (Optionnel)", type: "email" }, false)}</div>
+              <div>{field("email", "Email", <Mail className="w-4 h-4" />, { placeholder: t.auth.emailPlaceholder, type: "email" }, false)}</div>
             </div>
             
             {!user && (
@@ -509,14 +514,14 @@ export default function Commander() {
                   </div>
                   <input type="checkbox" className="hidden" checked={form.createAccount} onChange={(e) => setForm({ ...form, createAccount: e.target.checked })} />
                   <div>
-                    <p className="text-sm font-bold">Créer un compte ?</p>
-                    <p className="text-xs text-muted-foreground">Pour suivre votre commande et commander plus vite la prochaine fois.</p>
+                    <p className="text-sm font-bold">{t.auth.createAccount} ?</p>
+                    <p className="text-xs text-muted-foreground">{t.auth.accessAccount}</p>
                   </div>
                 </label>
                 
                 {form.createAccount && (
                   <div className="mt-4 animate-in slide-in-from-top-2 duration-200">
-                    {field("password", "Choisissez un mot de passe", <Check className="w-4 h-4" />, { placeholder: "Min. 8 caractères", type: "password" }, true)}
+                    {field("password", t.auth.password, <Check className="w-4 h-4" />, { placeholder: t.auth.passwordPlaceholder, type: "password" }, true)}
                   </div>
                 )}
               </div>
@@ -525,60 +530,49 @@ export default function Commander() {
 
           <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold text-lg flex items-center gap-2 text-primary"><MapPin className="w-5 h-5" />Livraison</h2>
-              {/* 
-              <button 
-                type="button" 
-                onClick={handleGetLocation} 
-                disabled={locating}
-                className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border transition-all ${form.latitude ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-primary/5 text-primary border-primary/20 hover:bg-primary/10"}`}
-              >
-                {locating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Navigation className="w-3 h-3" />}
-                {form.latitude ? "Position enregistrée" : "Ma position actuelle"}
-              </button>
-              */}
+              <h2 className="font-bold text-lg flex items-center gap-2 text-primary"><MapPin className="w-5 h-5" />{t.checkout.deliveryAddress}</h2>
             </div>
             
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium flex items-center gap-1.5 mb-1.5">
-                  Ville 
+                  {t.checkout.city} 
                   <span className="text-destructive font-black text-lg leading-none">*</span>
                 </label>
                 <div className="relative group">
-                  <div className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${errors.ville ? "text-destructive" : "text-muted-foreground group-focus-within:text-primary"}`}><MapPin className="w-4 h-4" /></div>
+                  <div className={`absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 transition-colors ${errors.ville ? "text-destructive" : "text-muted-foreground group-focus-within:text-primary"}`}><MapPin className="w-4 h-4" /></div>
                   <select 
                     value={form.ville} 
                     onChange={(e) => { setForm({ ...form, ville: e.target.value }); if (errors.ville) setErrors({ ...errors, ville: "" }); }} 
-                    className={`w-full pl-9 pr-10 py-3 border-2 rounded-xl text-sm focus:outline-none transition-all duration-200 bg-background appearance-none ${
+                    className={`w-full pl-9 pr-10 rtl:pr-9 rtl:pl-10 py-3 border-2 rounded-xl text-sm focus:outline-none transition-all duration-200 bg-background appearance-none ${
                       errors.ville 
                         ? "border-destructive/50 bg-destructive/5 shadow-[0_0_0_4px_rgba(239,68,68,0.1)]" 
                         : "border-border hover:border-primary/30 focus:border-primary focus:shadow-[0_0_0_4px_rgba(var(--primary-rgb),0.1)] shadow-sm"
-                    } ${!form.ville ? "border-l-4 border-l-primary/40" : ""}`}
+                    } ${!form.ville ? "border-l-4 rtl:border-l-0 rtl:border-r-4 border-l-primary/40 rtl:border-r-primary/40" : ""}`}
                   >
-                    <option value="">Sélectionner votre ville...</option>
+                    <option value="">{t.checkout.selectCity}</option>
                     {villes.map((v) => <option key={v} value={v}>{v}</option>)}
                   </select>
                   {!form.ville && !errors.ville && (
-                    <div className="absolute right-10 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <div className="absolute right-10 rtl:right-auto rtl:left-10 top-1/2 -translate-y-1/2 pointer-events-none">
                       <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-tighter">Requis</span>
                     </div>
                   )}
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none border-l pl-2 border-border">
+                  <div className="absolute right-4 rtl:right-auto rtl:left-4 top-1/2 -translate-y-1/2 pointer-events-none border-l rtl:border-l-0 rtl:border-r pl-2 rtl:pl-0 rtl:pr-2 border-border">
                     <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
                   </div>
                 </div>
                 {errors.ville && <p className="text-[11px] font-bold text-destructive mt-1.5 animate-in slide-in-from-top-1">{errors.ville}</p>}
               </div>
 
-              {field("adresse", "Adresse précise", <MapPin className="w-4 h-4" />, { placeholder: "Rue, immeuble, appartement... (Optionnel)" }, false)}
+              {field("adresse", t.checkout.address, <MapPin className="w-4 h-4" />, { placeholder: "Rue, immeuble, appartement... (Optionnel)" }, false)}
 
               <div>
-                <label className="text-sm font-medium block mb-1.5">Notes pour le livreur (Optionnel)</label>
+                <label className="text-sm font-medium block mb-1.5">{t.checkout.notes}</label>
                 <textarea 
                   value={form.notes} 
                   onChange={(e) => setForm({ ...form, notes: e.target.value })} 
-                  placeholder="Instructions spéciales (ex: code porte, repère...)" 
+                  placeholder={t.checkout.notesPlaceholder} 
                   rows={3} 
                   className="w-full px-4 py-3 border-2 border-border rounded-xl text-sm focus:outline-none focus:border-primary hover:border-primary/30 transition-all bg-background resize-none shadow-sm" 
                 />
@@ -587,24 +581,24 @@ export default function Commander() {
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-            <h2 className="font-bold text-lg mb-4 text-primary">Mode de paiement</h2>
+            <h2 className="font-bold text-lg mb-4 text-primary">{t.checkout.paymentMode}</h2>
             <div className="flex items-center gap-3 bg-primary/5 rounded-xl p-4 border-2 border-primary/20">
               <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-sm"><Check className="w-4 h-4 text-primary-foreground" /></div>
               <div>
-                <p className="font-bold text-sm">Paiement à la livraison</p>
-                <p className="text-xs text-muted-foreground">Réglez en espèces ou par chèque lors de la réception.</p>
+                <p className="font-bold text-sm">{t.checkout.cod}</p>
+                <p className="text-xs text-muted-foreground">{t.checkout.codDesc}</p>
               </div>
             </div>
           </div>
 
           <button type="submit" disabled={submitting} className="w-full bg-primary text-primary-foreground font-black py-4 rounded-2xl hover:bg-primary/90 transition-all text-lg shadow-xl disabled:opacity-50 flex items-center justify-center gap-2 transform active:scale-[0.98]">
-            {submitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Confirmation...</> : "Confirmer la commande →"}
+            {submitting ? <><Loader2 className="w-5 h-5 animate-spin" /> {t.checkout.sending}</> : t.checkout.confirmOrder}
           </button>
         </form>
 
         <div className="lg:col-span-2">
           <div className="bg-card border border-border rounded-2xl p-6 sticky top-24 shadow-sm">
-            <h2 className="font-bold text-lg mb-5">Récapitulatif du panier</h2>
+            <h2 className="font-bold text-lg mb-5">{t.checkout.summary}</h2>
             <div className="space-y-4 mb-6">
               {items.map((item) => (
                 <div key={`${item.product.id}-${item.size.label}`} className="flex gap-4">
@@ -654,11 +648,11 @@ export default function Commander() {
 
             <div className="border-t border-border pt-4 space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Livraison standard</span>
-                <span className="text-emerald-600 font-bold">Gratuite</span>
+                <span className="text-muted-foreground">{t.checkout.delivery}</span>
+                <span className="text-emerald-600 font-bold">{t.checkout.free}</span>
               </div>
               <div className="flex justify-between items-start text-xl font-black border-t border-dashed border-border pt-3">
-                <span>Total TTC</span>
+                <span>{t.cart.total}</span>
                 {surCommandeCount > 0 ? (
                   <div className="flex flex-col items-end gap-1">
                     {total > 0 ? (

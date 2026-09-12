@@ -1,11 +1,13 @@
 import { X, Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "@/context/LanguageContext";
 import { formatPrice } from "@/lib/utils";
 
 export default function CartDrawer() {
   const { items, isOpen, closeCart, removeItem, updateQty, total } = useCart();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   if (!isOpen) return null;
 
@@ -18,12 +20,12 @@ export default function CartDrawer() {
       />
 
       {/* Drawer */}
-      <aside className="fixed right-0 top-0 h-full w-full max-w-md z-50 bg-background shadow-2xl flex flex-col">
+      <aside className="fixed right-0 top-0 h-full w-full max-w-md z-50 bg-background shadow-2xl flex flex-col rtl:right-auto rtl:left-0">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div className="flex items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-primary" />
-            <h2 className="font-bold text-lg">Mon Panier</h2>
+            <h2 className="font-bold text-lg">{t.cart.myCart}</h2>
             <span className="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
               {items.length}
             </span>
@@ -38,7 +40,7 @@ export default function CartDrawer() {
           {items.length === 0 ? (
             <div className="text-center text-muted-foreground py-16">
               <ShoppingBag className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>Votre panier est vide</p>
+              <p>{t.cart.emptyCart}</p>
             </div>
           ) : (
             items.map((item) => (
@@ -53,7 +55,7 @@ export default function CartDrawer() {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm truncate">{item.product.name}</p>
-                  <p className="text-xs text-muted-foreground mb-2">Taille {item.size.label}</p>
+                  <p className="text-xs text-muted-foreground mb-2">{t.cart.size} {item.size.label}</p>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() =>
@@ -94,11 +96,11 @@ export default function CartDrawer() {
         {items.length > 0 && (
           <div className="border-t border-border p-5 space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Total</span>
+              <span className="text-muted-foreground">{t.cart.total}</span>
               <span className="text-xl font-black text-primary">{formatPrice(total)}</span>
             </div>
             <div className="bg-accent text-accent-foreground text-xs text-center py-2 rounded-xl">
-              ✅ Paiement à la livraison — Livraison gratuite
+              {t.cart.codFree}
             </div>
             <button
               onClick={() => {
@@ -107,7 +109,7 @@ export default function CartDrawer() {
               }}
               className="w-full bg-primary text-primary-foreground font-bold py-3.5 rounded-2xl hover:bg-primary/90 transition-colors text-sm"
             >
-              Commander Maintenant →
+              {t.cart.orderNow}
             </button>
           </div>
         )}

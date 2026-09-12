@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Notification;
+use App\Jobs\SendAdminPushNotificationJob;
 use Illuminate\Support\Carbon;
 
 class NotificationService
@@ -86,13 +87,15 @@ class NotificationService
             ->exists();
 
         if (! $recentExists) {
-            $this->notifyAdmin(
+            $notification = $this->notifyAdmin(
                 title: "🛒 Nouvelle commande #{$order->order_number}",
                 message: "{$clientName} — " . number_format($order->total, 2, ',', ' ') . " DT",
                 type: 'order',
                 path: "/admin/commandes",
                 color: 'blue'
             );
+
+            SendAdminPushNotificationJob::dispatch($notification->id);
         }
 
         // Notification client si enabled

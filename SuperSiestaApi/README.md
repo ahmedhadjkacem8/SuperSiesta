@@ -9,6 +9,27 @@
 
 ## About Laravel
 
+## Notifications mobiles administrateur
+
+Le backend enregistre les tokens Android/iOS via `POST /api/admin/push-tokens`.
+Lorsqu'une commande est créée, un job envoie la notification directement aux
+services de transport natifs : FCM HTTP v1 pour Android et APNs HTTP/2 pour iOS.
+L'application mobile n'embarque aucun SDK Firebase JavaScript.
+
+Configuration requise dans `.env` : `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`,
+`FIREBASE_PRIVATE_KEY`, `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_PRIVATE_KEY`,
+`APNS_BUNDLE_ID` et `APNS_SANDBOX`.
+
+Après la migration, lancer un worker séparé :
+
+```bash
+php artisan migrate --force
+php artisan queue:work database --sleep=3 --tries=3 --timeout=90
+```
+
+Avec Docker, démarrer un second conteneur de la même image avec
+`CONTAINER_ROLE=queue`. Le conteneur principal reste en PHP-FPM.
+
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
 - [Simple, fast routing engine](https://laravel.com/docs/routing).

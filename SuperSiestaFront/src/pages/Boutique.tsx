@@ -8,6 +8,7 @@ import { SlidersHorizontal, Loader2, ChevronDown, Check, X } from "lucide-react"
 import { formatPrice } from "@/lib/utils";
 import { api } from "@/lib/apiClient";
 import { trackSearch } from "@/services/metaPixel";
+import { useLanguage } from "@/context/LanguageContext";
 
 // ------------------------------------------------------------------
 // Composants définis EN DEHORS de Boutique() : leur identité ne change
@@ -116,6 +117,7 @@ function MobileSheet({
 }
 
 export default function Boutique() {
+  const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   // Build initial filters from URL params to avoid an extra unfiltered fetch
   const initialFilters: any = {};
@@ -286,10 +288,10 @@ export default function Boutique() {
   return (
     <main className="max-w-7xl mx-auto px-4 py-6 sm:py-10">
       <div className="mb-6 sm:mb-8">
-        <span className="text-xs font-bold text-primary uppercase tracking-widest">Boutique</span>
-        <h1 className="text-2xl sm:text-3xl font-black mt-1 mb-2">Tous nos matelas</h1>
+        <span className="text-xs font-bold text-primary uppercase tracking-widest">{t.shop.title}</span>
+        <h1 className="text-2xl sm:text-3xl font-black mt-1 mb-2">{t.shop.allMattresses}</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
-          {products.length} produit{products.length > 1 ? "s" : ""} chargé{products.length > 1 ? "s" : ""}
+          {products.length} {t.shop.productsFound}
           {hasMore && " (+ de résultats disponibles)"}
         </p>
       </div>
@@ -298,7 +300,7 @@ export default function Boutique() {
         <aside className="hidden lg:block w-56 flex-shrink-0">
           <div className="bg-card border border-border rounded-2xl p-5 sticky top-24 space-y-6">
             <div>
-              <h3 className="text-sm font-bold mb-3">Catégorie</h3>
+              <h3 className="text-sm font-bold mb-3">{t.shop.category}</h3>
               <div className="space-y-2">
                 {CATEGORIES.map((c) => (
                   <FilterButton
@@ -306,13 +308,13 @@ export default function Boutique() {
                     active={categories.includes(c)}
                     onClick={() => toggleFilter(categories, setCategories, c)}
                   >
-                    {c}
+                    {c === "Tous" ? t.common.all : c}
                   </FilterButton>
                 ))}
               </div>
             </div>
             <div>
-              <h3 className="text-sm font-bold mb-3">Gamme</h3>
+              <h3 className="text-sm font-bold mb-3">{t.shop.range}</h3>
               <div className="space-y-2">
                 {gammesList.map((g) => (
                   <FilterButton
@@ -320,13 +322,13 @@ export default function Boutique() {
                     active={gammes.includes(g)}
                     onClick={() => toggleFilter(gammes, setGammes, g)}
                   >
-                    {g}
+                    {g === "Tous" ? t.common.all : g}
                   </FilterButton>
                 ))}
               </div>
             </div>
             <div>
-              <h3 className="text-sm font-bold mb-3">Fermeté</h3>
+              <h3 className="text-sm font-bold mb-3">{t.shop.firmness}</h3>
               <div className="space-y-2">
                 {FERMETES.map((f) => (
                   <FilterButton
@@ -334,20 +336,20 @@ export default function Boutique() {
                     active={fermetes.includes(f)}
                     onClick={() => toggleFilter(fermetes, setFermetes, f)}
                   >
-                    {f}
+                    {f === "Tous" ? t.common.all : f}
                   </FilterButton>
                 ))}
               </div>
             </div>
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold">Dimensions</h3>
+                <h3 className="text-sm font-bold">{t.shop.dimension}</h3>
                 {!dimensions.includes("Tous") && (
                   <button
                     onClick={() => setDimensions(["Tous"])}
                     className="text-[10px] text-primary font-black uppercase tracking-widest hover:underline"
                   >
-                    Effacer
+                    {t.common.cancel}
                   </button>
                 )}
               </div>
@@ -379,7 +381,7 @@ export default function Boutique() {
               </div>
             </div>
             <div>
-              <h3 className="text-sm font-bold mb-3">Prix max</h3>
+              <h3 className="text-sm font-bold mb-3">{t.shop.maxPrice}</h3>
               <input type="range" min={200} max={3000} step={50} value={priceMax} onChange={(e) => setPriceMax(Number(e.target.value))} className="w-full accent-primary" />
               <p className="text-sm text-primary font-bold mt-1">{formatPrice(priceMax)}</p>
             </div>
@@ -387,34 +389,34 @@ export default function Boutique() {
         </aside>
 
         <div className="flex-1 min-w-0">
-          {/* Barre de filtres mobile : scroll horizontal, jamais de retour à la ligne qui pousse hors écran */}
+          {/* Barre de filtres mobile */}
             <div
               ref={dropdownRef}
               className="lg:hidden grid grid-cols-2 gap-2 mb-6"
             >
             <MobileFilterTrigger
-              label="Catégorie"
+              label={t.shop.category}
               isActive={!categories.includes("Tous")}
               badge={!categories.includes("Tous") ? String(categories.length) : undefined}
               isOpen={activeDropdown === "category"}
               onClick={() => setActiveDropdown(activeDropdown === "category" ? null : "category")}
             />
             <MobileFilterTrigger
-              label="Gamme"
+              label={t.shop.range}
               isActive={!gammes.includes("Tous")}
               badge={!gammes.includes("Tous") ? String(gammes.length) : undefined}
               isOpen={activeDropdown === "gamme"}
               onClick={() => setActiveDropdown(activeDropdown === "gamme" ? null : "gamme")}
             />
             <MobileFilterTrigger
-              label="Fermeté"
+              label={t.shop.firmness}
               isActive={!fermetes.includes("Tous")}
               badge={!fermetes.includes("Tous") ? String(fermetes.length) : undefined}
               isOpen={activeDropdown === "fermete"}
               onClick={() => setActiveDropdown(activeDropdown === "fermete" ? null : "fermete")}
             />
             <MobileFilterTrigger
-              label="Dimensions"
+              label={t.shop.dimension}
               isActive={!dimensions.includes("Tous")}
               badge={!dimensions.includes("Tous") ? dimensions[0] : undefined}
               isOpen={activeDropdown === "dimension"}
@@ -529,8 +531,8 @@ export default function Boutique() {
 
           {products.length === 0 ? (
             <div className="text-center py-16 sm:py-20 text-muted-foreground px-4">
-              <p className="text-base sm:text-lg font-medium">Aucun produit ne correspond à vos filtres.</p>
-              <button onClick={() => { setCategories(["Tous"]); setFermetes(["Tous"]); setGammes(["Tous"]); setDimensions(["Tous"]); }} className="mt-4 text-primary hover:underline text-sm">Réinitialiser les filtres</button>
+              <p className="text-base sm:text-lg font-medium">{t.shop.noProducts}</p>
+              <button onClick={() => { setCategories(["Tous"]); setFermetes(["Tous"]); setGammes(["Tous"]); setDimensions(["Tous"]); }} className="mt-4 text-primary hover:underline text-sm">{t.shop.resetFilters}</button>
             </div>
           ) : (
             <>

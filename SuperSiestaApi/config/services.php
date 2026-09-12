@@ -41,4 +41,19 @@ return [
         'test_event_code' => env('META_TEST_EVENT_CODE'),
     ],
 
+    'push' => [
+        'firebase' => [
+            'project_id' => env('FIREBASE_PROJECT_ID'),
+            'client_email' => env('FIREBASE_CLIENT_EMAIL'),
+            'private_key' => env('FIREBASE_PRIVATE_KEY'),
+        ],
+        'apns' => [
+            'team_id' => env('APNS_TEAM_ID'),
+            'key_id' => env('APNS_KEY_ID'),
+            'private_key' => env('APNS_PRIVATE_KEY'),
+            'bundle_id' => env('APNS_BUNDLE_ID', 'com.siestaofficiel.admin'),
+            'sandbox' => filter_var(env('APNS_SANDBOX', false), FILTER_VALIDATE_BOOL),
+        ],
+    ],
+
 ];

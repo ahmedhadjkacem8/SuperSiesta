@@ -15,6 +15,7 @@ import {
   validateFullName,
   validatePhone,
 } from "@/lib/validators";
+import { useLanguage } from "@/context/LanguageContext";
 
 type FormField = "email" | "password" | "passwordConfirm" | "fullName" | "phone" | "accountType";
 
@@ -27,6 +28,7 @@ interface FormErrors {
 }
 
 export default function Register() {
+  const { t, isRTL } = useLanguage();
   const { user, isLoading: authLoading, register } = useAuth();
   const navigate = useNavigate();
 
@@ -221,29 +223,29 @@ export default function Register() {
   return (
     <main className="max-w-md mx-auto px-4 py-8">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-black">Créer un compte</h1>
-        <p className="text-muted-foreground text-sm mt-2">Rejoignez Super Siesta</p>
+        <h1 className="text-3xl font-black">{t.auth.createAccount}</h1>
+        <p className="text-muted-foreground text-sm mt-2">{t.auth.joinUs}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 space-y-4">
         {/* Email Field */}
         <div>
-          <label className="text-sm font-bold mb-1 block">Email *</label>
+          <label className="text-sm font-bold mb-1 block">{t.auth.email} *</label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Mail className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="email"
               value={email}
               onChange={(e) => handleChange("email", e.target.value)}
               onBlur={() => handleBlur("email")}
-              className={`w-full pl-10 pr-4 py-2.5 border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 ${
+              className={`w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 ${
                 touchedFields.has("email")
                   ? errors.email.length > 0
                     ? "border-red-500 focus:ring-red-500"
                     : "border-green-500 focus:ring-green-500"
                   : "border-border focus:ring-primary"
               }`}
-              placeholder="email@exemple.com"
+              placeholder={t.auth.emailPlaceholder}
               required
             />
           </div>
@@ -261,22 +263,22 @@ export default function Register() {
 
         {/* Full Name Field */}
         <div>
-          <label className="text-sm font-bold mb-1 block">Nom complet *</label>
+          <label className="text-sm font-bold mb-1 block">{t.auth.fullName} *</label>
           <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <User className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               value={fullName}
               onChange={(e) => handleChange("fullName", e.target.value)}
               onBlur={() => handleBlur("fullName")}
-              className={`w-full pl-10 pr-4 py-2.5 border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 ${
+              className={`w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 ${
                 touchedFields.has("fullName")
                   ? errors.fullName.length > 0
                     ? "border-red-500 focus:ring-red-500"
                     : "border-green-500 focus:ring-green-500"
                   : "border-border focus:ring-primary"
               }`}
-              placeholder="Votre nom complet"
+              placeholder={t.auth.namePlaceholder}
               required
             />
           </div>

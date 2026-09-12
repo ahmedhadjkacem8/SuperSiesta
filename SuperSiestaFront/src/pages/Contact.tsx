@@ -8,6 +8,7 @@ import LucideIcon from "@/components/common/LucideIcon";
 import { useAuth } from "@/hooks/useAuthSecure";
 import CachedImage from "@/components/CachedImage";
 import { trackLead } from "@/services/metaPixel";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface Showroom {
   id: string;
@@ -22,6 +23,7 @@ interface Showroom {
 }
 
 export default function Contact() {
+  const { t, isRTL } = useLanguage();
   const [showrooms, setShowrooms] = useState<Showroom[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -79,7 +81,7 @@ export default function Contact() {
         phone: form.phone,
         city: form.city,
       });
-      toast.success("Message envoyé ! Merci pour votre avis.");
+      toast.success(t.contact.messageSent);
       setForm(prev => ({ ...prev, message: "", city: "" }));
       setRating(5);
     } catch {
@@ -94,9 +96,9 @@ export default function Contact() {
       {/* Hero */}
       <section className="bg-accent py-16">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <span className="text-xs font-bold text-primary uppercase tracking-widest">Contact</span>
-          <h1 className="text-4xl font-black mt-2 mb-4">Contactez-nous</h1>
-          <p className="text-muted-foreground">Une question ? Visitez l'un de nos showrooms ou envoyez-nous un message.</p>
+          <span className="text-xs font-bold text-primary uppercase tracking-widest">{t.contact.title}</span>
+          <h1 className="text-4xl font-black mt-2 mb-4">{t.contact.contactUs}</h1>
+          <p className="text-muted-foreground">{t.contact.heroDesc}</p>
         </div>
       </section>
 
@@ -105,19 +107,19 @@ export default function Contact() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Form */}
           <div>
-            <h2 className="text-2xl font-black mb-6">Envoyez-nous un message</h2>
+            <h2 className="text-2xl font-black mb-6">{t.contact.sendMessage}</h2>
             <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 space-y-4">
               <div>
-                <label className="text-sm font-bold mb-1 block">Nom complet</label>
+                <label className="text-sm font-bold mb-1 block">{t.contact.fullName}</label>
                 <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-bold mb-1 block">Email</label>
+                  <label className="text-sm font-bold mb-1 block">{t.contact.email}</label>
                   <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                 </div>
                 <div>
-                  <label className="text-sm font-bold mb-1 block">Téléphone</label>
+                  <label className="text-sm font-bold mb-1 block">{t.contact.phone}</label>
                   <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                 </div>
               </div>
@@ -155,30 +157,30 @@ export default function Contact() {
               </div>
 
               <div>
-                <label className="text-sm font-bold mb-1 block">Message</label>
+                <label className="text-sm font-bold mb-1 block">{t.contact.message}</label>
                 <textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} required rows={5} className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
               </div>
               <button type="submit" disabled={sending} className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm">
-                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Envoyer
+                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 rtl:rotate-180" />} {t.contact.send}
               </button>
             </form>
           </div>
 
           {/* Info */}
           <div>
-            <h2 className="text-2xl font-black mb-6">Informations</h2>
+            <h2 className="text-2xl font-black mb-6">{t.contact.info}</h2>
             <div className="bg-card border border-border rounded-2xl p-6 space-y-4 mb-8">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center"><Phone className="w-5 h-5 text-primary" /></div>
-                <div><p className="text-sm font-bold">Téléphone</p><p className="text-sm text-muted-foreground">{settings.contact_phone || "+216 71 000 000"}</p></div>
+                <div><p className="text-sm font-bold">{t.contact.phone}</p><p className="text-sm text-muted-foreground" dir="ltr">{settings.contact_phone || "+216 71 000 000"}</p></div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center"><Mail className="w-5 h-5 text-primary" /></div>
-                <div><p className="text-sm font-bold">Email</p><p className="text-sm text-muted-foreground">{settings.contact_email || "contact@supersiesta.tn"}</p></div>
+                <div><p className="text-sm font-bold">{t.contact.email}</p><p className="text-sm text-muted-foreground" dir="ltr">{settings.contact_email || "contact@supersiesta.tn"}</p></div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center"><Clock className="w-5 h-5 text-primary" /></div>
-                <div><p className="text-sm font-bold">Horaires</p><p className="text-sm text-muted-foreground">{settings.contact_hours || "Lun-Sam 9h-19h"}</p></div>
+                <div><p className="text-sm font-bold">{t.contact.hours}</p><p className="text-sm text-muted-foreground">{t.contact.hoursValue || settings.contact_hours || "Lun-Sam 9h-19h"}</p></div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center"><MapPin className="w-5 h-5 text-primary" /></div>

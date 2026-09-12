@@ -4,6 +4,7 @@ import { MapPin, Loader2, LayoutGrid, List, Map as MapIcon, ChevronLeft, Chevron
 import { toast } from 'sonner';
 import { ShowroomCard } from '@/components/showrooms/ShowroomCard';
 import { ShowroomsMap } from '@/components/showrooms/ShowroomsMap';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Showroom {
   id: string;
@@ -28,6 +29,7 @@ interface Showroom {
 type ViewMode = 'list' | 'grid' | 'map';
 
 export default function Showrooms() {
+  const { t, isRTL } = useLanguage();
   const [showrooms, setShowrooms] = useState<Showroom[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('map');
@@ -215,11 +217,10 @@ export default function Showrooms() {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-12">
           <div className="min-w-0">
             <h1 className="text-3xl sm:text-4xl md:text-6xl font-black text-foreground mb-2 sm:mb-4 tracking-tighter uppercase leading-none">
-              Nos <span className="text-primary">Espaces</span> d'Exposition
+              {t.showrooms.title}
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground font-medium leading-relaxed">
-              Découvrez nos {showrooms.length} showroom{showrooms.length > 1 ? 's' : ''} à travers la Tunisie.{' '}
-              <span className="hidden sm:inline">Venez tester le confort de nos matelas et recevez des conseils personnalisés de nos experts.</span>
+              {t.showrooms.subtitle}
             </p>
           </div>
 

@@ -22,6 +22,7 @@ import { trackSubscribe } from "@/services/metaPixel";
 import { useSocialNetworks } from "@/hooks/useSocialNetworks";
 import LucideIcon from "@/components/common/LucideIcon";
 import { useBlogPosts } from "@/hooks/useBlog";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface BlogPreview {
   id: string;
@@ -35,6 +36,7 @@ interface BlogPreview {
 
 export default function Index() {
   const navigate = useNavigate();
+  const { t, isRTL } = useLanguage();
   const { data: products, isLoading: productsLoading } = useProducts();
   const { allDimensions } = useCategories(products);
   const allProducts = (products || []).filter(p => p.sizes && p.sizes.length > 0).slice(0, 6);
@@ -93,6 +95,31 @@ export default function Index() {
       image: "/images/TopRelax-1.jpg"
     }];
   }
+
+  // Helper: traduit les valeurs par défaut françaises pour les cartes promo dynamiques.
+  // Si l'admin a saisi une valeur personnalisée, elle reste telle quelle.
+  // Pour les textes par défaut connus, on utilise les clés de traduction.
+  const translatePromoField = (field: string | undefined, type: 'badge' | 'title' | 'description' | 'link_text'): string => {
+    if (!field) return '';
+    const defaults: Record<string, Record<string, string>> = {
+      badge: {
+        "OFFRE LIMITÉE": t.home.limitedOffer,
+        "OFFRE": t.home.limitedOffer,
+      },
+      title: {
+        "Jusqu'à -20% sur les top modèles": t.home.promoTitle,
+      },
+      description: {
+        "Profitez de nos meilleures offres sur les matelas Top Relax et Tendresse pour des nuits inoubliables.": t.home.promoDesc,
+        "Profitez de nos meilleures offres sur les matelas Top Relax et Tendresse.": t.home.promoDesc,
+      },
+      link_text: {
+        "Profiter de l'offre": t.home.promoBtn.replace(" →", "").replace(" ←", ""),
+        "Profiter de l'offre →": t.home.promoBtn,
+      },
+    };
+    return defaults[type]?.[field] ?? field;
+  };
 
   // Autoplay pour le carrousel promo
   useEffect(() => {
@@ -224,10 +251,10 @@ export default function Index() {
   }
   if (!Array.isArray(trustBadges) || trustBadges.length === 0) {
     trustBadges = [
-      { icon: "Truck", title: "Livraison gratuite", sub: "Partout en Tunisie" },
-      { icon: "CreditCard", title: "Paiement à la livraison", sub: "Sans frais cachés" },
-      { icon: "ShieldCheck", title: "Garantie 10 ans", sub: "Sur tous nos matelas" },
-      { icon: "Clock", title: "Service client 24/7", sub: "+216 71 000 000" },
+      { icon: "Truck", title: t.home.freeDelivery, sub: t.home.freeDeliverySub },
+      { icon: "CreditCard", title: t.home.codPayment, sub: t.home.codPaymentSub },
+      { icon: "ShieldCheck", title: t.home.warranty, sub: t.home.warrantySub },
+      { icon: "Clock", title: t.home.support, sub: t.home.supportSub },
     ];
   }
 
@@ -348,7 +375,7 @@ useEffect(() => {
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-black text-xs uppercase tracking-wider text-muted-foreground">
-                Nos conseils
+                {t.home.ourTips}
               </h3>
               <span className="text-[10px] font-bold text-muted-foreground/50 tabular-nums">
                 {Math.floor(blogPageIndex / itemsPerView) + 1}/{Math.ceil(favoritePosts.length / itemsPerView)}
@@ -392,7 +419,7 @@ useEffect(() => {
                       </h4>
                     </div>
 
-                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 rtl:rotate-180 transition-all shrink-0" />
                   </Link>
                 ))}
               </motion.div>
@@ -430,7 +457,7 @@ useEffect(() => {
               to="/blog"
               className="w-full py-2.5 rounded-xl bg-primary/10 text-primary font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-primary hover:text-primary-foreground transition-all"
             >
-              Tous les articles <ArrowRight className="w-3 h-3" />
+              {t.home.viewAllArticles} <ArrowRight className="w-3 h-3 rtl:rotate-180" />
             </Link>
           </motion.div>
         </div>
@@ -447,9 +474,9 @@ useEffect(() => {
             {...fadeInUp}
             className="text-center mb-8 sm:mb-12"
           >
-            <span className="text-xs font-bold text-primary uppercase tracking-widest">Nos Gammes</span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mt-1">Choisissez votre matelas</h2>
-            <p className="text-muted-foreground text-sm mt-1">Sélectionnez le format souhaité et commandez en quelques clics</p>
+            <span className="text-xs font-bold text-primary uppercase tracking-widest">{t.home.ourRanges}</span>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mt-1">{t.home.chooseYourMattress}</h2>
+            <p className="text-muted-foreground text-sm mt-1">{t.home.chooseYourMattressSub}</p>
           </motion.div>
 
           {productsLoading ? (
@@ -549,7 +576,7 @@ return (
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   className="w-full h-full flex flex-col select-none group"
                 >
-                  <button type="button" onClick={handleNavigate} className="w-full text-left">
+                  <button type="button" onClick={handleNavigate} className="w-full text-left rtl:text-right">
                     <div className="w-full aspect-square relative overflow-hidden rounded-lg border border-border/70">
                       {g.cover_image ? (
                         <img
@@ -572,7 +599,7 @@ return (
                       <button
                         type="button"
                         onClick={handleNavigate}
-                        className="text-xs sm:text-sm font-bold text-left leading-tight line-clamp-2 group-hover:text-primary transition-colors"
+                        className="text-xs sm:text-sm font-bold text-left rtl:text-right leading-tight line-clamp-2 group-hover:text-primary transition-colors"
                       >
                         {g.name}
                       </button>
@@ -596,10 +623,10 @@ return (
 
       {/* Flèches + Dots (PC et mobile) */}
       {canScroll && (
-        <div className="flex items-center justify-center gap-4 mt-6 sm:mt-8">
+        <div className="flex items-center justify-center gap-4 mt-6 sm:mt-8" dir="ltr">
           <button
             type="button"
-            onClick={() => goToIndex(carouselIndex - 1)}
+            onClick={() => goToIndex(isRTL ? carouselIndex + 1 : carouselIndex - 1)}
             className="w-9 h-9 flex items-center justify-center rounded-full border border-border bg-card hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all flex-shrink-0"
             aria-label="Gamme précédente"
           >
@@ -624,7 +651,7 @@ return (
 
           <button
             type="button"
-            onClick={() => goToIndex(carouselIndex + 1)}
+            onClick={() => goToIndex(isRTL ? carouselIndex - 1 : carouselIndex + 1)}
             className="w-9 h-9 flex items-center justify-center rounded-full border border-border bg-card hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all flex-shrink-0"
             aria-label="Gamme suivante"
           >
@@ -667,9 +694,9 @@ return (
         className="max-w-7xl mx-auto px-4 py-14"
       >
         <div className="text-center mb-8">
-          <span className="text-xs font-bold text-primary uppercase tracking-widest">Guide rapide</span>
-          <h2 className="text-3xl md:text-4xl font-black mt-2 mb-2">Choisissez votre dimension</h2>
-          <p className="text-muted-foreground text-sm">Sélectionnez la taille de votre matelas pour voir les modèles disponibles</p>
+          <span className="text-xs font-bold text-primary uppercase tracking-widest">{t.home.quickGuide}</span>
+          <h2 className="text-3xl md:text-4xl font-black mt-2 mb-2">{t.home.chooseDimension}</h2>
+          <p className="text-muted-foreground text-sm">{t.home.chooseDimensionSub}</p>
         </div>
         <div className="max-w-4xl mx-auto">
           <motion.div
@@ -710,18 +737,18 @@ return (
                   >
                     {!isStandard && available && (
                       <span className="absolute top-0 right-0 bg-amber-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-bl-lg uppercase tracking-tighter">
-                        Spéciale
+                        {t.shop.special}
                       </span>
                     )}
                     {isStandard && available && (
                       <span className="absolute top-0 left-0 bg-primary/10 text-primary text-[7px] font-black px-1.5 py-0.5 rounded-br-lg uppercase tracking-tighter">
-                        Standard
+                        {t.shop.standard}
                       </span>
                     )}
                     <span className="relative z-10">{d}</span>
                     {available && (
                       <span className="block text-[10px] font-normal mt-0.5 opacity-70 relative z-10">
-                        {(products || []).filter(p => p.sizes.some(s => s.label === d)).length} modèles
+                        {(products || []).filter(p => p.sizes.some(s => s.label === d)).length} {t.home.models}
                       </span>
                     )}
                   </motion.button>
@@ -736,7 +763,7 @@ return (
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline transition-colors"
               >
                 <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showAllDimensions ? "rotate-180" : ""}`} />
-                {showAllDimensions ? "Afficher moins" : "Afficher plus"}
+                {showAllDimensions ? t.home.showLess : t.home.showMore}
               </button>
             </div>
           )}
@@ -754,8 +781,8 @@ return (
         className="max-w-7xl mx-auto px-4 pb-8"
       >
         <div className="text-center mb-6">
-          <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Explorez</span>
-          <h2 className="text-2xl md:text-3xl font-black mt-1 mb-2">Nos Collections</h2>
+          <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">{t.home.collections}</span>
+          <h2 className="text-2xl md:text-3xl font-black mt-1 mb-2">{t.home.ourCollections}</h2>
         </div>
         <div className="relative group/carousel">
           <motion.div
@@ -840,11 +867,11 @@ return (
             className="flex items-center justify-between mb-8 sm:mb-12"
           >
             <div>
-              <span className="text-xs font-bold text-primary uppercase tracking-widest">Populaires</span>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mt-1">Best Sellers</h2>
+              <span className="text-xs font-bold text-primary uppercase tracking-widest">{t.home.popular}</span>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mt-1">{t.home.bestSellers}</h2>
             </div>
             <Link to="/boutique" className="flex items-center gap-1 text-sm font-bold text-primary hover:underline">
-              Voir tout <ChevronRight className="w-4 h-4" />
+              {t.home.viewAll} <ChevronRight className="w-4 h-4 rtl:rotate-180" />
             </Link>
           </motion.div>
           {productsLoading ? (
@@ -914,13 +941,13 @@ return (
                   whileInView={{ x: 0, opacity: 1 }}
                   className="inline-block bg-primary text-primary-foreground text-[10px] sm:text-xs font-black px-3 sm:px-4 py-1 sm:py-1.5 rounded-full uppercase tracking-widest"
                 >
-                  {promoCardsList[promoIndex]?.badge || "OFFRE"}
+                  {translatePromoField(promoCardsList[promoIndex]?.badge || "OFFRE LIMITÉE", 'badge')}
                 </motion.span>
                 <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black mt-4 mb-3 leading-tight">
-                  {promoCardsList[promoIndex]?.title}
+                  {translatePromoField(promoCardsList[promoIndex]?.title, 'title')}
                 </h2>
                 <p className="text-secondary-foreground/80 mb-6 text-sm sm:text-base lg:text-lg max-w-lg leading-relaxed">
-                  {promoCardsList[promoIndex]?.description}
+                  {translatePromoField(promoCardsList[promoIndex]?.description, 'description')}
                 </p>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -928,7 +955,7 @@ return (
                   onClick={() => navigate(promoCardsList[promoIndex]?.link_url || "/boutique")}
                   className="bg-primary text-primary-foreground font-black px-6 sm:px-8 lg:px-10 py-3 sm:py-4 lg:py-5 rounded-xl sm:rounded-2xl hover:opacity-90 transition-all shadow-xl shadow-primary/20 flex items-center gap-2 text-sm sm:text-base w-fit"
                 >
-                  {promoCardsList[promoIndex]?.link_text || "Profiter de l'offre"} <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                  {translatePromoField(promoCardsList[promoIndex]?.link_text || "Profiter de l'offre", 'link_text')} <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
                 </motion.button>
               </div>
 
@@ -984,8 +1011,8 @@ return (
             {...fadeInUp}
             className="text-center mb-16"
           >
-            <span className="text-xs font-bold text-primary uppercase tracking-widest">Témoignages</span>
-            <h2 className="text-4xl font-black mt-2">Ce que disent nos clients</h2>
+            <span className="text-xs font-bold text-primary uppercase tracking-widest">{t.home.testimonials}</span>
+            <h2 className="text-4xl font-black mt-2">{t.home.clientsSay}</h2>
             <div className="flex items-center justify-center gap-1.5 mt-4">
               {[1, 2, 3, 4, 5].map((i) => <Star key={i} className={`w-6 h-6 ${i <= Math.round(averageRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}`} />)}
               <span className="text-lg font-black text-primary ml-3">{averageRating}/5</span>
@@ -1024,7 +1051,7 @@ return (
                           }}
                           className="text-sm font-bold text-primary hover:underline"
                         >
-                          {expandedReviews.includes(r.id) ? 'Voir moins' : 'Voir plus'}
+                          {expandedReviews.includes(r.id) ? t.common.seeLess : t.common.seeMore}
                         </button>
                       )}
                     </div>
@@ -1054,99 +1081,99 @@ return (
 
             {reviewsList.length === 0 && (
               <div className="py-12 text-center text-muted-foreground italic">
-                Aucun témoignage disponible pour le moment.
+                {t.home.noArticles}
               </div>
             )}
           </div>
         </div>
       </section>
 
-{/* LATEST BLOG POSTS CARDS */}
-{blogPosts.length > 0 && (
-  <section className="max-w-7xl mx-auto px-4 py-12 md:py-20">
-    <motion.div
-      {...fadeInUp}
-      className="flex items-end justify-between mb-8 md:mb-12"
-    >
-      <div>
-        <span className="text-[10px] md:text-xs font-bold text-primary uppercase tracking-widest">
-          Le Mag Super Siesta
-        </span>
-
-        <h2 className="text-2xl md:text-4xl font-black mt-1">
-          Derniers Conseils & Actualités
-        </h2>
-      </div>
-
-      <Link
-        to="/blog"
-        className="flex items-center gap-1 text-xs md:text-sm font-bold text-primary hover:underline whitespace-nowrap"
-      >
-        Voir tout
-        <ChevronRight className="w-4 h-4" />
-      </Link>
-    </motion.div>
-
-    <motion.div
-      variants={staggerContainer}
-      initial="initial"
-      whileInView="whileInView"
-      viewport={{ once: true }}
-      className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8"
-    >
-      {blogPosts.map((post) => (
-        <motion.div key={post.id} variants={fadeInUp}>
-          <Link
-            to={`/blog/${post.slug}`}
-            className="group flex flex-col h-full overflow-hidden rounded-3xl bg-card border border-border shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+      {/* LATEST BLOG POSTS CARDS */}
+      {blogPosts.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 py-12 md:py-20">
+          <motion.div
+            {...fadeInUp}
+            className="flex items-end justify-between mb-8 md:mb-12"
           >
-            {/* IMAGE */}
-            <div className="relative overflow-hidden">
-              <div className="aspect-[4/3] md:aspect-square">
-                {post.image_url ? (
-                  <img
-                    src={getImageUrl(post.image_url)}
-                    alt={post.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-muted flex items-center justify-center">
-                    <Star className="w-10 h-10 text-muted-foreground opacity-20" />
+            <div>
+              <span className="text-[10px] md:text-xs font-bold text-primary uppercase tracking-widest">
+                {t.home.tipsAndSleep}
+              </span>
+
+              <h2 className="text-2xl md:text-4xl font-black mt-1">
+                {t.home.latestArticles}
+              </h2>
+            </div>
+
+            <Link
+              to="/blog"
+              className="flex items-center gap-1 text-xs md:text-sm font-bold text-primary hover:underline whitespace-nowrap"
+            >
+              {t.home.allArticles}
+              <ChevronRight className="w-4 h-4 rtl:rotate-180" />
+            </Link>
+          </motion.div>
+
+          <motion.div
+            variants={staggerContainer}
+            initial="initial"
+            whileInView="whileInView"
+            viewport={{ once: true }}
+            className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8"
+          >
+            {blogPosts.map((post) => (
+              <motion.div key={post.id} variants={fadeInUp}>
+                <Link
+                  to={`/blog/${post.slug}`}
+                  className="group flex flex-col h-full overflow-hidden rounded-3xl bg-card border border-border shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 text-left rtl:text-right"
+                >
+                  {/* IMAGE */}
+                  <div className="relative overflow-hidden">
+                    <div className="aspect-[4/3] md:aspect-square">
+                      {post.image_url ? (
+                        <img
+                          src={getImageUrl(post.image_url)}
+                          alt={post.title}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
+                          <Star className="w-10 h-10 text-muted-foreground opacity-20" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Catégorie */}
+                    <div className="absolute top-3 left-3 rtl:left-auto rtl:right-3">
+                      <span className="rounded-full bg-white/95 backdrop-blur-md px-3 py-1 text-[9px] md:text-[10px] font-black uppercase text-primary shadow">
+                        {post.category}
+                      </span>
+                    </div>
                   </div>
-                )}
-              </div>
 
-              {/* Catégorie */}
-              <div className="absolute top-3 left-3">
-                <span className="rounded-full bg-white/95 backdrop-blur-md px-3 py-1 text-[9px] md:text-[10px] font-black uppercase text-primary shadow">
-                  {post.category}
-                </span>
-              </div>
-            </div>
+                  {/* CONTENU */}
+                  <div className="flex flex-col flex-1 p-4 md:p-8">
+                    <h3 className="font-black text-sm md:text-xl leading-snug md:leading-tight break-words group-hover:text-primary transition-colors">
+                      {post.title}
+                    </h3>
+                    <p className="mt-3 text-[11px] md:text-sm leading-relaxed text-muted-foreground line-clamp-3">
+                      {post.excerpt}
+                    </p>
 
-            {/* CONTENU */}
-            <div className="flex flex-col flex-1 p-4 md:p-8">
-              <h3 className="font-black text-sm md:text-xl leading-snug md:leading-tight break-words group-hover:text-primary transition-colors">
-                {post.title}
-              </h3>
-              <p className="mt-3 text-[11px] md:text-sm leading-relaxed text-muted-foreground line-clamp-3">
-                {post.excerpt}
-              </p>
-
-              {/* Bouton */}
-              <div className="mt-auto pt-5">
-                <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-2 md:px-5 md:py-2.5 text-[11px] md:text-sm font-bold text-primary transition-all group-hover:bg-primary group-hover:text-white">
-                  <span>Lire l'article</span>
-                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                </div>
-              </div>
-            </div>
-          </Link>
-        </motion.div>
-      ))}
-    </motion.div>
-  </section>
-)}
+                    {/* Bouton */}
+                    <div className="mt-auto pt-5">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-2 md:px-5 md:py-2.5 text-[11px] md:text-sm font-bold text-primary transition-all group-hover:bg-primary group-hover:text-white">
+                        <span>{t.home.readArticle}</span>
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1 rtl:rotate-180" />
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </motion.div>
+        </section>
+      )}
 
       {/* NEWSLETTER */}
       <motion.section
@@ -1155,15 +1182,15 @@ return (
       >
         <div className="relative overflow-hidden bg-accent rounded-[3rem] p-12 md:p-20 text-center shadow-xl">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-          <h2 className="text-3xl md:text-5xl font-black mb-4 text-accent-foreground relative z-10 leading-tight">Restez informé de nos offres</h2>
-          <p className="text-muted-foreground mb-10 text-base md:text-lg max-w-2xl mx-auto relative z-10">Inscrivez-vous à notre newsletter et recevez nos meilleures promotions directement dans votre boîte mail.</p>
+          <h2 className="text-3xl md:text-5xl font-black mb-4 text-accent-foreground relative z-10 leading-tight">{t.home.stayInformed}</h2>
+          <p className="text-muted-foreground mb-10 text-base md:text-lg max-w-2xl mx-auto relative z-10">{t.home.newsletterSub}</p>
           <form className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto relative z-10" onSubmit={handleNewsletterSubmit}>
             <input
               type="email"
               required
               value={newsletterEmail}
               onChange={(e) => setNewsletterEmail(e.target.value)}
-              placeholder="votre-email@gmail.com"
+              placeholder={t.home.emailPlaceholder}
               className="flex-1 bg-white border-2 border-transparent rounded-2xl px-6 py-4 text-lg shadow-inner focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all"
             />
             <motion.button
@@ -1175,7 +1202,7 @@ return (
             >
               {isSubscribing ? <Loader2 className="w-6 h-6 animate-spin" /> : (
                 <>
-                  S'inscrire <Send className="w-5 h-5 ml-1" />
+                  {t.home.subscribe} <Send className="w-5 h-5 ml-1 rtl:mr-1 rtl:ml-0 rtl:rotate-180" />
                 </>
               )}
             </motion.button>
@@ -1195,8 +1222,8 @@ return (
         href={socials.find(s => s.name.toLowerCase().includes('whatsapp') || s.icon.lucide_name.toLowerCase().includes('message'))?.url || `https://wa.me/${(settings.contact_phone || "21671000000").replace(/[^\d]/g, '')}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-8 right-8 z-40 bg-green-500 text-white w-16 h-16 rounded-3xl flex items-center justify-center shadow-xl hover:bg-green-600 transition-colors"
-        title="Discutez avec nous sur WhatsApp"
+        className="fixed bottom-8 right-8 rtl:right-auto rtl:left-8 z-40 bg-green-500 text-white w-16 h-16 rounded-3xl flex items-center justify-center shadow-xl hover:bg-green-600 transition-colors"
+        title={t.nav.whatsapp}
       >
         <svg viewBox="0 0 24 24" className="w-8 h-8 fill-current">
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />

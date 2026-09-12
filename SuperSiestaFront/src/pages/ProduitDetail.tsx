@@ -23,6 +23,7 @@ import { trackViewContent, trackAddToCart } from "@/services/metaPixel";
 import LucideIcon from "@/components/common/LucideIcon";
 import OrderModal, { OrderSizeGroup } from "@/components/OrderModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useLanguage } from "@/context/LanguageContext";
 
 const normalizeDimensionLabel = (label: string | undefined | null) => {
   if (!label) return "";
@@ -64,6 +65,7 @@ const getVisibleSizes = (sizes: any[], dimensions: any[], selectedNbPlaces: stri
 };
 
 export default function ProduitDetail() {
+  const { t, isRTL } = useLanguage();
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
@@ -287,8 +289,8 @@ export default function ProduitDetail() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">Produit non trouvé.</p>
-          <button onClick={() => navigate("/boutique")} className="text-primary hover:underline">← Retour à la boutique</button>
+          <p className="text-muted-foreground mb-4">{t.product.notFound}</p>
+          <button onClick={() => navigate("/boutique")} className="text-primary hover:underline">← {t.product.backToShop}</button>
         </div>
       </div>
     );
@@ -359,7 +361,7 @@ export default function ProduitDetail() {
         const dim = searchParams.get("dimension") || (typeof window !== 'undefined' ? sessionStorage.getItem("selectedDimension") : null);
         navigate(`/boutique${dim ? `?dimension=${encodeURIComponent(dim)}` : ''}`);
       }} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-6 transition-colors">
-        <ChevronLeft className="w-4 h-4" /> Retour à la boutique
+        <ChevronLeft className="w-4 h-4" /> {t.product.backToShop}
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -385,7 +387,7 @@ export default function ProduitDetail() {
             <h1 className="text-3xl md:text-4xl font-black mt-2">{product.name}</h1>
             {product.grammage && (
               <p className="text-lg font-black  mt-2 flex items-center gap-2">
-                Supporte jusqu'à <span className="text-red-600">{product.grammage} kg</span> par personne
+                {t.product.supportsUpTo} <span className="text-red-600">{product.grammage} kg</span> {t.product.kgPerPerson}
               </p>
             )}
             <div className="flex items-center gap-2 mt-2">
@@ -399,9 +401,9 @@ export default function ProduitDetail() {
                 })()}
               </div>
               {user ? (
-                <span className="text-sm text-muted-foreground">({reviews.length} avis)</span>
+                <span className="text-sm text-muted-foreground">({reviews.length} {t.product.reviews})</span>
               ) : (
-                <span className="text-sm text-muted-foreground">Avis</span>
+                <span className="text-sm text-muted-foreground">{t.product.reviewsLabel}</span>
               )}
             </div>
           </div>
@@ -409,13 +411,13 @@ export default function ProduitDetail() {
           <div className="bg-accent rounded-2xl p-4">
             <div className="flex items-baseline gap-2">
               {displayPrice === 0 ? (
-                <span className="text-4xl font-black text-amber-600">sur commande</span>
+                <span className="text-4xl font-black text-amber-600">{t.product.onOrder}</span>
               ) : (
                 <span className="text-4xl font-black text-primary">{formatPrice(displayPrice)}</span>
               )}
               {Number(selectedSize.originalPrice) > 0 && selectedSize.price !== 0 && <span className="text-lg text-muted-foreground line-through">{formatPrice(selectedSize.originalPrice)}</span>}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Prix pour la dimension {selectedSize.label}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t.product.priceForDimension} {selectedSize.label}</p>
             {isB2B && selectedSize.resellerPrice && <p className="text-xs text-primary font-bold mt-1">💼 Prix revendeur appliqué</p>}
           </div>
 
@@ -425,21 +427,21 @@ export default function ProduitDetail() {
             {searchParams.get("nbPlaces") ? (
               // Accès via URL avec nbPlaces → badge verrouillé (lecture seule)
               <div className="flex items-center gap-2 mb-4">
-                <span className="text-sm font-bold text-muted-foreground">Catégorie :</span>
+                <span className="text-sm font-bold text-muted-foreground">{t.product.category} :</span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold bg-primary text-primary-foreground">
-                  {selectedNbPlaces === "1" ? "1 place" : selectedNbPlaces === "1.5" ? "1.5 place" : selectedNbPlaces === "2" ? "2 places" : selectedNbPlaces}
+                  {selectedNbPlaces === "1" ? t.product.onePlace : selectedNbPlaces === "1.5" ? t.product.placeAndHalf : selectedNbPlaces === "2" ? t.product.twoPlaces : selectedNbPlaces}
                 </span>
               </div>
             ) : (
               // Accès libre → sélecteur toujours visible
               <>
-                <h3 className="text-sm font-bold mb-3">Choisir la catégorie de places</h3>
+                <h3 className="text-sm font-bold mb-3">{t.product.choosePlaceCategory}</h3>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {[
-                    { value: null, label: "Tous", title: "Afficher toutes les dimensions" },
-                    { value: "1", label: "1 place", title: "Choisir la taille - 1 place" },
-                    { value: "1.5", label: "1.5 place", title: "Choisir la taille - 1 place et demi" },
-                    { value: "2", label: "2 places", title: "Choisir la taille - 2 places" },
+                    { value: null, label: t.product.all, title: t.product.all },
+                    { value: "1", label: t.product.onePlace, title: t.product.onePlace },
+                    { value: "1.5", label: t.product.placeAndHalf, title: t.product.placeAndHalf },
+                    { value: "2", label: t.product.twoPlaces, title: t.product.twoPlaces },
                   ].map((option) => (
                     <button
                       key={option.value ?? "tous"}
@@ -457,11 +459,11 @@ export default function ProduitDetail() {
               </>
             )}
 
-            <h3 className="text-sm font-bold mb-3">Choisir la taille</h3>
+            <h3 className="text-sm font-bold mb-3">{t.product.chooseSize}</h3>
 
             {selectedNbPlaces && visibleSizes.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Aucune dimension n'est disponible pour cette catégorie.
+                {t.product.noDimensionAvailable}
               </p>
             ) : (
               <div className="flex flex-wrap gap-2">
@@ -499,7 +501,7 @@ export default function ProduitDetail() {
 
                       <span className="block text-xs mt-1 opacity-75">
                         {isSurCommande
-                          ? "Sur commande"
+                          ? t.product.onOrder
                           : formatPrice(size.price)}
                       </span>
                     </button>
@@ -510,7 +512,7 @@ export default function ProduitDetail() {
           </div>
 
           <div>
-            <h3 className="text-sm font-bold mb-3">Quantité</h3>
+            <h3 className="text-sm font-bold mb-3">{t.product.quantity}</h3>
             <div className="flex items-center gap-3">
               <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-10 h-10 rounded-xl border-2 border-border flex items-center justify-center hover:border-primary transition-colors"><Minus className="w-4 h-4" /></button>
               <span className="text-lg font-bold w-8 text-center">{qty}</span>
@@ -520,7 +522,7 @@ export default function ProduitDetail() {
 
           <div className="flex flex-col gap-3">
             <button onClick={handleAddToCart} className={`w-full font-bold py-4 rounded-2xl transition-all text-sm ${added ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}>
-              {added ? <span className="flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Ajouté !</span> : "Ajouter au panier"}
+              {added ? <span className="flex items-center justify-center gap-2"><Check className="w-4 h-4" /> {t.product.added}</span> : t.product.addToCart}
             </button>
             <button
               onClick={() => {
@@ -529,7 +531,7 @@ export default function ProduitDetail() {
               }}
               className="w-full bg-secondary text-secondary-foreground font-bold py-4 rounded-2xl hover:bg-secondary/90 transition-colors text-sm"
             >
-              Commander directement
+              {t.product.orderDirectly}
             </button>
           </div>
 
@@ -575,8 +577,8 @@ export default function ProduitDetail() {
                     <Gift className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold">Cadeaux & Garanties ! 🎁</h3>
-                    <p className="text-xs text-muted-foreground">Offres incluses avec cette dimension ({selectedSize.label})</p>
+                    <h3 className="text-sm font-bold">{t.product.giftsAndWarranty}</h3>
+                    <p className="text-xs text-muted-foreground">{t.product.includedOffers} ({selectedSize.label})</p>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -587,8 +589,8 @@ export default function ProduitDetail() {
                         <Shield className="w-6 h-6 text-primary-foreground" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold">Garantie {gamme.warranty} ans</p>
-                        <p className="text-[10px] text-muted-foreground">Sérénité totale garantie par Super Siesta</p>
+                        <p className="text-sm font-bold">{t.product.warranty} {gamme.warranty} {t.product.warrantyYears}</p>
+                        <p className="text-[10px] text-muted-foreground">{t.product.totalSerenity}</p>
                       </div>
                     </div>
                   )}
@@ -617,7 +619,7 @@ export default function ProduitDetail() {
           })()}
 
           <div className="border-t border-border pt-5">
-            <h3 className="text-sm font-bold mb-3">Caractéristiques</h3>
+            <h3 className="text-sm font-bold mb-3">{t.product.specs}</h3>
             <ul className="space-y-2">
               {product.specs.map((spec) => (
                 <li key={spec} className="flex items-center gap-2 text-sm text-muted-foreground"><Check className="w-4 h-4 text-primary flex-shrink-0" />{spec}</li>
@@ -646,7 +648,7 @@ export default function ProduitDetail() {
           <section className="mt-16">
             <div className="flex items-center gap-3 mb-6">
               <Play className="w-5 h-5 text-primary" />
-              <h2 className="text-2xl font-black">Multimédia — Gamme {gamme.name}</h2>
+              <h2 className="text-2xl font-black">{t.product.multimediaSection} {gamme.name}</h2>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
@@ -667,7 +669,7 @@ export default function ProduitDetail() {
                     ar
                     ar-modes="webxr scene-viewer quick-look"
                   >
-                    <button slot="ar-button" className="absolute bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-2xl font-black text-xs">Voir en AR</button>
+                    <button slot="ar-button" className="absolute bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-2xl font-black text-xs">{t.product.viewInAR}</button>
                   </model-viewer>
                 </div>
               )}
@@ -698,8 +700,8 @@ export default function ProduitDetail() {
             transition={{ duration: 0.6 }}
             className="text-center mb-16"
           >
-            <span className="text-xs font-bold text-primary uppercase tracking-widest">Témoignages</span>
-            <h2 className="text-3xl md:text-4xl font-black mt-2">Avis des clients</h2>
+            <span className="text-xs font-bold text-primary uppercase tracking-widest">{t.product.testimonials}</span>
+            <h2 className="text-3xl md:text-4xl font-black mt-2">{t.product.clientReviews}</h2>
             {averageRating !== null && (
               <div className="flex items-center justify-center gap-1.5 mt-4">
                 {[1, 2, 3, 4, 5].map((i) => <Star key={i} className={`w-6 h-6 ${i <= Math.round(averageRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}`} />)}
@@ -710,13 +712,13 @@ export default function ProduitDetail() {
 
           {!user && (
             <div className="text-center mb-6">
-              <p className="text-sm text-muted-foreground">Connectez-vous pour laisser un avis</p>
+              <p className="text-sm text-muted-foreground">{t.product.loginToReview}</p>
             </div>
           )}
 
           {user && (
             <div className="text-center mb-6">
-              <button onClick={() => setShowReviewForm(true)} className="text-sm text-primary font-black uppercase tracking-wider hover:underline">+ Donner un avis</button>
+              <button onClick={() => setShowReviewForm(true)} className="text-sm text-primary font-black uppercase tracking-wider hover:underline">{t.product.giveReview}</button>
             </div>
           )}
 
@@ -724,37 +726,37 @@ export default function ProduitDetail() {
           <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-black">Laisser un avis</DialogTitle>
+                <DialogTitle className="text-2xl font-black">{t.product.leaveReview}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmitReview} className="space-y-4">
                 <div>
-                  <label className="text-sm font-bold mb-1 block">Nom complet</label>
+                  <label className="text-sm font-bold mb-1 block">{t.product.fullName}</label>
                   <input value={reviewForm.name} onChange={(e) => setReviewForm({ ...reviewForm, name: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-bold mb-1 block">Email</label>
+                    <label className="text-sm font-bold mb-1 block">{t.product.email}</label>
                     <input type="email" value={reviewForm.email} onChange={(e) => setReviewForm({ ...reviewForm, email: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                   </div>
                   <div>
-                    <label className="text-sm font-bold mb-1 block">Téléphone</label>
+                    <label className="text-sm font-bold mb-1 block">{t.product.phone}</label>
                     <input value={reviewForm.phone} onChange={(e) => setReviewForm({ ...reviewForm, phone: e.target.value })} className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-bold mb-1 block">Ville</label>
+                  <label className="text-sm font-bold mb-1 block">{t.product.city}</label>
                   <select
                     value={reviewForm.city}
                     onChange={(e) => setReviewForm({ ...reviewForm, city: e.target.value })}
                     required
                     className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    <option value="">Sélectionnez votre ville</option>
+                    <option value="">{t.product.selectCity}</option>
                     {TUNIS_CITIES.sort().map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-bold mb-2 block">Votre Note</label>
+                  <label className="text-sm font-bold mb-2 block">{t.product.yourRating}</label>
                   <div className="flex gap-1.5 mb-2">
                     {[1, 2, 3, 4, 5].map((s) => (
                       <button
@@ -769,15 +771,15 @@ export default function ProduitDetail() {
                       </button>
                     ))}
                   </div>
-                  <p className="text-[10px] text-muted-foreground italic">Votre note nous aide à améliorer nos services.</p>
+                  <p className="text-[10px] text-muted-foreground italic">{t.product.ratingHelp}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-bold mb-1 block">Message</label>
+                  <label className="text-sm font-bold mb-1 block">{t.product.message}</label>
                   <textarea value={reviewForm.message} onChange={(e) => setReviewForm({ ...reviewForm, message: e.target.value })} required rows={5} className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
                 </div>
                 <div className="flex gap-2 justify-end pt-4">
-                  <button type="button" onClick={() => setShowReviewForm(false)} className="bg-muted text-foreground font-bold px-6 py-2 rounded-2xl hover:bg-muted/80 transition-colors">Annuler</button>
-                  <button type="submit" disabled={submittingReview} className="bg-primary text-primary-foreground font-bold px-6 py-2 rounded-2xl hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Envoyer</button>
+                  <button type="button" onClick={() => setShowReviewForm(false)} className="bg-muted text-foreground font-bold px-6 py-2 rounded-2xl hover:bg-muted/80 transition-colors">{t.product.cancel}</button>
+                  <button type="submit" disabled={submittingReview} className="bg-primary text-primary-foreground font-bold px-6 py-2 rounded-2xl hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t.product.send}</button>
                 </div>
               </form>
             </DialogContent>
@@ -785,7 +787,7 @@ export default function ProduitDetail() {
 
           <div className="relative">
             {loadingReviews ? (
-              <p className="text-sm text-muted-foreground text-center">Chargement des avis...</p>
+              <p className="text-sm text-muted-foreground text-center">{t.product.loadingReviews}</p>
             ) : (
               <>
                 {reviews && reviews.length > 0 ? (
@@ -825,7 +827,7 @@ export default function ProduitDetail() {
                                   }}
                                   className="text-sm font-bold text-primary hover:underline mb-4"
                                 >
-                                  {expandedReviews.includes(r.id) ? 'Voir moins' : 'Voir plus'}
+                                  {expandedReviews.includes(r.id) ? t.common.seeLess : t.common.seeMore}
                                 </button>
                               )}
                             </div>
@@ -856,7 +858,7 @@ export default function ProduitDetail() {
                     )}
                   </>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center">Aucun avis pour le moment.</p>
+                  <p className="text-sm text-muted-foreground text-center">{t.product.noReviews}</p>
                 )}
               </>
             )}
