@@ -78,7 +78,7 @@ export default function AdminProduits() {
     try {
       const [pData, gData, dData, catData, fermData] = await Promise.all([
         api.get<Product[]>("/products"),
-        api.get<any[]>(`/gammes?t=${Date.now()}`),
+        api.get<any[]>(`/gammes?per_page=20&t=${Date.now()}`),
         api.get<any[]>(`/dimensions?t=${Date.now()}`),
         api.get<any[]>("/categories"),
         api.get<any[]>("/fermetes")
@@ -233,7 +233,7 @@ export default function AdminProduits() {
               <div className="grid grid-cols-2 gap-3">
                 <Select value={form.name} onValueChange={(v) => setForm({ ...form, name: v, slug: generateSlug(v), gamme: v })}>
                   <SelectTrigger><SelectValue placeholder="Sélectionner la gamme (Nom du produit)" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-60 overflow-y-auto">
                     {gammes.map((g) => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
