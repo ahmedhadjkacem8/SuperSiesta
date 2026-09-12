@@ -62,8 +62,8 @@ export default function AdminGammes() {
 
   const load = async () => {
     try {
-      const data = await api.get<Gamme[]>(`/gammes?t=${Date.now()}`);
-      setGammes(data || []);
+      const data = await api.get<Gamme[] | { data?: Gamme[] }>(`/gammes?per_page=1000&t=${Date.now()}`);
+      setGammes(Array.isArray(data) ? data : data.data || []);
     } catch (err: any) {
       toast.error("Erreur lors du chargement des gammes");
     }
