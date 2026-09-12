@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Jobs\SendAdminPushNotificationJob;
 use App\Models\Notification;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
@@ -55,6 +56,31 @@ class NotificationController extends BaseController
             ],
             'unreadCount' => $unreadCount,
         ]);
+    }
+
+    /**
+     * Create and dispatch a notification-only test for a registered admin device.
+     */
+    public function testPush(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->isAdmin(), 403, 'Admin access required.');
+
+        $notification = $this->notificationService->notifyAdmin(
+            title: 'Test notification Super Siesta',
+            message: 'La notification push fonctionne correctement.',
+            type: 'system',
+            path: '/admin',
+            color: 'blue',
+            duration: 5,
+        );
+
+        SendAdminPushNotificationJob::dispatch($notification->id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Notification de test ajoutée à la queue.',
+            'notification_id' => $notification->id,
+        ], 202);
     }
 
     /**

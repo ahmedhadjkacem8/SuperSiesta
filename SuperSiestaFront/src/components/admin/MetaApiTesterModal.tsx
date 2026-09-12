@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Code2,
   Terminal,
+  Bell,
 } from "lucide-react";
 import {
   META_PIXEL_ID,
@@ -38,7 +39,7 @@ import { api } from "@/lib/apiClient";
 interface LogEntry {
   id: string;
   timestamp: string;
-  type: "pixel" | "capi";
+  type: "pixel" | "capi" | "push";
   eventName: string;
   status: "success" | "error" | "warning" | "info";
   eventId: string;
@@ -73,6 +74,7 @@ export default function MetaApiTesterModal({ open, onOpenChange }: MetaApiTester
   const [customValue, setCustomValue] = useState("250.00");
   const [activeTab, setActiveTab] = useState("pixel");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPushTesting, setIsPushTesting] = useState(false);
 
   const isPixelLoaded = typeof window !== "undefined" && typeof window.fbq === "function";
 
@@ -269,6 +271,36 @@ export default function MetaApiTesterModal({ open, onOpenChange }: MetaApiTester
     toast.info("Logs réinitialisés.");
   };
 
+  const handleTestPushNotification = async () => {
+    setIsPushTesting(true);
+    const eventId = `push-test-${Date.now()}`;
+
+    try {
+      const response = await api.post<any>("/admin/notifications/test-push", {});
+      addLog({
+        type: "push",
+        eventName: "TEST_PUSH_NOTIFICATION",
+        status: "success",
+        eventId,
+        message: "Notification ajoutée à la queue backend. Vérifiez le worker Laravel et le téléphone.",
+        response,
+      });
+      toast.success("Notification push ajoutée à la queue.");
+    } catch (err: any) {
+      addLog({
+        type: "push",
+        eventName: "TEST_PUSH_NOTIFICATION",
+        status: "error",
+        eventId,
+        message: err.message || "Impossible d'ajouter la notification push",
+        response: err,
+      });
+      toast.error(`Échec notification push: ${err.message}`);
+    } finally {
+      setIsPushTesting(false);
+    }
+  };
+
   const copyLogs = () => {
     navigator.clipboard.writeText(JSON.stringify(logs, null, 2));
     toast.success("Logs copiés dans le presse-papier!");
@@ -370,6 +402,9 @@ export default function MetaApiTesterModal({ open, onOpenChange }: MetaApiTester
                 </TabsTrigger>
                 <TabsTrigger value="capi" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                   <Server className="w-3.5 h-3.5 mr-1.5" /> Server CAPI (Graph API)
+                </TabsTrigger>
+                <TabsTrigger value="push" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+                  <Bell className="w-3.5 h-3.5 mr-1.5" /> Notification Push
                 </TabsTrigger>
                 <TabsTrigger value="logs" className="data-[state=active]:bg-slate-800 data-[state=active]:text-white">
                   <Terminal className="w-3.5 h-3.5 mr-1.5" /> Logs en Temps Réel ({logs.length})
@@ -492,7 +527,25 @@ export default function MetaApiTesterModal({ open, onOpenChange }: MetaApiTester
               </div>
             </TabsContent>
 
-            {/* TAB 3: Live Logs Console */}
+            {/* TAB 3: Push notification test */}
+            <TabsContent value="push" className="flex-1 p-5 overflow-y-auto m-0 space-y-4">
+              <div className="text-xs text-slate-400 bg-emerald-950/30 border border-emerald-900/50 p-3 rounded">
+                <strong>Test notification uniquement :</strong> ce bouton ne crée aucune commande. Il crée une notification admin et lance le même job push que celui utilisé après une nouvelle commande.
+              </div>
+              <Button
+                onClick={handleTestPushNotification}
+                disabled={isPushTesting}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs h-10 px-5"
+              >
+                {isPushTesting ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Bell className="w-4 h-4 mr-2" />}
+                Envoyer une notification test
+              </Button>
+              <p className="text-xs text-slate-500">
+                Le worker backend doit être actif et le téléphone doit avoir accepté les notifications.
+              </p>
+            </TabsContent>
+
+            {/* TAB 4: Live Logs Console */}
             <TabsContent value="logs" className="flex-1 p-0 overflow-hidden flex flex-col m-0 bg-slate-950">
               <div className="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-xs">
                 {logs.length === 0 ? (
@@ -521,7 +574,9 @@ export default function MetaApiTesterModal({ open, onOpenChange }: MetaApiTester
                             className={`text-[10px] uppercase font-semibold ${
                               log.type === "pixel"
                                 ? "bg-indigo-950 text-indigo-300 border-indigo-700"
-                                : "bg-purple-950 text-purple-300 border-purple-700"
+                                : log.type === "capi"
+                                ? "bg-purple-950 text-purple-300 border-purple-700"
+                                : "bg-emerald-950 text-emerald-300 border-emerald-700"
                             }`}
                           >
                             {log.type}

@@ -329,6 +329,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('/admin/notifications')->group(function () {
         Route::get('/', [NotificationController::class, 'adminIndex']);
+        Route::post('/test-push', [NotificationController::class, 'testPush']);
         Route::post('/', [NotificationController::class, 'store']);
         Route::get('/stats', [NotificationController::class, 'getStats']);
         Route::post('/mark-all-read', [NotificationController::class, 'markAllAdminAsRead']);
