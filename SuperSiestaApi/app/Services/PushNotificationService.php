@@ -144,6 +144,11 @@ class PushNotificationService
         );
 
         if ($response['status'] >= 400) {
+            Log::error('[PUSH_FCM] RESPONSE_ERROR', [
+                'timestamp' => now()->toIso8601String(),
+                'status' => $response['status'],
+                'body' => $response['body'],
+            ]);
             throw new RuntimeException('FCM rejected the push.', $response['status']);
         }
 
