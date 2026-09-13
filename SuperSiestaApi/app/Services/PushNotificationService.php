@@ -212,15 +212,17 @@ class PushNotificationService
 
     private function curlJson(string $url, array $payload, array $headers, bool $http2 = false): array
     {
+        $isFormEncoded = str_contains(implode('', $headers), 'application/x-www-form-urlencoded');
+
         $handle = curl_init($url);
         curl_setopt_array($handle, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => str_contains(implode('', $headers), 'application/x-www-form-urlencoded')
+            CURLOPT_POSTFIELDS => $isFormEncoded
                 ? http_build_query($payload)
                 : json_encode($payload, JSON_THROW_ON_ERROR),
             CURLOPT_HTTPHEADER => array_merge(
-                $http2 ? ['Content-Type: application/json'] : [],
+                $isFormEncoded ? [] : ['Content-Type: application/json'],
                 $headers
             ),
             CURLOPT_TIMEOUT => 20,
