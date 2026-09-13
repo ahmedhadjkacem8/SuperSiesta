@@ -24,6 +24,7 @@ import LucideIcon from "@/components/common/LucideIcon";
 import OrderModal, { OrderSizeGroup } from "@/components/OrderModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLanguage } from "@/context/LanguageContext";
+import { useDimensions } from "@/hooks/useDimensions";
 
 const normalizeDimensionLabel = (label: string | undefined | null) => {
   if (!label) return "";
@@ -64,6 +65,13 @@ const getVisibleSizes = (sizes: any[], dimensions: any[], selectedNbPlaces: stri
   });
 };
 
+const hasPlaceOptionsForProduct = (sizes: any[], dimensions: any[]) => {
+  return sizes.some((size: any) => {
+    const matchingDimension = dimensions.find((dimension: any) => normalizeDimensionLabel(dimension.label) === normalizeDimensionLabel(size.label));
+    return matchingDimension && normalizeNbPlacesValue(matchingDimension.nb_places) !== null;
+  });
+};
+
 export default function ProduitDetail() {
   const { t, isRTL } = useLanguage();
   const { slug } = useParams<{ slug: string }>();
@@ -89,9 +97,10 @@ export default function ProduitDetail() {
   const [reviewsPageIndex, setReviewsPageIndex] = useState(0)
   const [expandedReviews, setExpandedReviews] = useState<number[]>([])
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
-  const [dimensions, setDimensions] = useState<any[]>([])
+  const dimensions = useDimensions()
   const [submittingReview, setSubmittingReview] = useState(false)
   const [selectedNbPlaces, setSelectedNbPlaces] = useState<string | null>(null)
+  const hasPlaceOptions = Boolean(product && hasPlaceOptionsForProduct(product.sizes, dimensions));
 
   const TUNIS_CITIES = [
     "Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan", "Bizerte", "Béja", "Jendouba", "Le Kef",
@@ -141,7 +150,7 @@ export default function ProduitDetail() {
     const visibleSizes = getVisibleSizes(
       product.sizes,
       dimensions,
-      selectedNbPlaces
+      hasPlaceOptions ? selectedNbPlaces : null
     );
 
     const candidateSizes = visibleSizes.length > 0
@@ -207,7 +216,8 @@ export default function ProduitDetail() {
     product,
     searchParams,
     dimensions,
-    selectedNbPlaces
+    selectedNbPlaces,
+    hasPlaceOptions
   ]);
 
   // Update form when user changes
@@ -257,19 +267,6 @@ export default function ProduitDetail() {
       setReviewsPageIndex(0)
     }
   }, [reviews.length, reviewsPageIndex, windowWidth])
-
-  // Fetch dimensions for gifts
-  useEffect(() => {
-    const fetchDimensions = async () => {
-      try {
-        const res = await api.get('/dimensions')
-        if (res) setDimensions(Array.isArray(res) ? res : (res as any).data || [])
-      } catch (err) {
-        console.error('Error fetching dimensions', err)
-      }
-    }
-    fetchDimensions()
-  }, [])
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth)
@@ -341,7 +338,11 @@ export default function ProduitDetail() {
     setTimeout(() => setAdded(false), 2000);
   };
 
-  const visibleSizes = getVisibleSizes(product?.sizes || [], dimensions, selectedNbPlaces);
+  const visibleSizes = getVisibleSizes(
+    product?.sizes || [],
+    dimensions,
+    hasPlaceOptions ? selectedNbPlaces : null
+  );
 
   const handlePlacesSelection = (value: string | null) => {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -424,7 +425,7 @@ export default function ProduitDetail() {
           <p className="text-muted-foreground leading-relaxed">{product.description}</p>
 
           <div>
-            {searchParams.get("nbPlaces") ? (
+            {hasPlaceOptions && searchParams.get("nbPlaces") ? (
               // Accès via URL avec nbPlaces → badge verrouillé (lecture seule)
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-sm font-bold text-muted-foreground">{t.product.category} :</span>
@@ -432,7 +433,7 @@ export default function ProduitDetail() {
                   {selectedNbPlaces === "1" ? t.product.onePlace : selectedNbPlaces === "1.5" ? t.product.placeAndHalf : selectedNbPlaces === "2" ? t.product.twoPlaces : selectedNbPlaces}
                 </span>
               </div>
-            ) : (
+            ) : hasPlaceOptions ? (
               // Accès libre → sélecteur toujours visible
               <>
                 <h3 className="text-sm font-bold mb-3">{t.product.choosePlaceCategory}</h3>
@@ -457,7 +458,7 @@ export default function ProduitDetail() {
                   ))}
                 </div>
               </>
-            )}
+            ) : null}
 
             <h3 className="text-sm font-bold mb-3">{t.product.chooseSize}</h3>
 

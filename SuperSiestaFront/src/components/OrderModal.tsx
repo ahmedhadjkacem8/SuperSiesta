@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatPrice } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
+import { useDimensions } from "@/hooks/useDimensions";
 
 export type OrderSizeGroup = "1 Place" | "1 Place et Demi" | "2 Places";
 
@@ -52,28 +53,14 @@ interface OrderModalProps {
   product: Product;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  sizeGroup: OrderSizeGroup;
+  sizeGroup?: OrderSizeGroup;
+  skipSizeSelection?: boolean;
 }
 
-export default function OrderModal({ product, open, onOpenChange, sizeGroup }: OrderModalProps) {
+export default function OrderModal({ product, open, onOpenChange, sizeGroup, skipSizeSelection = false }: OrderModalProps) {
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
-  const [dimensions, setDimensions] = useState<any[]>([]);
-
-  useEffect(() => {
-    const fetchDimensions = async () => {
-      try {
-        const res = await api.get('/dimensions');
-        if (res) {
-          setDimensions(Array.isArray(res) ? res : (res as any).data || []);
-        }
-      } catch {
-        setDimensions([]);
-      }
-    };
-
-    fetchDimensions();
-  }, []);
+  const dimensions = useDimensions();
 
   const dimensionByLabel = useMemo(() => {
     const m = new Map();
@@ -86,6 +73,8 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
   }, [dimensions]);
 
   const availableSizes = useMemo(() => {
+    if (skipSizeSelection) return product.sizes;
+
     const targetPlaces = mapGroupToNbPlacesValue(sizeGroup);
     const filtered = product.sizes.filter((size) => {
       const normLabel = normalizeDimensionLabel(size.label);
@@ -100,7 +89,7 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
       return false;
     });
     return filtered.length > 0 ? filtered : product.sizes;
-  }, [product.sizes, sizeGroup, dimensionByLabel]);
+  }, [product.sizes, sizeGroup, skipSizeSelection, dimensionByLabel]);
 
   const [selectedSizeId, setSelectedSizeId] = useState<string>("");
   const selectedSize = availableSizes.find((size) => size.id === selectedSizeId) || availableSizes[0];
@@ -127,7 +116,7 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup }: O
       setLastOrderId(null);
       setBlContact("");
       setBlSent(false);
-      setStep(1);
+      setStep(skipSizeSelection ? 2 : 1);
       setQty(1);
       setForm({ full_name: "", telephone: "", ville: "", adresse: "", notes: "" });
       setErrors({});

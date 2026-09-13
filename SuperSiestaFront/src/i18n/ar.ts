@@ -120,6 +120,7 @@ export const ar = {
     noProducts: "ما فمّاش منتجات تطابق الفلاتر المختارة.",
     resetFilters: "إعادة تعيين الفلاتر",
     addToCart: "زيد للسلّة",
+    buyOnly: "شراء",
     orderDirect: "اطلب مباشرة",
     promo: "تخفيض",
     from: "ابتداءً من",

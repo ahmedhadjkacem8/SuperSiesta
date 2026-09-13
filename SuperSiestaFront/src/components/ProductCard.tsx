@@ -1,6 +1,7 @@
 import { ShoppingCart, X, Check, Search } from "lucide-react";
 import { Product, ProductSize } from "@/hooks/useProducts";
 import type { OrderSizeGroup } from "@/components/OrderModal";
+import OrderModal from "@/components/OrderModal";
 import { useCart } from "@/context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { formatPrice } from "@/lib/utils";
@@ -8,8 +9,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getImageUrl } from "@/utils/imageUtils";
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { api } from "@/lib/apiClient";
 import { useLanguage } from "@/context/LanguageContext";
+import { useDimensions } from "@/hooks/useDimensions";
 
 interface ProductCardProps {
   product: Product;
@@ -63,22 +64,7 @@ function DimensionModal({
   const { t, isRTL } = useLanguage();
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-  const [dimensions, setDimensions] = useState<any[]>([]);
-
-  useEffect(() => {
-    const fetchDimensions = async () => {
-      try {
-        const res = await api.get('/dimensions');
-        if (res) {
-          setDimensions(Array.isArray(res) ? res : (res as any).data || []);
-        }
-      } catch (err) {
-        console.error("Erreur de récupération des dimensions dans ProductCard:", err);
-        setDimensions([]);
-      }
-    };
-    fetchDimensions();
-  }, []);
+  const dimensions = useDimensions();
 
   const dimensionByLabel = useMemo(() => {
     const m = new Map();
@@ -361,22 +347,9 @@ export default function ProductCard({
   const { addItem } = useCart();
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
   const [addedSize, setAddedSize] = useState<string | null>(null);
-  const [dimensions, setDimensions] = useState<any[]>([]);
-
-  useEffect(() => {
-    const fetchDimensions = async () => {
-      try {
-        const res = await api.get('/dimensions');
-        if (res) {
-          setDimensions(Array.isArray(res) ? res : (res as any).data || []);
-        }
-      } catch {
-        setDimensions([]);
-      }
-    };
-    fetchDimensions();
-  }, []);
+  const dimensions = useDimensions();
 
   const getGroupFromCategory = (value: string): OrderSizeGroup | null => {
     if (value === "1") return "1 Place";
@@ -419,6 +392,11 @@ export default function ProductCard({
 
   const availableSizes = (product.sizes || []).filter((s) => s.price > 0);
 
+  const hasPlaceOptions = availableSizes.some((size) => {
+    const dimension = dimensions.find((item) => normalizeDim(item.label) === normalizeDim(size.label));
+    return dimension && normalizeNbPlacesValue(dimension.nb_places) !== null;
+  });
+
   const handleCartButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     // Dimension déjà sélectionnée → ajout direct
@@ -433,6 +411,11 @@ export default function ProductCard({
     }
     // Plusieurs tailles → ouvrir le modal
     setShowModal(true);
+  };
+
+  const handleBuyOnly = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOrderModalOpen(true);
   };
 
   const handleAddToCart = (size: ProductSize) => {
@@ -516,7 +499,7 @@ export default function ProductCard({
                 verticalPlaceButtons ? "flex flex-col gap-2" : "flex flex-wrap gap-1.5 mt-2"
               }`}
             >
-              {[
+              {hasPlaceOptions ? [
                 { value: "1", label: t.home.onePlace, title: t.home.onePlace },
                 { value: "1.5", label: t.home.placeAndHalf, title: t.home.placeAndHalf },
                 { value: "2", label: t.home.twoPlaces, title: t.home.twoPlaces },
@@ -530,7 +513,16 @@ export default function ProductCard({
                 >
                   {option.label}
                 </button>
-              ))}
+              )) : (
+                <button
+                  type="button"
+                  onClick={handleBuyOnly}
+                  className="w-full bg-primary text-primary-foreground font-bold text-xs py-2.5 rounded-xl hover:bg-primary/90 transition-colors hover-scale"
+                  title={t.shop.buyOnly}
+                >
+                  {t.shop.buyOnly}
+                </button>
+              )}
             </div>
           ) : null}
 
@@ -647,6 +639,12 @@ export default function ProductCard({
           addedSize={addedSize}
         />
       )}
+      <OrderModal
+        product={product}
+        open={orderModalOpen}
+        onOpenChange={setOrderModalOpen}
+        skipSizeSelection
+      />
     </>
   );
 }

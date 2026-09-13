@@ -120,6 +120,7 @@ export const en = {
     noProducts: "No products match your selected filters.",
     resetFilters: "Reset filters",
     addToCart: "Add to cart",
+    buyOnly: "Buy",
     orderDirect: "Order directly",
     promo: "Sale",
     from: "From",

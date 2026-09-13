@@ -120,6 +120,7 @@ export const fr = {
     noProducts: "Aucun produit ne correspond à vos filtres.",
     resetFilters: "Réinitialiser les filtres",
     addToCart: "Ajouter au panier",
+    buyOnly: "Acheter",
     orderDirect: "Commander direct",
     promo: "Promo",
     from: "à partir de",
