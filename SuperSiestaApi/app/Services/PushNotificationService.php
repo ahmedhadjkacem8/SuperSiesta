@@ -71,8 +71,27 @@ class PushNotificationService
         $clientEmail = (string) config('services.push.firebase.client_email');
         $privateKey = str_replace('\\n', "\n", (string) config('services.push.firebase.private_key'));
 
-        if ($projectId === '' || $clientEmail === '' || $privateKey === '') {
-            Log::warning('[PUSH_FCM] CONFIG_MISSING', ['timestamp' => now()->toIso8601String()]);
+        $credentialsFile = (string) config('services.push.firebase.credentials_file');
+        if ($credentialsFile !== '' && is_readable($credentialsFile)) {
+            $credentials = json_decode((string) file_get_contents($credentialsFile), true);
+            if (is_array($credentials)) {
+                $projectId = (string) ($credentials['project_id'] ?? $projectId);
+                $clientEmail = (string) ($credentials['client_email'] ?? $clientEmail);
+                $privateKey = (string) ($credentials['private_key'] ?? $privateKey);
+            }
+        }
+
+        $missing = array_keys(array_filter([
+            'FIREBASE_PROJECT_ID' => $projectId === '',
+            'FIREBASE_CLIENT_EMAIL' => $clientEmail === '',
+            'FIREBASE_PRIVATE_KEY' => $privateKey === '',
+        ]));
+
+        if ($missing !== []) {
+            Log::warning('[PUSH_FCM] CONFIG_MISSING', [
+                'timestamp' => now()->toIso8601String(),
+                'missing' => $missing,
+            ]);
             return;
         }
 

@@ -4,6 +4,7 @@ documentation/
 # Environment files
 .env
 .env.docker
+*firebase-adminsdk*.json
 
 # OS files
 .DS_Store

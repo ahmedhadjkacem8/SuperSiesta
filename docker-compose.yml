@@ -25,6 +25,7 @@ services:
       # ⚠️ Ne PAS monter tout storage/ avec un volume nommé : ça écrase les fichiers
       - api_storage_public:/var/www/html/storage/app/public
       - api_logs:/var/www/html/storage/logs
+      - ./test-notif-53619-firebase-adminsdk-fbsvc-042a333c78.json:/run/secrets/firebase-service-account.json:ro
 
   # 1.5. LARAVEL QUEUE WORKER (Meta CAPI & Async Jobs)
   api-queue:
@@ -45,6 +46,7 @@ services:
     volumes:
       - api_storage_public:/var/www/html/storage/app/public
       - api_logs:/var/www/html/storage/logs
+      - ./test-notif-53619-firebase-adminsdk-fbsvc-042a333c78.json:/run/secrets/firebase-service-account.json:ro
 
 
   # 2. NGINX FOR API

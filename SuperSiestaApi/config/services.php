@@ -43,6 +43,7 @@ return [
 
     'push' => [
         'firebase' => [
+            'credentials_file' => env('FIREBASE_CREDENTIALS_FILE'),
             'project_id' => env('FIREBASE_PROJECT_ID'),
             'client_email' => env('FIREBASE_CLIENT_EMAIL'),
             'private_key' => env('FIREBASE_PRIVATE_KEY'),
