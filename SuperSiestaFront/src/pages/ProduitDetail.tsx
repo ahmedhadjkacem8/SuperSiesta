@@ -18,7 +18,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { api } from "@/lib/apiClient";
 import { Star, Shield, Truck, CreditCard, ChevronLeft, ChevronRight, Plus, Minus, Check, Loader2, Play, Gift, Phone } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
-import { getImageUrl } from "@/utils/imageUtils";
+import { getImageUrl, getResponsiveImageSrcSet, getResponsiveImageUrl } from "@/utils/imageUtils";
 import { trackViewContent, trackAddToCart } from "@/services/metaPixel";
 import { trackGAContactClick, trackGAViewItem } from "@/services/analytics";
 import LucideIcon from "@/components/common/LucideIcon";
@@ -146,7 +146,9 @@ function ProductGallery({ images, name }: { images: string[]; name: string }) {
             className="absolute inset-0"
           >
             <img
-              src={getImageUrl(images[index])}
+              src={getResponsiveImageUrl(images[index], 1200)}
+              srcSet={getResponsiveImageSrcSet(images[index], [384, 768, 1200, 1600])}
+              sizes="(min-width: 1024px) 50vw, 100vw"
               alt={`${name} ${index + 1}`}
               draggable={false}
               className="w-full h-full object-cover select-none"
@@ -203,7 +205,14 @@ function ProductGallery({ images, name }: { images: string[]; name: string }) {
                   : "border-border opacity-70 hover:opacity-100 hover:border-primary/50"
                 }`}
             >
-              <img src={getImageUrl(img)} alt="" className="w-full h-full object-cover" />
+              <img
+                src={getResponsiveImageUrl(img, 96)}
+                srcSet={getResponsiveImageSrcSet(img, [96, 192, 384])}
+                sizes="80px"
+                alt=""
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
             </button>
           ))}
         </div>
@@ -736,9 +745,9 @@ export default function ProduitDetail() {
           <div>
             <h3 className="text-sm font-bold mb-3">{t.product.quantity}</h3>
             <div className="flex items-center gap-3">
-              <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-10 h-10 rounded-xl border-2 border-border flex items-center justify-center hover:border-primary transition-colors"><Minus className="w-4 h-4" /></button>
+              <button onClick={() => setQty(Math.max(1, qty - 1))} aria-label={`Diminuer ${t.product.quantity} pour ${product.name}`} className="w-10 h-10 rounded-xl border-2 border-border flex items-center justify-center hover:border-primary transition-colors"><Minus className="w-4 h-4" aria-hidden="true" /></button>
               <span className="text-lg font-bold w-8 text-center">{qty}</span>
-              <button onClick={() => setQty(qty + 1)} className="w-10 h-10 rounded-xl border-2 border-border flex items-center justify-center hover:border-primary transition-colors"><Plus className="w-4 h-4" /></button>
+              <button onClick={() => setQty(qty + 1)} aria-label={`Augmenter ${t.product.quantity} pour ${product.name}`} className="w-10 h-10 rounded-xl border-2 border-border flex items-center justify-center hover:border-primary transition-colors"><Plus className="w-4 h-4" aria-hidden="true" /></button>
             </div>
           </div>
 
@@ -822,7 +831,14 @@ export default function ProduitDetail() {
                     <div key={gift.id} className="flex items-center gap-3 bg-accent/30 p-3 rounded-2xl border border-primary/10 animate-in slide-in-from-bottom-2 duration-500">
                       {gift.image ? (
                         <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-white">
-                          <img src={getImageUrl(gift.image)} alt={gift.titre} className="w-full h-full object-cover" />
+                          <img
+                            src={getResponsiveImageUrl(gift.image, 384)}
+                            srcSet={getResponsiveImageSrcSet(gift.image, [96, 192, 384])}
+                            sizes="112px"
+                            alt={gift.titre}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
                         </div>
                       ) : (
                         <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -952,22 +968,23 @@ export default function ProduitDetail() {
               </DialogHeader>
               <form onSubmit={handleSubmitReview} className="space-y-4">
                 <div>
-                  <label className="text-sm font-bold mb-1 block">{t.product.fullName}</label>
-                  <input value={reviewForm.name} onChange={(e) => setReviewForm({ ...reviewForm, name: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                  <label htmlFor="review-full-name" className="text-sm font-bold mb-1 block">{t.product.fullName}</label>
+                  <input id="review-full-name" value={reviewForm.name} onChange={(e) => setReviewForm({ ...reviewForm, name: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-bold mb-1 block">{t.product.email}</label>
-                    <input type="email" value={reviewForm.email} onChange={(e) => setReviewForm({ ...reviewForm, email: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                    <label htmlFor="review-email" className="text-sm font-bold mb-1 block">{t.product.email}</label>
+                    <input id="review-email" type="email" value={reviewForm.email} onChange={(e) => setReviewForm({ ...reviewForm, email: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                   </div>
                   <div>
-                    <label className="text-sm font-bold mb-1 block">{t.product.phone}</label>
-                    <input value={reviewForm.phone} onChange={(e) => setReviewForm({ ...reviewForm, phone: e.target.value })} className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                    <label htmlFor="review-phone" className="text-sm font-bold mb-1 block">{t.product.phone}</label>
+                    <input id="review-phone" type="tel" value={reviewForm.phone} onChange={(e) => setReviewForm({ ...reviewForm, phone: e.target.value })} className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-bold mb-1 block">{t.product.city}</label>
+                  <label htmlFor="review-city" className="text-sm font-bold mb-1 block">{t.product.city}</label>
                   <select
+                    id="review-city"
                     value={reviewForm.city}
                     onChange={(e) => setReviewForm({ ...reviewForm, city: e.target.value })}
                     required
@@ -985,10 +1002,13 @@ export default function ProduitDetail() {
                         key={s}
                         type="button"
                         onClick={() => setReviewRating(s)}
+                        aria-label={`Attribuer ${s} étoile${s > 1 ? "s" : ""} sur 5`}
+                        aria-pressed={reviewRating === s}
                         className="focus:outline-none transition-transform hover:scale-110"
                       >
                         <Star
                           className={`w-7 h-7 transition-colors ${s <= reviewRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                          aria-hidden="true"
                         />
                       </button>
                     ))}
@@ -996,8 +1016,8 @@ export default function ProduitDetail() {
                   <p className="text-[10px] text-muted-foreground italic">{t.product.ratingHelp}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-bold mb-1 block">{t.product.message}</label>
-                  <textarea value={reviewForm.message} onChange={(e) => setReviewForm({ ...reviewForm, message: e.target.value })} required rows={5} className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
+                  <label htmlFor="review-message" className="text-sm font-bold mb-1 block">{t.product.message}</label>
+                  <textarea id="review-message" value={reviewForm.message} onChange={(e) => setReviewForm({ ...reviewForm, message: e.target.value })} required rows={5} className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
                 </div>
                 <div className="flex gap-2 justify-end pt-4">
                   <button type="button" onClick={() => setShowReviewForm(false)} className="bg-muted text-foreground font-bold px-6 py-2 rounded-2xl hover:bg-muted/80 transition-colors">{t.product.cancel}</button>

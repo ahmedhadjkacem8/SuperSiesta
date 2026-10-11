@@ -24,14 +24,14 @@ export default function CartDrawer() {
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div className="flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-primary" />
+            <ShoppingBag className="w-5 h-5 text-primary" aria-hidden="true" />
             <h2 className="font-bold text-lg">{t.cart.myCart}</h2>
             <span className="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
               {items.length}
             </span>
           </div>
-          <button onClick={closeCart} className="p-2 rounded-xl hover:bg-muted transition-colors">
-            <X className="w-5 h-5" />
+          <button onClick={closeCart} aria-label="Fermer le panier" className="p-2 rounded-xl hover:bg-muted transition-colors">
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -61,27 +61,30 @@ export default function CartDrawer() {
                       onClick={() =>
                         updateQty(item.product.id, item.size.label, item.quantity - 1)
                       }
+                      aria-label={`Diminuer la quantité de ${item.product.name} (${item.size.label})`}
                       className="w-7 h-7 rounded-lg bg-background border border-border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
                     >
-                      <Minus className="w-3 h-3" />
+                      <Minus className="w-3 h-3" aria-hidden="true" />
                     </button>
                     <span className="text-sm font-bold w-6 text-center">{item.quantity}</span>
                     <button
                       onClick={() =>
                         updateQty(item.product.id, item.size.label, item.quantity + 1)
                       }
+                      aria-label={`Augmenter la quantité de ${item.product.name} (${item.size.label})`}
                       className="w-7 h-7 rounded-lg bg-background border border-border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
                     >
-                      <Plus className="w-3 h-3" />
+                      <Plus className="w-3 h-3" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
                 <div className="flex flex-col items-end justify-between">
                   <button
                     onClick={() => removeItem(item.product.id, item.size.label)}
+                    aria-label={`Retirer ${item.product.name} (${item.size.label}) du panier`}
                     className="p-1 text-muted-foreground hover:text-destructive transition-colors"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4" aria-hidden="true" />
                   </button>
                   <p className="font-bold text-sm text-primary">
                     {formatPrice(item.size.price * item.quantity)}

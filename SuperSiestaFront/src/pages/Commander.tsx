@@ -518,7 +518,7 @@ export default function Commander() {
         />
         {required && !form[name] && !errors[name] && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-            <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-tighter">Requis</span>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">Requis</span>
           </div>
         )}
       </div>
@@ -608,7 +608,7 @@ export default function Commander() {
                   </select>
                   {!form.ville && !errors.ville && (
                     <div className="absolute right-10 rtl:right-auto rtl:left-10 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-tighter">Requis</span>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">Requis</span>
                     </div>
                   )}
                   <div className="absolute right-4 rtl:right-auto rtl:left-4 top-1/2 -translate-y-1/2 pointer-events-none border-l rtl:border-l-0 rtl:border-r pl-2 rtl:pl-0 rtl:pr-2 border-border">

@@ -41,14 +41,15 @@ class ApiRateLimiting
 
         // Check if rate limit exceeded
         if ($attempts >= $limit && $now->timestamp < $resetTime) {
-            return response()->json([
+            $response = response()->json([
                 'message' => 'Too many requests. Please try again later.',
                 'retry_after' => max(1, $resetTime - $now->timestamp),
-            ], 429)
-            ->header('X-RateLimit-Limit', $limit)
-            ->header('X-RateLimit-Remaining', 0)
-            ->header('X-RateLimit-Reset', $resetTime)
-            ->header('Retry-After', max(1, $resetTime - $now->timestamp));
+            ], 429);
+            $response->headers->set('X-RateLimit-Limit', (string) $limit);
+            $response->headers->set('X-RateLimit-Remaining', '0');
+            $response->headers->set('X-RateLimit-Reset', (string) $resetTime);
+            $response->headers->set('Retry-After', (string) max(1, $resetTime - $now->timestamp));
+            return $response;
         }
 
         // Reset counter if expired
@@ -66,10 +67,10 @@ class ApiRateLimiting
         $response = $next($request);
 
         // Add rate limit headers
-        return $response
-            ->header('X-RateLimit-Limit', $limit)
-            ->header('X-RateLimit-Remaining', max(0, $limit - $attempts))
-            ->header('X-RateLimit-Reset', $resetTime);
+        $response->headers->set('X-RateLimit-Limit', (string) $limit);
+        $response->headers->set('X-RateLimit-Remaining', (string) max(0, $limit - $attempts));
+        $response->headers->set('X-RateLimit-Reset', (string) $resetTime);
+        return $response;
     }
 
     private function resolveRequestSignature(Request $request): string

@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { Loader2, ChevronLeft, Calendar, Tag, Share2 } from "lucide-react";
-import { getImageUrl } from "@/utils/imageUtils";
+import { getResponsiveImageSrcSet, getResponsiveImageUrl } from "@/utils/imageUtils";
 import { useBlogPost } from "@/hooks/useBlog";
 
 export default function BlogPost() {
@@ -40,7 +40,13 @@ export default function BlogPost() {
       <article>
         {post.image_url && (
           <div className="aspect-square rounded-3xl overflow-hidden mb-8 bg-muted">
-            <img src={getImageUrl(post.image_url)} alt={post.title} className="w-full h-full object-cover" />
+            <img
+              src={getResponsiveImageUrl(post.image_url, 1200)}
+              srcSet={getResponsiveImageSrcSet(post.image_url, [384, 768, 1200])}
+              sizes="(min-width: 1024px) 896px, 100vw"
+              alt={post.title}
+              className="w-full h-full object-cover"
+            />
           </div>
         )}
 
@@ -84,7 +90,7 @@ export default function BlogPost() {
           <p className="text-sm font-bold mb-3 flex items-center gap-2"><Share2 className="w-4 h-4" /> Partager cet article</p>
           <div className="flex gap-2">
             {shareLinks.map((s) => (
-              <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer" className="bg-muted hover:bg-accent px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-2">
+              <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer" aria-label={`Partager sur ${s.name} (s'ouvre dans un nouvel onglet)`} className="bg-muted hover:bg-accent px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-2">
                 <span>{s.icon}</span> {s.name}
               </a>
             ))}

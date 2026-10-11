@@ -40,6 +40,7 @@ RUN apk add --no-cache \
     curl \
     curl-dev \
     libpng-dev \
+    libwebp-dev \
     libzip-dev \
     zip \
     unzip \

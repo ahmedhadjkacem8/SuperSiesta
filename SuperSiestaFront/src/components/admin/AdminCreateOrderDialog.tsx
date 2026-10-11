@@ -384,9 +384,10 @@ export function AdminCreateOrderDialog({ open, onOpenChange, onSuccess }: AdminC
                           <button 
                             type="button" 
                             onClick={() => removeItem(index)}
+                            aria-label={`Retirer ${item.product_name} (${item.size_label}) de la commande`}
                             className="text-destructive hover:bg-destructive/10 p-1.5 rounded-lg transition-colors"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" aria-hidden="true" />
                           </button>
                         </div>
                       </div>

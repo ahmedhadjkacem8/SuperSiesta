@@ -173,9 +173,10 @@ export default function AdminNotificationsPanel() {
                               e.stopPropagation();
                               markAsRead(notif.id);
                             }}
+                            aria-label={`Marquer la notification « ${notif.title} » comme lue`}
                             className="opacity-0 group-hover/item:opacity-100 transition-opacity p-1 hover:bg-muted rounded"
                           >
-                            <CheckCheck className="w-4 h-4 text-primary" />
+                            <CheckCheck className="w-4 h-4 text-primary" aria-hidden="true" />
                           </button>
                         )}
                       </div>
@@ -253,4 +254,3 @@ function getExpirationProgress(expiresAt: string): number {
     return 100;
   }
 }
-

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Loader2, Calendar, Tag, ArrowRight, ChevronRight, ChevronLeft, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import useEmblaCarousel from "embla-carousel-react";
-import { getImageUrl } from "@/utils/imageUtils";
+import { getResponsiveImageSrcSet, getResponsiveImageUrl } from "@/utils/imageUtils";
 import { useBlogPosts } from "@/hooks/useBlog";
 
 const fadeInUp = {
@@ -59,9 +59,12 @@ export default function Blog() {
                           <div className="aspect-[4/3] md:aspect-square">
                             {post.image_url ? (
                               <img
-                                src={getImageUrl(post.image_url)}
+                                src={getResponsiveImageUrl(post.image_url, 768)}
+                                srcSet={getResponsiveImageSrcSet(post.image_url, [384, 768, 1200])}
+                                sizes="(min-width: 1024px) 33vw, 85vw"
                                 alt={post.title}
                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                loading="lazy"
                               />
                             ) : (
                               <div className="w-full h-full bg-muted flex items-center justify-center">
@@ -104,15 +107,17 @@ export default function Blog() {
               </div>
               <button 
                 onClick={scrollPrev} 
+                aria-label="Afficher les articles précédents"
                 className="absolute top-1/2 -left-4 -translate-y-1/2 w-10 h-10 bg-background/80 backdrop-blur border border-border shadow-md rounded-full flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all z-10"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-5 h-5" aria-hidden="true" />
               </button>
               <button 
                 onClick={scrollNext} 
+                aria-label="Afficher les articles suivants"
                 className="absolute top-1/2 -right-4 -translate-y-1/2 w-10 h-10 bg-background/80 backdrop-blur border border-border shadow-md rounded-full flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all z-10"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -156,9 +161,12 @@ export default function Blog() {
                     <div className="aspect-[4/3] md:aspect-square">
                       {post.image_url ? (
                         <img
-                          src={getImageUrl(post.image_url)}
+                          src={getResponsiveImageUrl(post.image_url, 768)}
+                          srcSet={getResponsiveImageSrcSet(post.image_url, [384, 768, 1200])}
+                          sizes="(min-width: 768px) 33vw, 50vw"
                           alt={post.title}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="w-full h-full bg-muted flex items-center justify-center">

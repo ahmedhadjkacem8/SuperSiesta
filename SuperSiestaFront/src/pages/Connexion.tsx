@@ -161,10 +161,11 @@ export default function Connexion() {
       <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 space-y-4">
         {/* Email Field */}
         <div>
-          <label className="text-sm font-bold mb-1 block">{t.auth.email} *</label>
+          <label htmlFor="login-email" className="text-sm font-bold mb-1 block">{t.auth.email} *</label>
           <div className="relative">
             <Mail className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
+              id="login-email"
               type="email"
               value={email}
               onChange={(e) => handleChange("email", e.target.value)}
@@ -195,10 +196,11 @@ export default function Connexion() {
 
         {/* Password Field */}
         <div>
-          <label className="text-sm font-bold mb-1 block">{t.auth.password} *</label>
+          <label htmlFor="login-password" className="text-sm font-bold mb-1 block">{t.auth.password} *</label>
           <div className="relative">
             <Lock className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
+              id="login-password"
               type="password"
               value={password}
               onChange={(e) => handleChange("password", e.target.value)}

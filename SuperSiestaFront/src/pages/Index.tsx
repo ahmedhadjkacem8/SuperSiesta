@@ -15,7 +15,7 @@ import ThreeDShowcase from "@/components/ThreeDShowcase";
 import { api } from "@/lib/apiClient";
 
 import { useHeroSlides } from "@/hooks/useHeroSlides";
-import { getImageUrl } from "@/utils/imageUtils";
+import { getImageUrl, getResponsiveImageSrcSet, getResponsiveImageUrl } from "@/utils/imageUtils";
 import { useSettings } from "@/hooks/useSettings";
 import { useNewsletters } from "@/hooks/useNewsletters";
 import { trackSubscribe } from "@/services/metaPixel";
@@ -378,10 +378,10 @@ useEffect(() => {
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-black text-xs uppercase tracking-wider text-muted-foreground">
+              <h2 className="font-black text-xs uppercase tracking-wider text-muted-foreground">
                 {t.home.ourTips}
-              </h3>
-              <span className="text-[10px] font-bold text-muted-foreground/50 tabular-nums">
+              </h2>
+              <span className="text-[10px] font-bold text-muted-foreground tabular-nums">
                 {Math.floor(blogPageIndex / itemsPerView) + 1}/{Math.ceil(favoritePosts.length / itemsPerView)}
               </span>
             </div>
@@ -404,13 +404,15 @@ useEffect(() => {
                     <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-muted/50">
                       {post.image_url ? (
                         <img
-                          src={getImageUrl(post.image_url)}
+                          src={getResponsiveImageUrl(post.image_url, 96)}
+                          srcSet={getResponsiveImageSrcSet(post.image_url, [96, 192, 384])}
+                          sizes="48px"
                           alt={post.title}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-muted-foreground/30 font-black text-sm">★</div>
+                        <div aria-hidden="true" className="w-full h-full flex items-center justify-center text-muted-foreground/30 font-black text-sm">★</div>
                       )}
                     </div>
 
@@ -419,9 +421,9 @@ useEffect(() => {
                         }`}>
                         {post.category || 'Article'}
                       </span>
-                      <h4 className="font-bold text-xs leading-snug group-hover:text-primary transition-colors line-clamp-2 tracking-tight">
+                      <h3 className="font-bold text-xs leading-snug group-hover:text-primary transition-colors line-clamp-2 tracking-tight">
                         {post.title}
-                      </h4>
+                      </h3>
                     </div>
 
                     <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 rtl:rotate-180 transition-all shrink-0" />
@@ -446,9 +448,16 @@ useEffect(() => {
                     aria-label={post.title}
                   >
                     {post.image_url ? (
-                      <img src={getImageUrl(post.image_url)} alt="" className="w-full h-full object-cover" loading="lazy" />
+                      <img
+                        src={getResponsiveImageUrl(post.image_url, 384)}
+                        srcSet={getResponsiveImageSrcSet(post.image_url, [384, 768, 1200])}
+                        sizes="(min-width: 1024px) 33vw, 85vw"
+                        alt=""
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
                     ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center text-[10px] font-black text-muted-foreground/50">
+                      <div aria-hidden="true" className="w-full h-full bg-muted flex items-center justify-center text-[10px] font-black text-muted-foreground">
                         ★
                       </div>
                     )}
@@ -582,11 +591,13 @@ return (
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   className="w-full h-full flex flex-col select-none group"
                 >
-                  <button type="button" onClick={handleNavigate} className="w-full text-left rtl:text-right">
+                  <button type="button" onClick={handleNavigate} aria-label={`Afficher la gamme ${g.name}`} className="w-full text-left rtl:text-right">
                     <div className="w-full aspect-square relative overflow-hidden rounded-lg border border-border/70">
                       {g.cover_image ? (
                         <img
-                          src={getImageUrl(g.cover_image)}
+                          src={getResponsiveImageUrl(g.cover_image, 384)}
+                          srcSet={getResponsiveImageSrcSet(g.cover_image, [192, 384, 768])}
+                          sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
                           alt={g.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
                           draggable={false}
@@ -769,7 +780,7 @@ return (
                 onClick={() => setShowAllDimensions(!showAllDimensions)}
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline transition-colors"
               >
-                <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showAllDimensions ? "rotate-180" : ""}`} />
+                <ChevronDown aria-hidden="true" className={`w-4 h-4 transition-transform duration-300 ${showAllDimensions ? "rotate-180" : ""}`} />
                 {showAllDimensions ? t.home.showLess : t.home.showMore}
               </button>
             </div>
@@ -826,7 +837,14 @@ return (
                   <ChevronRight className="w-10 h-10 rotate-[-45deg]" />
                 </div>
                 {c.image ? (
-                  <img src={getImageUrl(c.image)} alt={c.label} className="w-16 h-16 object-contain mb-3 group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                  <img
+                    src={getResponsiveImageUrl(c.image, 96)}
+                    srcSet={getResponsiveImageSrcSet(c.image, [96, 192, 384])}
+                    sizes="64px"
+                    alt={c.label}
+                    className="w-16 h-16 object-contain mb-3 group-hover:scale-110 transition-transform duration-500"
+                    loading="lazy"
+                  />
                 ) : (
                   <div className="w-16 h-16 bg-background/50 rounded-xl mb-3 flex items-center justify-center shadow-sm">
                     <span className="text-[10px] opacity-40">Plus</span>
@@ -846,8 +864,8 @@ return (
               {/* Le point principal pour les 5 premiers */}
               <button
                 onClick={() => scrollToCollection(0)}
+                aria-label="Afficher le début des collections"
                 className={`h-1.5 rounded-full transition-all duration-500 ${activeCollectionDot < 5 ? 'w-10 bg-primary shadow-[0_0_15px_rgba(var(--primary),0.4)]' : 'w-2.5 bg-primary/20 hover:bg-primary/40'}`}
-                title="Début"
               />
               {/* Les points pour les suivants */}
               {Array.from({ length: categories.length - 5 }).map((_, idx) => {
@@ -856,8 +874,8 @@ return (
                   <button
                     key={idx}
                     onClick={() => scrollToCollection(targetIdx)}
+                    aria-label={`Afficher la collection ${targetIdx + 1}`}
                     className={`h-1.5 rounded-full transition-all duration-500 ${activeCollectionDot === targetIdx ? 'w-10 bg-primary shadow-[0_0_15px_rgba(var(--primary),0.4)]' : 'w-2.5 bg-primary/20 hover:bg-primary/40'}`}
-                    title={`Collection ${targetIdx + 1}`}
                   />
                 );
               })}
@@ -938,7 +956,14 @@ return (
             >
               {/* Background watermark image */}
               <div className="absolute right-0 top-0 w-1/2 h-full opacity-10 pointer-events-none">
-                <img src={getImageUrl(promoCardsList[promoIndex]?.image)} alt="" className="w-full h-full object-cover" loading="lazy" />
+                <img
+                  src={getResponsiveImageUrl(promoCardsList[promoIndex]?.image, 768)}
+                  srcSet={getResponsiveImageSrcSet(promoCardsList[promoIndex]?.image, [384, 768, 1200])}
+                  sizes="50vw"
+                  alt=""
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
               </div>
 
               {/* Text content */}
@@ -973,7 +998,9 @@ return (
                 className="relative z-10 hidden lg:block flex-shrink-0"
               >
                 <img
-                  src={getImageUrl(promoCardsList[promoIndex]?.image)}
+                  src={getResponsiveImageUrl(promoCardsList[promoIndex]?.image, 768)}
+                  srcSet={getResponsiveImageSrcSet(promoCardsList[promoIndex]?.image, [384, 768, 1200])}
+                  sizes="(min-width: 1280px) 320px, 288px"
                   alt={promoCardsList[promoIndex]?.title}
                   className="w-72 xl:w-80 h-52 xl:h-60 object-cover rounded-3xl shadow-2xl border-4 border-white/20"
                 />
@@ -986,7 +1013,9 @@ return (
                 className="relative z-10 block lg:hidden w-full aspect-square max-h-64"
               >
                 <img
-                  src={getImageUrl(promoCardsList[promoIndex]?.image)}
+                  src={getResponsiveImageUrl(promoCardsList[promoIndex]?.image, 384)}
+                  srcSet={getResponsiveImageSrcSet(promoCardsList[promoIndex]?.image, [192, 384, 768])}
+                  sizes="(max-width: 1023px) 100vw, 0px"
                   alt={promoCardsList[promoIndex]?.title}
                   className="w-full h-full object-cover rounded-2xl shadow-lg border-2 border-white/10"
                 />
@@ -1080,6 +1109,7 @@ return (
                   <button
                     key={idx}
                     onClick={() => setReviewsPageIndex(idx)}
+                    aria-label={`Afficher la page d’avis ${idx + 1}`}
                     className={`h-2 rounded-full transition-all duration-500 ${reviewsPageIndex === idx ? "w-12 bg-primary shadow-[0_0_15px_rgba(var(--primary),0.4)]" : "w-2 bg-primary/20 hover:bg-primary/40"}`}
                   />
                 ))}
@@ -1139,7 +1169,9 @@ return (
                     <div className="aspect-[4/3] md:aspect-square">
                       {post.image_url ? (
                         <img
-                          src={getImageUrl(post.image_url)}
+                          src={getResponsiveImageUrl(post.image_url, 768)}
+                          srcSet={getResponsiveImageSrcSet(post.image_url, [384, 768, 1200])}
+                          sizes="(min-width: 1024px) 33vw, 85vw"
                           alt={post.title}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                           loading="lazy"
@@ -1230,11 +1262,12 @@ return (
         href={socials.find(s => s.name.toLowerCase().includes('whatsapp') || s.icon?.lucide_name?.toLowerCase().includes('message'))?.url || `https://wa.me/${(settings.contact_phone || "21671000000").replace(/[^\d]/g, '')}`}
         target="_blank"
         rel="noopener noreferrer"
+        aria-label="Contacter Super Siesta sur WhatsApp (s'ouvre dans un nouvel onglet)"
         onClick={() => trackGAContactClick("whatsapp", "Floating Button")}
         className="fixed bottom-8 right-8 rtl:right-auto rtl:left-8 z-40 bg-green-500 text-white w-16 h-16 rounded-3xl flex items-center justify-center shadow-xl hover:bg-green-600 transition-colors"
         title={t.nav.whatsapp}
       >
-        <svg viewBox="0 0 24 24" className="w-8 h-8 fill-current">
+        <svg viewBox="0 0 24 24" className="w-8 h-8 fill-current" aria-hidden="true">
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
           <path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.558 4.112 1.532 5.836L.057 23.999l6.352-1.656A11.952 11.952 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.851 0-3.576-.5-5.065-1.373l-.363-.215-3.768.987.997-3.641-.235-.375A9.958 9.958 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
         </svg>

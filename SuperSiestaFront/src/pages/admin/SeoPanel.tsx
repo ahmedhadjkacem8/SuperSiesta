@@ -706,6 +706,7 @@ const SeoPanel = () => {
                           href={getTargetUrl(editing.page_identifier)}
                           target="_blank"
                           rel="noreferrer"
+                          aria-label={`Ouvrir la page SEO ${getTargetUrl(editing.page_identifier)} (s'ouvre dans un nouvel onglet)`}
                           className="text-primary hover:underline font-mono text-xs flex items-center gap-1 font-semibold bg-primary/10 px-2 py-0.5 rounded border border-primary/20"
                         >
                           {getTargetUrl(editing.page_identifier)}
@@ -968,6 +969,7 @@ const SeoPanel = () => {
                       <label className="text-xs font-medium text-foreground mb-1.5 block">Statut</label>
                       <div className="flex items-center gap-3 mt-1">
                         <button onClick={() => setEditing({ ...editing, is_active: !editing.is_active })}
+                          aria-label={editing.is_active ? "Désactiver ce référencement" : "Activer ce référencement"}
                           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editing.is_active ? "bg-emerald-500" : "bg-zinc-600"}`}>
                           <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${editing.is_active ? "translate-x-6" : "translate-x-1"}`} />
                         </button>
@@ -1189,6 +1191,7 @@ const SeoPanel = () => {
                               href={getTargetUrl(entry.page_identifier)}
                               target="_blank"
                               rel="noreferrer"
+                              aria-label={`Ouvrir la page SEO ${getPagePath(entry.page_identifier)} (s'ouvre dans un nouvel onglet)`}
                               className="inline-flex items-center gap-1 text-primary hover:underline font-mono text-[11px] bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20 font-medium"
                               title="Ouvrir l'URL ciblée par le SEO dans un nouvel onglet"
                             >
@@ -1236,9 +1239,10 @@ const SeoPanel = () => {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleAnalyze(entry.id!)}
+                            aria-label={`Recalculer le score SEO de ${entry.page_identifier}`}
                             title="Recalculer le score SEO"
                             className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                            <RefreshCw className="w-3.5 h-3.5" />
+                            <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
                           </button>
                           <button
                             onClick={() => { setEditing({ ...entry }); setFormTab("meta"); }}
@@ -1247,9 +1251,10 @@ const SeoPanel = () => {
                           </button>
                           <button
                             onClick={() => handleDelete(entry.id!)}
+                            aria-label={`Supprimer l’entrée SEO ${entry.page_identifier}`}
                             title="Supprimer"
                             className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                           </button>
                         </div>
                       </td>
@@ -1417,6 +1422,7 @@ const SeoPanel = () => {
                   href={`${API_ROOT}/sitemap.xml`}
                   target="_blank"
                   rel="noreferrer"
+                  aria-label="Ouvrir le sitemap XML (s'ouvre dans un nouvel onglet)"
                   className="flex items-center gap-1.5 text-xs text-accent hover:underline"
                 >
                   <ExternalLink className="w-3 h-3" /> Ouvrir
@@ -1457,6 +1463,7 @@ const SeoPanel = () => {
                   href={`${API_ROOT}/robots.txt`}
                   target="_blank"
                   rel="noreferrer"
+                  aria-label="Ouvrir le fichier robots.txt (s'ouvre dans un nouvel onglet)"
                   className="flex items-center gap-1.5 text-xs text-accent hover:underline"
                 >
                   <ExternalLink className="w-3 h-3" /> Ouvrir
@@ -1505,9 +1512,10 @@ const SeoPanel = () => {
               <button
                 onClick={() => setIsSyncModalOpen(false)}
                 disabled={resyncing}
+                aria-label="Fermer la fenêtre de synchronisation SEO"
                 className="text-zinc-400 hover:text-zinc-200 disabled:opacity-50 transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 

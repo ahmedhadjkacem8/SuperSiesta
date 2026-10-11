@@ -117,23 +117,24 @@ export default function Contact() {
             <h2 className="text-2xl font-black mb-6">{t.contact.sendMessage}</h2>
             <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 space-y-4">
               <div>
-                <label className="text-sm font-bold mb-1 block">{t.contact.fullName}</label>
-                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                <label htmlFor="contact-name" className="text-sm font-bold mb-1 block">{t.contact.fullName}</label>
+                <input id="contact-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-bold mb-1 block">{t.contact.email}</label>
-                  <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                  <label htmlFor="contact-email" className="text-sm font-bold mb-1 block">{t.contact.email}</label>
+                  <input id="contact-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                 </div>
                 <div>
-                  <label className="text-sm font-bold mb-1 block">{t.contact.phone}</label>
-                  <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                  <label htmlFor="contact-phone" className="text-sm font-bold mb-1 block">{t.contact.phone}</label>
+                  <input id="contact-phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-bold mb-1 block">Ville</label>
+                <label htmlFor="contact-city" className="text-sm font-bold mb-1 block">Ville</label>
                 <select 
+                  id="contact-city"
                   value={form.city} 
                   onChange={(e) => setForm({ ...form, city: e.target.value })} 
                   required
@@ -152,10 +153,13 @@ export default function Contact() {
                       key={s}
                       type="button"
                       onClick={() => setRating(s)}
+                      aria-label={`Attribuer ${s} étoile${s > 1 ? "s" : ""} sur 5`}
+                      aria-pressed={rating === s}
                       className="focus:outline-none transition-transform hover:scale-110"
                     >
                       <Star 
-                        className={`w-7 h-7 transition-colors ${s <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
+                        className={`w-7 h-7 transition-colors ${s <= rating ? 'fill-yellow-700 text-yellow-700' : 'text-gray-600'}`}
+                        aria-hidden="true"
                       />
                     </button>
                   ))}
@@ -164,8 +168,8 @@ export default function Contact() {
               </div>
 
               <div>
-                <label className="text-sm font-bold mb-1 block">{t.contact.message}</label>
-                <textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} required rows={5} className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
+                <label htmlFor="contact-message" className="text-sm font-bold mb-1 block">{t.contact.message}</label>
+                <textarea id="contact-message" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} required rows={5} className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
               </div>
               <button type="submit" disabled={sending} className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm">
                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 rtl:rotate-180" />} {t.contact.send}
@@ -213,10 +217,11 @@ export default function Contact() {
                   href={s.url} 
                   target="_blank" 
                   rel="noopener noreferrer" 
+                  aria-label={`${s.name} de Super Siesta (s'ouvre dans un nouvel onglet)`}
                   className="flex-1 min-w-[140px] bg-card border border-border rounded-xl p-3 flex items-center justify-center gap-2 hover:bg-accent transition-all hover:scale-105 font-bold text-sm"
                 >
                   <div style={{ color: s.icon.hex_color || 'var(--primary)' }}>
-                    <LucideIcon name={s.icon.lucide_name} label={s.name} className="w-5 h-5 transition-colors" />
+                    <LucideIcon name={s.icon.lucide_name} label={s.name} className="w-5 h-5 transition-colors" aria-hidden="true" />
                   </div>
                   <span>{s.name}</span>
                 </a>

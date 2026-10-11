@@ -31,6 +31,7 @@ export default function Footer() {
                   href={s.url} 
                   target="_blank" 
                   rel="noopener noreferrer" 
+                  aria-label={`Suivre Super Siesta sur ${s.name} (s'ouvre dans un nouvel onglet)`}
                   onClick={() => {
                     if (isWhatsapp) {
                       trackGAContactClick("whatsapp", s.name);
@@ -39,7 +40,7 @@ export default function Footer() {
                   className="p-2 bg-background/10 rounded-xl transition-all hover:scale-110"
                   style={{ color: s.icon?.hex_color || 'currentColor' }}
                 >
-                  <LucideIcon name={s.icon?.lucide_name} label={s.name} className="w-4 h-4" />
+                  <LucideIcon name={s.icon?.lucide_name} className="w-4 h-4" aria-hidden="true" />
                 </a>
               );
             })}
@@ -47,7 +48,7 @@ export default function Footer() {
         </div>
 
         <div>
-          <h3 className="font-bold mb-4 text-background">{t.footer.shop}</h3>
+          <h2 className="font-bold mb-4 text-background">{t.footer.shop}</h2>
           <ul className="space-y-2 text-sm text-background/70">
             {[
               { label: t.nav.home, href: "/" },
@@ -57,13 +58,13 @@ export default function Footer() {
               { label: t.nav.about, href: "/a-propos" },
               { label: t.nav.contact, href: "/contact" },
             ].map((l) => (
-              <li key={l.href}><Link to={l.href} className="hover:text-primary transition-colors">{l.label}</Link></li>
+              <li key={l.href}><Link to={l.href} className="hover:text-background transition-colors">{l.label}</Link></li>
             ))}
           </ul>
         </div>
 
         <div>
-          <h3 className="font-bold mb-4 text-background">{t.nav.myAccount}</h3>
+          <h2 className="font-bold mb-4 text-background">{t.nav.myAccount}</h2>
           <ul className="space-y-2 text-sm text-background/70">
             {[
               { label: t.nav.login, href: "/connexion" },
@@ -75,7 +76,7 @@ export default function Footer() {
                 <Link 
                   to={l.href} 
                   onClick={l.onClick}
-                  className="hover:text-primary transition-colors"
+                  className="hover:text-background transition-colors"
                 >
                   {l.label}
                 </Link>
@@ -85,21 +86,21 @@ export default function Footer() {
         </div>
 
         <div>
-          <h3 className="font-bold mb-4 text-background">{t.footer.contact}</h3>
+          <h2 className="font-bold mb-4 text-background">{t.footer.contact}</h2>
           <ul className="space-y-3 text-sm text-background/70">
             <li className="flex items-center gap-2">
-              <Phone className="w-4 h-4 text-primary flex-shrink-0" />
+              <Phone className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
               <a
                 href={`tel:${(settings.contact_phone || "+21671000000").replace(/\s+/g, '')}`}
                 onClick={() => trackGAContactClick("call", settings.contact_phone || "+216 71 000 000")}
-                className="hover:text-primary transition-colors"
+                className="hover:text-background transition-colors"
                 dir="ltr"
               >
                 {settings.contact_phone || "+216 71 000 000"}
               </a>
             </li>
             <li className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-primary flex-shrink-0" />
+              <Mail className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
               <a
                 href={`mailto:${settings.contact_email || "contact@supersiesta.tn"}`}
                 className="hover:text-primary transition-colors"
@@ -116,7 +117,7 @@ export default function Footer() {
         </div>
 
         <div>
-          <h3 className="font-bold mb-4 text-background">{t.footer.legalNotices}</h3>
+          <h2 className="font-bold mb-4 text-background">{t.footer.legalNotices}</h2>
           <ul className="space-y-2 text-sm text-background/70">
             {[
               { label: t.footer.privacy, href: "/mentions-legales#confidentialite" },
@@ -125,7 +126,7 @@ export default function Footer() {
               { label: t.footer.cookies, href: "/mentions-legales#cookies" },
             ].map((link) => (
               <li key={link.href}>
-                <Link to={link.href} className="hover:text-primary transition-colors">
+                <Link to={link.href} className="hover:text-background transition-colors">
                   {link.label}
                 </Link>
               </li>
@@ -134,7 +135,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-background/10 px-4 py-5 text-center text-xs text-background/40">
+      <div className="border-t border-background/10 px-4 py-5 text-center text-xs text-background/70">
         © {new Date().getFullYear()} {t.footer.copyright}
       </div>
     </footer>

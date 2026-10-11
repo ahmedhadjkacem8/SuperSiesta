@@ -230,10 +230,11 @@ export default function Register() {
       <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 space-y-4">
         {/* Email Field */}
         <div>
-          <label className="text-sm font-bold mb-1 block">{t.auth.email} *</label>
+          <label htmlFor="register-email" className="text-sm font-bold mb-1 block">{t.auth.email} *</label>
           <div className="relative">
             <Mail className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
+              id="register-email"
               type="email"
               value={email}
               onChange={(e) => handleChange("email", e.target.value)}
@@ -263,10 +264,11 @@ export default function Register() {
 
         {/* Full Name Field */}
         <div>
-          <label className="text-sm font-bold mb-1 block">{t.auth.fullName} *</label>
+          <label htmlFor="register-full-name" className="text-sm font-bold mb-1 block">{t.auth.fullName} *</label>
           <div className="relative">
             <User className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
+              id="register-full-name"
               type="text"
               value={fullName}
               onChange={(e) => handleChange("fullName", e.target.value)}
@@ -296,10 +298,11 @@ export default function Register() {
 
         {/* Phone Field */}
         <div>
-          <label className="text-sm font-bold mb-1 block">Téléphone (optionnel)</label>
+          <label htmlFor="register-phone" className="text-sm font-bold mb-1 block">Téléphone (optionnel)</label>
           <div className="relative">
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
+              id="register-phone"
               type="tel"
               value={phone}
               onChange={(e) => handleChange("phone", e.target.value)}
@@ -365,10 +368,11 @@ export default function Register() {
 
         {/* Password Field */}
         <div>
-          <label className="text-sm font-bold mb-1 block">Mot de passe *</label>
+          <label htmlFor="register-password" className="text-sm font-bold mb-1 block">Mot de passe *</label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
+              id="register-password"
               type="password"
               value={password}
               onChange={(e) => handleChange("password", e.target.value)}
@@ -397,10 +401,11 @@ export default function Register() {
 
         {/* Password Confirmation Field */}
         <div>
-          <label className="text-sm font-bold mb-1 block">Confirmer le mot de passe *</label>
+          <label htmlFor="register-password-confirm" className="text-sm font-bold mb-1 block">Confirmer le mot de passe *</label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
+              id="register-password-confirm"
               type="password"
               value={passwordConfirm}
               onChange={(e) => handleChange("passwordConfirm", e.target.value)}

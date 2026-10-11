@@ -70,6 +70,36 @@ export function getImageUrl(imagePath: string | null | undefined): string {
   return `/storage/${cleaned}`
 }
 
+export function getResponsiveImageUrl(
+  imagePath: string | null | undefined,
+  width: number
+): string {
+  if (!imagePath) return "";
+
+  const imageUrl = getImageUrl(imagePath);
+  const relativePath = toRelativePath(imageUrl);
+
+  if (!relativePath.startsWith("/storage/")) {
+    return imageUrl;
+  }
+
+  const storagePath = relativePath
+    .slice("/storage/".length)
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
+  return `${API_URL}/media/${storagePath}?width=${width}`;
+}
+
+export function getResponsiveImageSrcSet(
+  imagePath: string | null | undefined,
+  widths: number[]
+): string {
+  return widths
+    .map((width) => `${getResponsiveImageUrl(imagePath, width)} ${width}w`)
+    .join(", ");
+}
+
 /**
  * Vérifie si une URL d'image est valide
  */

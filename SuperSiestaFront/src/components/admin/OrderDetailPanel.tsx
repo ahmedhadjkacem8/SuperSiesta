@@ -384,7 +384,7 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
                   <span className="font-bold">{formatPrice(order.subtotal)}</span>
                 </div>
                 <div className="flex justify-between items-center text-xl pt-2 border-t border-primary/20 mt-2 font-black">
-                  <span className="text-primary/70">TOTAL TTC</span>
+                  <span className="text-primary">TOTAL TTC</span>
                   <span className="text-primary">{formatPrice(order.total)}</span>
                 </div>
               </div>
@@ -448,6 +448,7 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
                     <a
                       href={`https://www.google.com/maps/search/?api=1&query=${order.latitude},${order.longitude}`}
                       target="_blank"
+                      aria-label="Ouvrir l’itinéraire Google Maps (s'ouvre dans un nouvel onglet)"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-[10px] font-bold text-primary hover:underline mt-2 bg-primary/5 px-2 py-1 rounded"
                     >

@@ -703,7 +703,7 @@ export default function AdminBonLivraison() {
                             {item.grammage && `— Gr: ${item.grammage} `}
                             — Qté: {item.quantity}
                             {item.parameters?.custom && (
-                              <><br/><span className="italic text-primary/70">Paramètres: {
+                              <><br/><span className="italic text-primary">Paramètres: {
                                 (() => {
                                   try {
                                     const parsed = JSON.parse(item.parameters.custom);

@@ -80,9 +80,10 @@ export default function VideoUpload({
           <button
             type="button"
             onClick={handleClear}
+            aria-label="Supprimer la vidéo"
             className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90 z-10"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       )}

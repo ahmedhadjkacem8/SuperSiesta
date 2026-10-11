@@ -30,7 +30,7 @@ export default function APropos() {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary opacity-20" />
-        <p className="text-sm font-black text-primary/40 uppercase tracking-widest animate-pulse">Chargement de l'univers Super Siesta...</p>
+        <p className="text-sm font-black text-primary uppercase tracking-widest animate-pulse">Chargement de l'univers Super Siesta...</p>
       </div>
     );
   }

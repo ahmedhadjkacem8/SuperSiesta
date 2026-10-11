@@ -269,7 +269,7 @@ const sections: { id?: string; title: string; icon: LucideIcon; content: ReactNo
           </p>
           <p>
             Site internet :{" "}
-            <a href="https://www.siestaofficiel.com" target="_blank" rel="noreferrer">
+            <a href="https://www.siestaofficiel.com" target="_blank" rel="noreferrer" aria-label="Site Super Siesta (s'ouvre dans un nouvel onglet)">
               www.siestaofficiel.com
             </a>
           </p>
@@ -381,7 +381,7 @@ export default function MentionsLegales() {
                     href={`#${section.id || `mention-${index + 1}`}`}
                     className="flex items-start gap-3 rounded-lg px-2 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
                   >
-                    <span className="mt-0.5 text-xs font-bold text-primary/70">
+                    <span className="mt-0.5 text-xs font-bold text-primary">
                       {String(index + 1).padStart(2, "0")}
                     </span>
                     <span>{section.title}</span>

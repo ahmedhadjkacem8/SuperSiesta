@@ -1368,7 +1368,7 @@ export default function AdminSettings() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="space-y-6">
-                <h3 className="font-bold text-sm tracking-wide uppercase text-primary/80 bg-primary/5 px-3 py-2 rounded-lg border border-primary/10">Coordonnées de l'entreprise</h3>
+                <h3 className="font-bold text-sm tracking-wide uppercase text-primary bg-primary/5 px-3 py-2 rounded-lg border border-primary/10">Coordonnées de l'entreprise</h3>
                 <div className="space-y-5 px-1">
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Téléphone Principal</label>
@@ -1390,12 +1390,12 @@ export default function AdminSettings() {
               </div>
 
               <div className="space-y-6">
-                <h3 className="font-bold text-sm tracking-wide uppercase text-primary/80 bg-primary/5 px-3 py-2 rounded-lg border border-primary/10">Textes d'affichage du site</h3>
+                <h3 className="font-bold text-sm tracking-wide uppercase text-primary bg-primary/5 px-3 py-2 rounded-lg border border-primary/10">Textes d'affichage du site</h3>
                 <div className="space-y-5 px-1">
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Ruban Annonce (Header)</label>
                     <Input className="bg-muted/30 border-border/60 shadow-sm" value={contactSettings.top_banner_text} onChange={e => setContactSettings({ ...contactSettings, top_banner_text: e.target.value })} />
-                    <p className="text-[10px] text-muted-foreground/70">Ce texte s'affiche tout en haut du site web.</p>
+                    <p className="text-[10px] text-muted-foreground">Ce texte s'affiche tout en haut du site web.</p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Description de la marque (Footer)</label>
@@ -1410,7 +1410,7 @@ export default function AdminSettings() {
 
               {/* Trust Badges Config */}
               <div className="space-y-6 md:col-span-2">
-                <h3 className="font-bold text-sm tracking-wide uppercase text-primary/80 bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 flex justify-between items-center">
+                <h3 className="font-bold text-sm tracking-wide uppercase text-primary bg-primary/5 px-3 py-2 rounded-lg border border-primary/10 flex justify-between items-center">
                   <span>Badges de Confiance (Accueil & 3D)</span>
                   <Button variant="outline" size="sm" onClick={() => setTrustBadges([...trustBadges, { icon: "Star", title: "Nouveau Badge", sub: "Description" }])}>
                     <Plus className="w-4 h-4 mr-1" /> Ajouter

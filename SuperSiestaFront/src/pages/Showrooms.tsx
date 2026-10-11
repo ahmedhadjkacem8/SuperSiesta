@@ -177,7 +177,8 @@ export default function Showrooms() {
       } else if (processed.length > 0) {
         setActiveShowroom(processed[0]?.id ?? null);
       }
-      console.error(err);
+    } catch (error) {
+      console.error("Unable to load showrooms.", error);
     } finally {
       setLoading(false);
     }
@@ -195,14 +196,14 @@ export default function Showrooms() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background pt-20 pb-12 px-4 flex items-center justify-center">
+      <main className="min-h-screen bg-background pt-20 pb-12 px-4 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-12 h-12 animate-spin text-primary" />
           <p className="text-muted-foreground font-black uppercase tracking-widest animate-pulse">
             Chargement...
           </p>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -210,7 +211,7 @@ export default function Showrooms() {
   const rightShowrooms = showrooms.filter((_, i) => i % 2 !== 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30 pt-24 pb-12">
+    <main className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30 pt-24 pb-12">
       <div className="w-full max-w-[1600px] mx-auto" style={{ paddingLeft: 'clamp(16px, 4vw, 32px)', paddingRight: 'clamp(16px, 4vw, 32px)' }}>
 
         {/* ── Header ── */}
@@ -227,21 +228,23 @@ export default function Showrooms() {
           {/* View Toggle */}
           <div className="flex items-center bg-card border border-border rounded-2xl p-1.5 shadow-sm shrink-0 self-start sm:self-auto">
             {([
-              { mode: 'map' as ViewMode, icon: <MapIcon className="w-4 h-4" />, label: 'Carte' },
-              { mode: 'list' as ViewMode, icon: <List className="w-4 h-4" />, label: 'Liste' },
-              { mode: 'grid' as ViewMode, icon: <LayoutGrid className="w-4 h-4" />, label: 'Grille' },
+              { mode: 'map' as ViewMode, icon: <MapIcon className="w-4 h-4" aria-hidden="true" />, label: 'Carte' },
+              { mode: 'list' as ViewMode, icon: <List className="w-4 h-4" aria-hidden="true" />, label: 'Liste' },
+              { mode: 'grid' as ViewMode, icon: <LayoutGrid className="w-4 h-4" aria-hidden="true" />, label: 'Grille' },
             ]).map(({ mode, icon, label }) => (
               <button
                 key={mode}
                 id={`view-toggle-${mode}`}
                 onClick={() => setViewMode(mode)}
+                aria-label={`Afficher les showrooms en mode ${label.toLowerCase()}`}
+                aria-pressed={viewMode === mode}
                 className={`px-3 sm:px-4 py-2.5 rounded-xl flex items-center gap-1.5 sm:gap-2 text-xs font-black uppercase tracking-widest transition-all ${
                   viewMode === mode
                     ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 }`}
               >
-                {icon}
+                <span aria-hidden="true">{icon}</span>
                 <span className="hidden sm:inline">{label}</span>
               </button>
             ))}
@@ -252,9 +255,9 @@ export default function Showrooms() {
         {showrooms.length === 0 ? (
           <div className="text-center py-24 bg-card border border-border rounded-3xl shadow-sm">
             <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
-              <MapPin className="w-10 h-10 text-muted-foreground/30" />
+              <MapPin className="w-10 h-10 text-muted-foreground/30" aria-hidden="true" />
             </div>
-            <h3 className="text-xl font-black mb-2">Bientôt disponibles</h3>
+            <h2 className="text-xl font-black mb-2">Bientôt disponibles</h2>
             <p className="text-muted-foreground font-medium">
               Nous préparons de nouveaux espaces pour vous accueillir.
             </p>
@@ -343,24 +346,26 @@ export default function Showrooms() {
                     <p className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                       <List className="w-3.5 h-3.5" />
                       Nos showrooms
-                      <span className="text-primary/70">({carouselIndex + 1}/{showrooms.length})</span>
+                      <span className="text-primary">({carouselIndex + 1}/{showrooms.length})</span>
                     </p>
                     <div className="flex gap-2">
                       <button
                         id="carousel-prev"
                         onClick={() => goCarousel('prev')}
                         disabled={carouselIndex === 0}
+                        aria-label="Afficher le showroom précédent"
                         className="w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center disabled:opacity-30 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
                       >
-                        <ChevronLeft className="w-4 h-4" />
+                        <ChevronLeft className="w-4 h-4" aria-hidden="true" />
                       </button>
                       <button
                         id="carousel-next"
                         onClick={() => goCarousel('next')}
                         disabled={carouselIndex === showrooms.length - 1}
+                        aria-label="Afficher le showroom suivant"
                         className="w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center disabled:opacity-30 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
                       >
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-4 h-4" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
@@ -398,6 +403,8 @@ export default function Showrooms() {
                       {showrooms.map((_, idx) => (
                         <button
                           key={idx}
+                          aria-label={`Afficher le showroom ${showrooms[idx].name}`}
+                          aria-current={idx === carouselIndex ? "true" : undefined}
                           onClick={() => {
                             setCarouselIndex(idx);
                             setActiveShowroom(showrooms[idx].id);
@@ -459,6 +466,6 @@ export default function Showrooms() {
           100% { transform: scale(1);   box-shadow: 0 0 0 0   rgba(241,90,36,0); }
         }
       `}} />
-    </div>
+    </main>
   );
 }

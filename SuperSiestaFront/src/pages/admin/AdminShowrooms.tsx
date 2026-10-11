@@ -381,9 +381,10 @@ export default function AdminShowrooms() {
                             <button 
                               type="button" 
                               onClick={() => setForm({ ...form, image_file: null })}
+                              aria-label="Supprimer l’image principale sélectionnée"
                               className="absolute top-2 right-2 p-1.5 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-lg"
                             >
-                              <X className="w-3.5 h-3.5" />
+                              <X className="w-3.5 h-3.5" aria-hidden="true" />
                             </button>
                           )}
                           <div className="absolute top-2 left-2 px-2 py-1 bg-background/80 backdrop-blur-sm rounded text-[10px] font-bold z-10 border border-border/50">
@@ -425,9 +426,10 @@ export default function AdminShowrooms() {
                           <button 
                             type="button" 
                             onClick={() => setForm(prev => ({ ...prev, images_files: prev.images_files.filter((_, idx) => idx !== i) }))}
+                            aria-label={`Supprimer la nouvelle image ${i + 1}`}
                             className="bg-destructive text-white p-1 rounded-full shadow-lg"
                           >
-                            <X className="w-2.5 h-2.5" />
+                            <X className="w-2.5 h-2.5" aria-hidden="true" />
                           </button>
                         </div>
                         <div className="absolute bottom-1 left-1 px-1 bg-primary text-primary-foreground rounded text-[7px] font-black shadow-sm">NEUF</div>
@@ -442,9 +444,10 @@ export default function AdminShowrooms() {
                           <button 
                             type="button" 
                             onClick={() => setRemovedImages(prev => [...prev, img])}
+                            aria-label={`Marquer l’image ${i + 1} pour suppression`}
                             className="bg-destructive text-white p-1 rounded-full shadow-lg"
                           >
-                            <X className="w-2.5 h-2.5" />
+                            <X className="w-2.5 h-2.5" aria-hidden="true" />
                           </button>
                         </div>
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
@@ -544,6 +547,7 @@ export default function AdminShowrooms() {
                 <a 
                   href={form.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(form.address + ', ' + form.city)}`}
                   target="_blank" rel="noopener noreferrer"
+                  aria-label={`Afficher l’aperçu de l’adresse ${form.address}, ${form.city} sur Google Maps (s'ouvre dans un nouvel onglet)`}
                   className="block rounded-2xl overflow-hidden border border-border bg-muted aspect-video group relative cursor-pointer"
                 >
                   <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-colors z-10 flex items-center justify-center">
@@ -616,8 +620,8 @@ export default function AdminShowrooms() {
                       </div>
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
-                      <button onClick={() => handleEdit(s)} title="Modifier" className="p-3 rounded-xl bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-all duration-300"><Edit className="w-5 h-5" /></button>
-                      <button onClick={() => handleDelete(s.id)} title="Supprimer" className="p-3 rounded-xl bg-muted/50 hover:bg-destructive hover:text-destructive-foreground transition-all duration-300"><Trash2 className="w-5 h-5" /></button>
+                      <button onClick={() => handleEdit(s)} aria-label={`Modifier le showroom ${s.name}`} title="Modifier" className="p-3 rounded-xl bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-all duration-300"><Edit aria-hidden="true" className="w-5 h-5" /></button>
+                      <button onClick={() => handleDelete(s.id)} aria-label={`Supprimer le showroom ${s.name}`} title="Supprimer" className="p-3 rounded-xl bg-muted/50 hover:bg-destructive hover:text-destructive-foreground transition-all duration-300"><Trash2 aria-hidden="true" className="w-5 h-5" /></button>
                     </div>
                   </div>
                   
@@ -651,7 +655,7 @@ export default function AdminShowrooms() {
                           const isActive = days && (days as any)[day] === true;
                           
                           return (
-                            <span key={day} className={`w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-black ${isActive ? "bg-primary/20 text-primary border border-primary/20" : "bg-muted text-muted-foreground/30"}`}>
+                            <span key={day} className={`w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-black ${isActive ? "bg-primary/20 text-primary border border-primary/20" : "bg-muted text-muted-foreground"}`}>
                               {DAYS_FR[day][0]}
                             </span>
                           );
@@ -668,8 +672,8 @@ export default function AdminShowrooms() {
 
                   {s.google_maps_url && (
                     <div className="mt-5 pt-4 border-t border-border/30">
-                      <a href={s.google_maps_url} target="_blank" rel="noopener noreferrer" className="text-primary font-black text-xs hover:underline flex items-center gap-2 uppercase tracking-wide">
-                        <MapPin className="w-3.5 h-3.5" /> Ouvrir l'itinéraire précis sur Google Maps →
+                      <a href={s.google_maps_url} target="_blank" rel="noopener noreferrer" aria-label={`Ouvrir l’itinéraire vers ${s.name} sur Google Maps (s'ouvre dans un nouvel onglet)`} className="text-primary font-black text-xs hover:underline flex items-center gap-2 uppercase tracking-wide">
+                        <MapPin className="w-3.5 h-3.5" aria-hidden="true" /> Ouvrir l'itinéraire précis sur Google Maps →
                       </a>
                     </div>
                   )}
@@ -679,6 +683,7 @@ export default function AdminShowrooms() {
                 <a 
                   href={s.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.address + ', ' + s.city)}`}
                   target="_blank" rel="noopener noreferrer"
+                  aria-label={`Afficher ${s.name} sur Google Maps (s'ouvre dans un nouvel onglet)`}
                   className="w-full md:w-80 h-40 md:h-auto rounded-2xl overflow-hidden border border-border shrink-0 bg-muted group relative cursor-pointer"
                 >
                   <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-all z-10 flex items-center justify-center">

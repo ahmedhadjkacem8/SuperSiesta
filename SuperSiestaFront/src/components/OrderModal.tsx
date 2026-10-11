@@ -360,6 +360,7 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup, ski
                         api.put(`/orders/${lastOrderId}/bl-contact`, { bl_contact: blContact.trim() }).finally(() => { setBlSending(false); setBlSent(true); }); 
                       }}
                       disabled={!blContact.trim() || blSending}
+                      aria-label={blSending ? "Envoi du document de livraison en cours" : "Envoyer le document de livraison"}
                       className="px-4 py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 flex-shrink-0"
                     >
                       {blSending ? "..." : "Envoyer"}
@@ -535,9 +536,9 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup, ski
                     <div className="flex justify-between text-sm text-muted-foreground"><span>Dimension</span><span>{selectedSize.label}</span></div>
                     <div className="flex justify-between text-sm text-muted-foreground items-center"><span>{t.product.quantity}</span>
                       <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => setQty(Math.max(1, qty - 1))} className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-sm">-</button>
+                        <button type="button" onClick={() => setQty(Math.max(1, qty - 1))} aria-label="Diminuer la quantité" className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-sm">-</button>
                         <span className="w-8 text-center font-bold">{qty}</span>
-                        <button type="button" onClick={() => setQty(qty + 1)} className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-sm">+</button>
+                        <button type="button" onClick={() => setQty(qty + 1)} aria-label="Augmenter la quantité" className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-sm">+</button>
                       </div>
                     </div>
                     <div className="border-t border-border pt-3 flex justify-between items-center text-base font-black">

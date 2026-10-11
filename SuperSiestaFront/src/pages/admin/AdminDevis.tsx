@@ -469,7 +469,7 @@ export default function AdminDevis() {
                         <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
                         <div className="flex gap-4 mb-4">
                           <div className="flex-1">
-                            <label className="text-[10px] uppercase font-black text-primary/60 ml-1">Produit à ajouter</label>
+                            <label className="text-[10px] uppercase font-black text-primary ml-1">Produit à ajouter</label>
                             <Select value={group.product_slug} onValueChange={(v) => selectProduct(gIdx, v)}>
                               <SelectTrigger className="h-10 border-primary/20"><SelectValue placeholder="Choisir un produit..." /></SelectTrigger>
                               <SelectContent>
@@ -478,7 +478,7 @@ export default function AdminDevis() {
                             </Select>
                           </div>
                           <div className="flex-1">
-                            <label className="text-[10px] uppercase font-black text-primary/60 ml-1">Description (Optionnel)</label>
+                            <label className="text-[10px] uppercase font-black text-primary ml-1">Description (Optionnel)</label>
                             <Input 
                               placeholder="Nom personnalisé..." 
                               value={group.description} 
@@ -513,11 +513,11 @@ export default function AdminDevis() {
                             <Table className="border-none">
                               <TableHeader className="bg-muted/40">
                                 <TableRow className="h-8 border-b border-border hover:bg-transparent">
-                                  <TableHead className="text-[10px] uppercase font-black h-8 text-primary/70">Dimension</TableHead>
-                                  <TableHead className="text-[10px] uppercase font-black h-8 text-primary/70">Paramètres</TableHead>
-                                  <TableHead className="text-[10px] uppercase font-black w-32 h-8 text-center text-primary/70">Quantité</TableHead>
-                                  <TableHead className="text-[10px] uppercase font-black w-44 h-8 text-right text-primary/70">Prix Unitaire (DT)</TableHead>
-                                  <TableHead className="text-[10px] uppercase font-black w-44 h-8 text-right text-primary/70">Total Ligne</TableHead>
+                                  <TableHead className="text-[10px] uppercase font-black h-8 text-primary">Dimension</TableHead>
+                                  <TableHead className="text-[10px] uppercase font-black h-8 text-primary">Paramètres</TableHead>
+                                  <TableHead className="text-[10px] uppercase font-black w-32 h-8 text-center text-primary">Quantité</TableHead>
+                                  <TableHead className="text-[10px] uppercase font-black w-44 h-8 text-right text-primary">Prix Unitaire (DT)</TableHead>
+                                  <TableHead className="text-[10px] uppercase font-black w-44 h-8 text-right text-primary">Total Ligne</TableHead>
                                   <TableHead className="w-12 h-8"></TableHead>
                                 </TableRow>
                               </TableHeader>

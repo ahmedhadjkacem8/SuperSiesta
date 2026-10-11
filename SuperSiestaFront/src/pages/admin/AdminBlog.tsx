@@ -230,9 +230,10 @@ export default function AdminBlog() {
                   {t}
                   <button 
                     onClick={() => removeTag(t)}
+                    aria-label={`Supprimer l’étiquette ${t}`}
                     className="p-0.5 rounded-full hover:bg-muted-foreground/20 text-muted-foreground group-hover:text-foreground transition-colors"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-3 h-3" aria-hidden="true" />
                   </button>
                 </Badge>
               )) : (
@@ -274,9 +275,10 @@ export default function AdminBlog() {
           <button 
             onClick={handleSave} 
             disabled={blogActions.isPending}
+            aria-label={blogActions.isPending ? "Enregistrement de l’article en cours" : editing ? "Mettre à jour l’article" : "Créer l’article"}
             className="bg-primary text-primary-foreground font-bold px-6 py-2 rounded-xl text-sm hover:bg-primary/90 disabled:opacity-50"
           >
-            {blogActions.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (editing ? "Mettre à jour" : "Créer")}
+            {blogActions.isPending ? <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" /> : (editing ? "Mettre à jour" : "Créer")}
           </button>
           {editing && <button onClick={resetForm} className="text-sm text-muted-foreground hover:underline">Annuler</button>}
         </div>
@@ -311,31 +313,34 @@ export default function AdminBlog() {
                   onClick={() => move(p.id, -1)} 
                   disabled={i === 0 || blogActions.isPending} 
                   className="p-2 rounded-lg hover:bg-muted disabled:opacity-30"
+                  aria-label={`Monter l’article « ${p.title} »`}
                   title="Monter"
                 >
-                  <ArrowUp className="w-4 h-4" />
+                  <ArrowUp aria-hidden="true" className="w-4 h-4" />
                 </button>
                 <button 
                   onClick={() => move(p.id, 1)} 
                   disabled={i === posts.length - 1 || blogActions.isPending} 
                   className="p-2 rounded-lg hover:bg-muted disabled:opacity-30"
+                  aria-label={`Descendre l’article « ${p.title} »`}
                   title="Descendre"
                 >
-                  <ArrowDown className="w-4 h-4" />
+                  <ArrowDown aria-hidden="true" className="w-4 h-4" />
                 </button>
                 <button 
                   onClick={() => toggleFavorite(p)} 
                   disabled={blogActions.isPending}
+                  aria-label={p.is_favorite ? `Retirer « ${p.title} » des favoris` : `Ajouter « ${p.title} » aux favoris`}
                   className={`p-2 rounded-lg hover:bg-muted ${p.is_favorite ? "text-yellow-500" : "text-muted-foreground"}`}
                   title={p.is_favorite ? "Retirer des favoris" : "Marquer comme favori"}
                 >
-                  <Star className={`w-4 h-4 ${p.is_favorite ? "fill-yellow-500" : ""}`} />
+                  <Star aria-hidden="true" className={`w-4 h-4 ${p.is_favorite ? "fill-yellow-500" : ""}`} />
                 </button>
-                <button onClick={() => togglePublish(p)} disabled={blogActions.isPending} className="p-2 rounded-lg hover:bg-muted" title={p.published ? "Dépublier" : "Publier"}>
-                  {p.published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                <button onClick={() => togglePublish(p)} disabled={blogActions.isPending} aria-label={p.published ? `Dépublier « ${p.title} »` : `Publier « ${p.title} »`} className="p-2 rounded-lg hover:bg-muted" title={p.published ? "Dépublier" : "Publier"}>
+                  {p.published ? <EyeOff aria-hidden="true" className="w-4 h-4" /> : <Eye aria-hidden="true" className="w-4 h-4" />}
                 </button>
-                <button onClick={() => handleEdit(p)} disabled={blogActions.isPending} className="p-2 rounded-lg hover:bg-muted"><Edit className="w-4 h-4" /></button>
-                <button onClick={() => handleDelete(p.id)} disabled={blogActions.isPending} className="p-2 rounded-lg hover:bg-destructive/10 text-destructive"><Trash2 className="w-4 h-4" /></button>
+                <button onClick={() => handleEdit(p)} disabled={blogActions.isPending} aria-label={`Modifier l’article « ${p.title} »`} className="p-2 rounded-lg hover:bg-muted"><Edit aria-hidden="true" className="w-4 h-4" /></button>
+                <button onClick={() => handleDelete(p.id)} disabled={blogActions.isPending} aria-label={`Supprimer l’article « ${p.title} »`} className="p-2 rounded-lg hover:bg-destructive/10 text-destructive"><Trash2 aria-hidden="true" className="w-4 h-4" /></button>
               </div>
             </motion.div>
           ))}

@@ -51,7 +51,7 @@ export default function Navbar() {
 
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
         {/* Logo */}
-        <button onClick={() => navigate("/")} className="flex items-center gap-2">
+        <button onClick={() => navigate("/")} aria-label="Accueil Super Siesta" className="flex items-center gap-2">
           <img 
             src="/images/logo.png" 
             alt="Siesta Officiel" 
@@ -60,7 +60,7 @@ export default function Navbar() {
         </button>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-6">
+        <nav aria-label="Navigation principale" className="hidden md:flex items-center gap-6">
           {links.map((l) => (
             <Link key={l.href} to={l.href} className="text-sm font-medium text-foreground hover:text-primary transition-colors">
               {l.label}
@@ -119,7 +119,7 @@ export default function Navbar() {
             to={user ? "/mon-compte" : "/connexion"} 
             className="hidden sm:flex items-center gap-1.5 text-xs bg-accent text-accent-foreground px-3 py-1.5 rounded-full hover:bg-primary hover:text-primary-foreground transition-colors"
           >
-            <User className="w-3 h-3" />
+            <User className="w-3 h-3" aria-hidden="true" />
             {user ? t.nav.myAccount : t.nav.login}
           </Link>
 
@@ -133,6 +133,7 @@ export default function Navbar() {
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label={`${s.name} de Super Siesta (s'ouvre dans un nouvel onglet)`}
                   onClick={() => {
                     if (isWhatsapp) {
                       trackGAContactClick("whatsapp", s.name);
@@ -142,7 +143,7 @@ export default function Navbar() {
                   className="w-8 h-8 flex items-center justify-center bg-accent rounded-full transition-all hover:scale-110"
                   style={{ color: s.icon?.hex_color || 'currentColor' }}
                 >
-                  <LucideIcon name={s.icon?.lucide_name} label={s.name} className="w-4 h-4" />
+                  <LucideIcon name={s.icon?.lucide_name} label={s.name} className="w-4 h-4" aria-hidden="true" />
                 </a>
               );
             })}
@@ -151,10 +152,11 @@ export default function Navbar() {
           {/* Cart Trigger */}
           <button 
             onClick={openCart} 
+            aria-label="Ouvrir le panier"
             className="relative p-2 rounded-xl bg-muted hover:bg-primary hover:text-primary-foreground transition-colors"
             title={t.nav.cart}
           >
-            <ShoppingCart className="w-5 h-5" />
+            <ShoppingCart className="w-5 h-5" aria-hidden="true" />
             {count > 0 && (
               <span className="absolute -top-1 -right-1 bg-secondary text-secondary-foreground text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
                 {count}
@@ -163,15 +165,20 @@ export default function Navbar() {
           </button>
 
           {/* Mobile Menu Toggle */}
-          <button className="md:hidden p-2 rounded-xl bg-muted" onClick={() => setMenuOpen(!menuOpen)}>
-            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          <button
+            className="md:hidden p-2 rounded-xl bg-muted"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-expanded={menuOpen}
+            aria-controls="navigation-mobile"
+            aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+          >
+            {menuOpen ? <X className="w-5 h-5" aria-hidden="true" /> : <Menu className="w-5 h-5" aria-hidden="true" />}
           </button>
         </div>
       </div>
 
       {/* Mobile Drawer */}
-      {menuOpen && (
-        <div className="md:hidden border-t border-border bg-background px-4 py-4 flex flex-col gap-3">
+      <nav id="navigation-mobile" aria-label="Navigation mobile" className={`md:hidden border-t border-border bg-background px-4 py-4 flex-col gap-3 ${menuOpen ? "flex" : "hidden"}`}>
           {links.map((l) => (
             <Link 
               key={l.href} 
@@ -188,7 +195,7 @@ export default function Navbar() {
               className="text-sm font-medium py-2 text-primary flex items-center gap-2" 
               onClick={() => setMenuOpen(false)}
             >
-              <User className="w-4 h-4" />
+              <User className="w-4 h-4" aria-hidden="true" />
               {user ? t.nav.myAccount : t.nav.login}
             </Link>
 
@@ -206,8 +213,7 @@ export default function Navbar() {
               ))}
             </div>
           </div>
-        </div>
-      )}
+      </nav>
     </header>
   );
 }

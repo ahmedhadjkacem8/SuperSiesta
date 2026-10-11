@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -16,27 +17,33 @@ class OptimizeHttpCache
     {
         $response = $next($request);
 
+        // Resized images have stable request URLs, so allow revalidation after one day.
+        if ($request->is('api/media/*')) {
+            $response->headers->set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+        }
         // Public files (images, videos, assets) - cache for 1 year (immutable)
-        if ($this->isPublicFile($request)) {
-            $response->header('Cache-Control', 'public, max-age=31536000, immutable');
-            $response->header('ETag', md5($response->getContent()));
+        elseif ($this->isPublicFile($request)) {
+            $response->headers->set('Cache-Control', 'public, max-age=31536000, immutable');
+            if (!$response instanceof BinaryFileResponse) {
+                $response->headers->set('ETag', md5((string) $response->getContent()));
+            }
         }
         // API GET requests for dynamic entities - don't cache
         elseif ($request->isMethod('GET') && ($request->is('api/quotes*') || $request->is('api/orders*') || $request->is('api/invoices*') || $request->is('api/products*') || $request->is('api/clients*'))) {
-            $response->header('Cache-Control', 'no-cache, no-store, must-revalidate');
+            $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
         }
         // Other API GET requests - short cache (conditional revalidation)
         elseif ($request->isMethod('GET') && $request->is('api/*')) {
-            $response->header('Cache-Control', 'public, max-age=60, must-revalidate');
-            $response->header('Vary', 'Accept, Authorization');
+            $response->headers->set('Cache-Control', 'public, max-age=60, must-revalidate');
+            $response->headers->set('Vary', 'Accept, Authorization');
         }
         // API POST/PUT/DELETE - don't cache
         else {
-            $response->header('Cache-Control', 'no-cache, no-store, must-revalidate');
+            $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
         }
 
         // Add compression hint
-        $response->header('Vary', 'Accept-Encoding');
+        $response->headers->set('Vary', 'Accept-Encoding');
 
         return $response;
     }

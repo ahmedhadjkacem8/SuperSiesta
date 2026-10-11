@@ -6,7 +6,7 @@ import { useCart } from "@/context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { formatPrice } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { getImageUrl } from "@/utils/imageUtils";
+import { getResponsiveImageSrcSet, getResponsiveImageUrl } from "@/utils/imageUtils";
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useLanguage } from "@/context/LanguageContext";
@@ -152,9 +152,10 @@ function DimensionModal({
               {step === 2 && (
                 <button
                   onClick={handleBack}
+                  aria-label="Retour à la sélection des dimensions"
                   className="p-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
@@ -170,9 +171,10 @@ function DimensionModal({
             </div>
             <button
               onClick={onClose}
+              aria-label="Fermer la sélection des dimensions"
               className="ml-3 flex-shrink-0 p-2 rounded-xl bg-muted hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
 
@@ -445,7 +447,9 @@ export default function ProductCard({
         {/* Image */}
         <div className="relative overflow-hidden aspect-square sm:aspect-[4/3] bg-muted">
           <img
-            src={getImageUrl(product.image)}
+            src={getResponsiveImageUrl(product.image, 768)}
+            srcSet={getResponsiveImageSrcSet(product.image, [384, 768, 1200])}
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
             loading="lazy"
@@ -468,17 +472,19 @@ export default function ProductCard({
             <div className="absolute bottom-2 right-2 flex gap-1.5 z-10">
               <button
                 onClick={(e) => { e.stopPropagation(); navigate(`/produit/${product.slug}${selectedDimension && selectedDimension !== "Tous" ? `?dimension=${encodeURIComponent(selectedDimension)}` : ''}`); }}
+                aria-label={`Voir le détail de ${product.name}`}
                 className="p-2 sm:p-2.5 bg-card/90 text-foreground rounded-full shadow-lg active:scale-90 hover:bg-card transition-colors border border-border"
                 title="Voir les détails"
               >
-                <Search className="w-4 h-4" />
+                <Search className="w-4 h-4" aria-hidden="true" />
               </button>
               <button
                 onClick={handleCartButtonClick}
+                aria-label={`Choisir une dimension pour ${product.name}`}
                 className="p-2 sm:p-2.5 bg-primary text-primary-foreground rounded-full shadow-lg active:scale-90 hover:bg-primary/90 transition-colors"
                 title="Ajouter au panier"
               >
-                <ShoppingCart className="w-4 h-4" />
+                <ShoppingCart className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
           )}

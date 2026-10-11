@@ -107,8 +107,8 @@ function MobileSheet({
               Effacer
             </button>
           )}
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-muted">
-            <X className="w-4 h-4" />
+          <button onClick={onClose} aria-label="Fermer les filtres" className="p-1 rounded-full hover:bg-muted">
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </div>

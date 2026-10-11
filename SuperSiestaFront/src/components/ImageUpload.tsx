@@ -80,9 +80,10 @@ export default function ImageUpload({
           <button
             type="button"
             onClick={handleClear}
+            aria-label="Supprimer l’image"
             className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
           <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 truncate">
             {value?.name || "Image actuelle"}

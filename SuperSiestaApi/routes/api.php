@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\NewsletterController;
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\MetaTestController;
 use App\Http\Controllers\Api\ProspectController;
+use App\Http\Controllers\Api\OptimizedImageController;
 
 // Public routes (no authentication required)
 Route::middleware('api')->group(function () {
@@ -42,6 +43,7 @@ Route::middleware('api')->group(function () {
 
     // CSRF Token
     Route::get('/csrf-token', [AuthController::class, 'getCsrfToken']);
+    Route::get('/media/{path}', [OptimizedImageController::class, 'show'])->where('path', '.*');
 
     // DEBUG - Vérifier l'état des notifications (à supprimer après test)
     Route::get('/admin/notifications/debug/info', function () {

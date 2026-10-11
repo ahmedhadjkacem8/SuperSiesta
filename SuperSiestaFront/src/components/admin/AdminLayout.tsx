@@ -72,14 +72,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex bg-slate-50/50 dark:bg-zinc-950/50 font-sans">
       <aside className="w-[230px] bg-background border-r border-border/40 flex flex-col shrink-0 hidden md:flex overflow-visible shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] z-40">
         <div className="p-5 border-b border-border/40 flex items-center relative min-h-[85px]">
-          <Link to="/admin" className="absolute inset-0 flex items-center justify-center group pointer-events-auto">
+          <Link to="/admin" aria-label="Tableau de bord d’administration Super Siesta" className="absolute inset-0 flex items-center justify-center group pointer-events-auto">
             <img src={logo} alt="Super Siesta Logo" className="w-20 h-auto object-contain drop-shadow-md group-hover:scale-105 transition-transform" />
           </Link>
           <div className="ml-auto relative z-10 pointer-events-auto">
             <AdminNotificationsPanel />
           </div>
         </div>
-        <nav className="flex-1 p-2 space-y-3 overflow-y-auto">
+        <nav aria-label="Navigation d’administration" className="flex-1 p-2 space-y-3 overflow-y-auto">
           {navGroups.map((group, idx) => (
             <div key={idx} className="space-y-0.5">
               <h4 className="px-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 mt-2 first:mt-0">
@@ -89,7 +89,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 const isActive = pathname === item.path;
                 return (
                   <Link key={item.path} to={item.path} className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${isActive ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-md shadow-primary/20 scale-[1.02]" : "text-muted-foreground hover:bg-primary/10 hover:text-primary hover:scale-[1.01]"}`}>
-                    <item.icon className={`w-4 h-4 ${isActive ? "text-primary-foreground" : "text-muted-foreground/70"}`} />{item.label}
+                    <item.icon aria-hidden="true" className={`w-4 h-4 ${isActive ? "text-primary-foreground" : "text-muted-foreground/70"}`} />{item.label}
                   </Link>
                 );
               })}
@@ -102,20 +102,20 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-background border-b border-border/40 px-4 py-3 flex items-center justify-between shadow-sm">
-        <Link to="/" className="flex items-center gap-2">
+      <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-background border-b border-border/40 px-4 py-3 flex items-center justify-between shadow-sm">
+        <Link to="/" aria-label="Accueil Super Siesta" className="flex items-center gap-2">
           <img src={logo} alt="Logo" className="w-7 h-auto object-contain drop-shadow-sm" />
           <span className="text-lg font-black bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">SS</span>
         </Link>
-        <div className="flex gap-1 overflow-x-auto">
+        <nav aria-label="Navigation mobile d’administration" className="flex gap-1 overflow-x-auto">
           {allItems.map((item) => (
-            <Link key={item.path} to={item.path} className={`p-2 rounded-xl transition-colors ${pathname === item.path ? "bg-primary/10 text-primary" : "text-muted-foreground"}`} title={item.label}>
-              <item.icon className="w-4 h-4" />
+            <Link key={item.path} to={item.path} aria-label={item.label} aria-current={pathname === item.path ? "page" : undefined} className={`p-2 rounded-xl transition-colors ${pathname === item.path ? "bg-primary/10 text-primary" : "text-muted-foreground"}`}>
+              <item.icon className="w-4 h-4" aria-hidden="true" />
             </Link>
           ))}
-          <button onClick={handleSignOut} className="p-2 text-muted-foreground hover:text-destructive"><LogOut className="w-4 h-4" /></button>
-        </div>
-      </div>
+          <button onClick={handleSignOut} aria-label="Déconnexion" className="p-2 text-muted-foreground hover:text-destructive"><LogOut className="w-4 h-4" aria-hidden="true" /></button>
+        </nav>
+      </header>
 
       <main className="flex-1 overflow-auto bg-muted/20 md:mt-0 mt-16 relative">
         <div className="p-6 md:p-8 max-w-[1600px] mx-auto min-h-full">
@@ -125,10 +125,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         {/* Floating Provisoire Meta API Tester Button */}
         <button
           onClick={() => setIsMetaTesterOpen(true)}
+          aria-label="Ouvrir la console de test Meta API (provisoire)"
           className="fixed bottom-5 right-5 z-50 bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-full shadow-2xl flex items-center gap-2 text-xs font-semibold border border-indigo-400/30 transition-transform hover:scale-105 active:scale-95 group"
-          title="Ouvrir la Console de Test Meta API (Provisoire)"
         >
-          <Activity className="w-4 h-4 animate-pulse text-amber-300" />
+          <Activity className="w-4 h-4 animate-pulse text-amber-300" aria-hidden="true" />
           <span className="hidden sm:inline">Test Meta API (Provisoire)</span>
         </button>
 

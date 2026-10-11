@@ -91,10 +91,10 @@ export function ShowroomCard({ showroom, viewMode = 'grid', isActive = false, on
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              title="Ouvrir dans Google Maps"
+              aria-label={`Ouvrir ${showroom.name} dans Google Maps (s'ouvre dans un nouvel onglet)`}
               className="absolute top-2 right-2 z-10 w-7 h-7 rounded-lg bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary/20"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
+              <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
             </a>
           )}
 
@@ -236,9 +236,10 @@ export function ShowroomCard({ showroom, viewMode = 'grid', isActive = false, on
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
+              aria-label={`Voir l’itinéraire vers ${showroom.name} dans Google Maps (s'ouvre dans un nouvel onglet)`}
               className={`flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3.5 px-6 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg hover:shadow-primary/20 shrink-0 hover:scale-105 active:scale-95 ${isList ? 'w-full sm:w-auto' : 'w-full'} ${(!showroom.contact_person_name && !showroom.contact_person_phone && !isList) ? 'mt-auto' : ''}`}
             >
-              <ExternalLink className="w-4 h-4" />
+              <ExternalLink className="w-4 h-4" aria-hidden="true" />
               Ouvrir dans Google Maps
             </a>
           ) : (
@@ -249,7 +250,7 @@ export function ShowroomCard({ showroom, viewMode = 'grid', isActive = false, on
               }}
               className={`flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3.5 px-6 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg hover:shadow-primary/20 shrink-0 hover:scale-105 active:scale-95 ${isList ? 'w-full sm:w-auto' : 'w-full'} ${(!showroom.contact_person_name && !showroom.contact_person_phone && !isList) ? 'mt-auto' : ''}`}
             >
-              <MapPin className="w-4 h-4" />
+              <MapPin className="w-4 h-4" aria-hidden="true" />
               Voir sur la carte
             </button>
           )}

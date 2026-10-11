@@ -150,9 +150,10 @@ export default function MultiImageUpload({
                 <button
                   type="button"
                   onClick={() => handleRemove(img.index)}
+                  aria-label={`Supprimer l’image ${img.index + 1}`}
                   className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <Trash2 className="w-3 h-3" />
+                  <Trash2 className="w-3 h-3" aria-hidden="true" />
                 </button>
                 <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 truncate">
                   {img.index + 1}

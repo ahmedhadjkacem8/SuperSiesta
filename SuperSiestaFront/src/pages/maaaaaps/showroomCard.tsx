@@ -48,6 +48,7 @@ export function ShowroomCard({ showroom, viewMode = 'grid', isActive = false }: 
             href={showroom.google_maps_url}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={`Ouvrir l’itinéraire de ${showroom.name} dans Google Maps (s'ouvre dans un nouvel onglet)`}
             className={`mt-2 flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-xs font-medium transition-colors ${isActive ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-900 text-white hover:bg-gray-800'}`}
           >
             <ExternalLink className="w-3 h-3" />
@@ -142,6 +143,7 @@ export function ShowroomCard({ showroom, viewMode = 'grid', isActive = false }: 
             href={showroom.google_maps_url}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={`Afficher ${showroom.name} sur la carte (s'ouvre dans un nouvel onglet)`}
             className={`flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white py-2.5 px-5 rounded-xl text-sm font-medium transition-colors shrink-0 ${isList ? 'w-full sm:w-auto' : 'w-full'}`}
           >
             <ExternalLink className="w-4 h-4" />
@@ -152,4 +154,3 @@ export function ShowroomCard({ showroom, viewMode = 'grid', isActive = false }: 
     </div>
   );
 }
-

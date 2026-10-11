@@ -125,38 +125,38 @@ export default function MonCompte() {
           </div>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-bold mb-1 block">{t.account.fullName}</label>
+              <label htmlFor="profile-full-name" className="text-sm font-bold mb-1 block">{t.account.fullName}</label>
               <div className="relative">
                 <User className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                <input id="profile-full-name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
               </div>
             </div>
             <div>
-              <label className="text-sm font-bold mb-1 block">{t.account.email}</label>
+              <label htmlFor="profile-email" className="text-sm font-bold mb-1 block">{t.account.email}</label>
               <div className="relative">
                 <Mail className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input value={user.email || ""} disabled className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border border-border rounded-xl bg-muted text-sm text-muted-foreground" />
+                <input id="profile-email" value={user.email || ""} disabled className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border border-border rounded-xl bg-muted text-sm text-muted-foreground" />
               </div>
             </div>
             <div>
-              <label className="text-sm font-bold mb-1 block">{t.account.phone}</label>
+              <label htmlFor="profile-phone" className="text-sm font-bold mb-1 block">{t.account.phone}</label>
               <div className="relative">
                 <Phone className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="+216..." />
+                <input id="profile-phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="+216..." />
               </div>
             </div>
             <div>
-              <label className="text-sm font-bold mb-1 block">{t.checkout.address}</label>
+              <label htmlFor="profile-address" className="text-sm font-bold mb-1 block">{t.checkout.address}</label>
               <div className="relative">
                 <MapPin className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Rue, n°, immeuble..." />
+                <input id="profile-address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Rue, n°, immeuble..." />
               </div>
             </div>
             <div>
-              <label className="text-sm font-bold mb-1 block">{t.checkout.city}</label>
+              <label htmlFor="profile-city" className="text-sm font-bold mb-1 block">{t.checkout.city}</label>
               <div className="relative">
                 <MapPin className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <select value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                <select id="profile-city" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border border-border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                   <option value="">{t.checkout.selectCity}</option>
                   {["Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan", "Bizerte", "Béja", "Jendouba", "Le Kef", "Siliana", "Sousse", "Monastir", "Mahdia", "Sfax", "Kairouan", "Kasserine", "Sidi Bouzid", "Gabès", "Médenine", "Tataouine", "Gafsa", "Tozeur", "Kébili"].map(v => (
                     <option key={v} value={v}>{v}</option>
