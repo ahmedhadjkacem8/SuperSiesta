@@ -28,6 +28,11 @@ class Order extends Model
         'longitude',
         'notes',
         'bl_contact',
+        'gclid',
+        'gbraid',
+        'wbraid',
+        'ads_click_captured_at',
+        'ads_exported_at',
         'subtotal',
         'total',
     ];
@@ -37,6 +42,8 @@ class Order extends Model
     protected $casts = [
         'subtotal' => 'decimal:2',
         'total' => 'decimal:2',
+        'ads_click_captured_at' => 'datetime',
+        'ads_exported_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

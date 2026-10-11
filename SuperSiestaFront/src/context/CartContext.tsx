@@ -48,6 +48,7 @@ function saveCartToStorage(items: CartItem[]) {
 }
 
 import { trackAddToCart } from "@/services/metaPixel";
+import { trackGAAddToCart } from "@/services/analytics";
 
 const CartContext = createContext<CartContextType | null>(null);
 
@@ -69,12 +70,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return [...prev, { product, size, quantity: qty }];
     });
 
+    const category = (product as any).categorie || product.category;
+
     // Track Meta Pixel AddToCart
     trackAddToCart({
       id: product.id,
       name: product.name,
       price: size.price,
       quantity: qty,
+      category,
+    });
+
+    // Track GA4 add_to_cart
+    trackGAAddToCart({
+      id: product.id,
+      name: product.name,
+      price: size.price,
+      quantity: qty,
+      category,
     });
 
     setIsOpen(true);

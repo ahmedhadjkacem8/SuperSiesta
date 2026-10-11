@@ -19,6 +19,7 @@ import { getImageUrl } from "@/utils/imageUtils";
 import { useSettings } from "@/hooks/useSettings";
 import { useNewsletters } from "@/hooks/useNewsletters";
 import { trackSubscribe } from "@/services/metaPixel";
+import { trackGASubscribe, trackGAContactClick } from "@/services/analytics";
 import { useSocialNetworks } from "@/hooks/useSocialNetworks";
 import LucideIcon from "@/components/common/LucideIcon";
 import { useBlogPosts } from "@/hooks/useBlog";
@@ -60,7 +61,7 @@ export default function Index() {
   const { subscribe, isSubscribing } = useNewsletters();
   const { socials } = useSocialNetworks();
 
-  const { data: blogPosts = [] } = useBlogPosts();
+  const { data: blogPosts = [] } = useBlogPosts({ per_page: 6 });
   const { data: favoritePosts = [] } = useBlogPosts({ is_favorite: true });
 
   const [promoIndex, setPromoIndex] = useState(0);
@@ -212,7 +213,7 @@ export default function Index() {
     if (heroSlides.length > 0) {
       heroSlides.slice(0, 2).forEach(slide => {
         const img = new Image();
-        img.src = slide.image_url;
+        img.src = getImageUrl(slide.image_url);
       });
     }
   }, [heroSlides]);
@@ -287,8 +288,9 @@ export default function Index() {
 
     try {
       await subscribe(newsletterEmail);
-      // Track Meta Pixel Subscribe
+      // Track Meta Pixel & GA4 Subscribe
       trackSubscribe(newsletterEmail);
+      trackGASubscribe("newsletter", newsletterEmail);
       toast.success("Succès !", {
         description: "Vous êtes maintenant inscrit à notre newsletter."
       });
@@ -330,25 +332,26 @@ useEffect(() => {
 
   return (
     <main className="overflow-hidden">
-      {/* HERO SLIDER FULL WIDTH */}
-      <motion.section
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1 }}
-        className="relative overflow-hidden"
-      >
-        <div className="relative min-h-[400px] md:min-h-[600px] bg-muted/20">
-          {slidesLoading ? (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          ) : (
-            <HeroSlider slides={heroSlides} />
-          )}
-        </div>
-      </motion.section>
+      <div className="relative">
+        {/* HERO SLIDER FULL WIDTH */}
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+          className="relative overflow-hidden"
+        >
+          <div className="relative min-h-[400px] md:min-h-[600px] bg-muted/20">
+            {slidesLoading ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <HeroSlider slides={heroSlides} />
+            )}
+          </div>
+        </motion.section>
 
-{/* FLOAT CARD FAVORITES OVER HERO */}
+        {/* FLOAT CARD FAVORITES OVER HERO */}
 {favoritePosts.length > 0 && (() => {
   const itemsPerView = Math.min(windowWidth < 640 ? 1 : 3, favoritePosts.length);
 
@@ -365,7 +368,8 @@ useEffect(() => {
   };
 
   return (
-    <div className="relative z-20 max-w-9xl mx-auto px-2 -mt-48 md:-mt-[29rem] mb-26 pointer-events-none">      <div className="flex justify-center md:justify-end pr-0 md:pr-10">
+    <div className="relative z-20 mx-auto -mt-6 max-w-9xl px-2 pb-4 md:absolute md:inset-x-0 md:bottom-8 md:mt-0 md:px-2 md:pb-0 md:pointer-events-none">
+      <div className="flex justify-center pr-0 md:justify-end md:pr-10">
       <motion.div
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -403,6 +407,7 @@ useEffect(() => {
                           src={getImageUrl(post.image_url)}
                           alt={post.title}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted-foreground/30 font-black text-sm">★</div>
@@ -441,7 +446,7 @@ useEffect(() => {
                     aria-label={post.title}
                   >
                     {post.image_url ? (
-                      <img src={getImageUrl(post.image_url)} alt="" className="w-full h-full object-cover" />
+                      <img src={getImageUrl(post.image_url)} alt="" className="w-full h-full object-cover" loading="lazy" />
                     ) : (
                       <div className="w-full h-full bg-muted flex items-center justify-center text-[10px] font-black text-muted-foreground/50">
                         ★
@@ -464,6 +469,7 @@ useEffect(() => {
       </div>
     );
 })()}
+      </div>
       {/* CHOISISSEZ VOTRE MATELAS */}
       <motion.section
         {...fadeInUp}
@@ -584,6 +590,7 @@ return (
                           alt={g.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
                           draggable={false}
+                          loading="lazy"
                         />
                       ) : (
                         <div className="w-full h-full bg-muted flex items-center justify-center">
@@ -819,7 +826,7 @@ return (
                   <ChevronRight className="w-10 h-10 rotate-[-45deg]" />
                 </div>
                 {c.image ? (
-                  <img src={getImageUrl(c.image)} alt={c.label} className="w-16 h-16 object-contain mb-3 group-hover:scale-110 transition-transform duration-500" />
+                  <img src={getImageUrl(c.image)} alt={c.label} className="w-16 h-16 object-contain mb-3 group-hover:scale-110 transition-transform duration-500" loading="lazy" />
                 ) : (
                   <div className="w-16 h-16 bg-background/50 rounded-xl mb-3 flex items-center justify-center shadow-sm">
                     <span className="text-[10px] opacity-40">Plus</span>
@@ -931,7 +938,7 @@ return (
             >
               {/* Background watermark image */}
               <div className="absolute right-0 top-0 w-1/2 h-full opacity-10 pointer-events-none">
-                <img src={getImageUrl(promoCardsList[promoIndex]?.image)} alt="" className="w-full h-full object-cover" />
+                <img src={getImageUrl(promoCardsList[promoIndex]?.image)} alt="" className="w-full h-full object-cover" loading="lazy" />
               </div>
 
               {/* Text content */}
@@ -1135,6 +1142,7 @@ return (
                           src={getImageUrl(post.image_url)}
                           alt={post.title}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="w-full h-full bg-muted flex items-center justify-center">
@@ -1219,9 +1227,10 @@ return (
         transition={{ delay: 1, type: "spring" }}
         whileHover={{ scale: 1.2, rotate: 10 }}
         whileTap={{ scale: 0.9 }}
-        href={socials.find(s => s.name.toLowerCase().includes('whatsapp') || s.icon.lucide_name.toLowerCase().includes('message'))?.url || `https://wa.me/${(settings.contact_phone || "21671000000").replace(/[^\d]/g, '')}`}
+        href={socials.find(s => s.name.toLowerCase().includes('whatsapp') || s.icon?.lucide_name?.toLowerCase().includes('message'))?.url || `https://wa.me/${(settings.contact_phone || "21671000000").replace(/[^\d]/g, '')}`}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => trackGAContactClick("whatsapp", "Floating Button")}
         className="fixed bottom-8 right-8 rtl:right-auto rtl:left-8 z-40 bg-green-500 text-white w-16 h-16 rounded-3xl flex items-center justify-center shadow-xl hover:bg-green-600 transition-colors"
         title={t.nav.whatsapp}
       >

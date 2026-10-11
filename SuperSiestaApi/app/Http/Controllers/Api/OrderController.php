@@ -115,6 +115,10 @@ class OrderController extends BaseController
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.grammage' => 'nullable|string',
+            'gclid' => 'nullable|string|max:255',
+            'gbraid' => 'nullable|string|max:255',
+            'wbraid' => 'nullable|string|max:255',
+            'ads_click_captured_at' => 'nullable|date',
         ]);
 
         $user = Auth::guard('sanctum')->user();
@@ -209,6 +213,10 @@ class OrderController extends BaseController
             'latitude' => $validated['latitude'] ?? null,
             'longitude' => $validated['longitude'] ?? null,
             'notes' => $validated['notes'] ?? null,
+            'gclid' => $validated['gclid'] ?? null,
+            'gbraid' => $validated['gbraid'] ?? null,
+            'wbraid' => $validated['wbraid'] ?? null,
+            'ads_click_captured_at' => !empty($validated['ads_click_captured_at']) ? \Carbon\Carbon::parse($validated['ads_click_captured_at']) : null,
             'status' => 'en_attente',
         ]);
 

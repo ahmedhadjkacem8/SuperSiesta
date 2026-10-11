@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/apiClient';
 
 export interface SiteSettings {
@@ -32,40 +32,22 @@ const defaultSettings: SiteSettings = {
   ]),
 };
 
-// Simple singleton to cache settings between components
-let cachedSettings: SiteSettings | null = null;
-let listeners: Array<(settings: SiteSettings) => void> = [];
-
 export function useSettings() {
-  const [settings, setSettings] = useState<SiteSettings>(cachedSettings || defaultSettings);
-  const [loading, setLoading] = useState(!cachedSettings);
+  const query = useQuery({
+    queryKey: ['site-settings'],
+    queryFn: async () => {
+      try {
+        const data = await api.get<Partial<SiteSettings>>("/settings");
+        return { ...defaultSettings, ...data };
+      } catch (error) {
+        console.error('Error fetching site settings:', error);
+        throw error;
+      }
+    },
+    staleTime: 1000 * 60 * 5,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
 
-  useEffect(() => {
-    const handleChange = (newSettings: SiteSettings) => {
-      setSettings(newSettings);
-    };
-
-    listeners.push(handleChange);
-
-    if (!cachedSettings) {
-      api.get<any>("/settings")
-        .then((data) => {
-          if (data) {
-            const merged = { ...defaultSettings, ...data };
-            cachedSettings = merged;
-            listeners.forEach(l => l(merged));
-          }
-        })
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
-
-    return () => {
-      listeners = listeners.filter(l => l !== handleChange);
-    };
-  }, []);
-
-  return { settings, loading };
+  return { settings: query.data || defaultSettings, loading: query.isLoading };
 }

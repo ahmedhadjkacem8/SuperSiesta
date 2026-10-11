@@ -178,6 +178,7 @@ export const en = {
     placeAndHalf: "Single & half",
     twoPlaces: "Double",
     choosePlaceCategory: "Choose place category",
+    dimensionType: "Dimension type",
     chooseSize: "Choose size",
     noDimensionAvailable: "No dimensions available for this category.",
     warrantyYears: "years",
@@ -317,6 +318,11 @@ export const en = {
     cityRequired: "City is required",
     orderError: "Error placing order: ",
     size: "Size",
+    advanceTitle: "Made-to-order product",
+    advanceNotice: "This size requires made-to-order manufacturing. A deposit will be required to confirm production. Our team will call you after your order is validated to let you know the deposit amount and payment options.",
+    advanceCallout: "Our team will call after your order is confirmed to explain the deposit amount and payment options.",
+    confirmSelection: "Continue with this size",
+    cancelSelection: "Choose another size",
   },
 
   // Login & Register
@@ -376,6 +382,11 @@ export const en = {
       { label: "My Account", href: "/connexion" },
     ],
     contact: "Contact",
+    legalNotices: "Legal notice",
+    privacy: "Privacy",
+    conditions: "Terms",
+    security: "Security",
+    cookies: "Cookies",
     copyright: "Super Siesta Official. All rights reserved.",
   },
 

@@ -10,18 +10,20 @@ declare global {
   }
 }
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { useProduct } from "@/hooks/useProducts";
+import { ProductSize, useProduct } from "@/hooks/useProducts";
 import { useGammes } from "@/hooks/useGammes";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/hooks/useAuthSecure";
 import { useSettings } from "@/hooks/useSettings";
 import { api } from "@/lib/apiClient";
-import { Star, Shield, Truck, CreditCard, ChevronLeft, Plus, Minus, Check, Loader2, Play, Gift } from "lucide-react";
+import { Star, Shield, Truck, CreditCard, ChevronLeft, ChevronRight, Plus, Minus, Check, Loader2, Play, Gift, Phone } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { getImageUrl } from "@/utils/imageUtils";
 import { trackViewContent, trackAddToCart } from "@/services/metaPixel";
+import { trackGAContactClick, trackGAViewItem } from "@/services/analytics";
 import LucideIcon from "@/components/common/LucideIcon";
 import OrderModal, { OrderSizeGroup } from "@/components/OrderModal";
+import OrderAdvanceAlert from "@/components/OrderAdvanceAlert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLanguage } from "@/context/LanguageContext";
 import { useDimensions } from "@/hooks/useDimensions";
@@ -30,6 +32,8 @@ const normalizeDimensionLabel = (label: string | undefined | null) => {
   if (!label) return "";
   return label.toString().replace(/\s*[x×]\s*/gi, "×").trim();
 };
+
+type DimensionTypeFilter = "all" | "standard" | "special";
 
 const normalizeBooleanValue = (value: unknown): boolean => {
   if (typeof value === "boolean") return value;
@@ -56,12 +60,31 @@ const normalizeNbPlacesValue = (value: string | null | undefined) => {
   return normalized;
 };
 
-const getVisibleSizes = (sizes: any[], dimensions: any[], selectedNbPlaces: string | null) => {
-  if (!selectedNbPlaces) return sizes;
-
+const getVisibleSizes = (
+  sizes: any[],
+  dimensions: any[],
+  selectedNbPlaces: string | null,
+  selectedDimensionType: DimensionTypeFilter = "all"
+) => {
   return sizes.filter((size: any) => {
-    const matchingDimension = dimensions.find((dimension: any) => normalizeDimensionLabel(dimension.label) === normalizeDimensionLabel(size.label));
-    return matchingDimension && normalizeNbPlacesValue(String(matchingDimension.nb_places)) === selectedNbPlaces;
+    const matchingDimension = dimensions.find(
+      (dimension: any) => normalizeDimensionLabel(dimension.label) === normalizeDimensionLabel(size.label)
+    );
+
+    if (selectedNbPlaces &&
+      (!matchingDimension || normalizeNbPlacesValue(String(matchingDimension.nb_places)) !== selectedNbPlaces)
+    ) {
+      return false;
+    }
+
+    if (selectedDimensionType !== "all") {
+      const isStandard = matchingDimension
+        ? normalizeBooleanValue(matchingDimension.is_standard)
+        : true;
+      if ((selectedDimensionType === "standard") !== isStandard) return false;
+    }
+
+    return true;
   });
 };
 
@@ -71,6 +94,123 @@ const hasPlaceOptionsForProduct = (sizes: any[], dimensions: any[]) => {
     return matchingDimension && normalizeNbPlacesValue(matchingDimension.nb_places) !== null;
   });
 };
+
+function ProductGallery({ images, name }: { images: string[]; name: string }) {
+  const [index, setIndex] = useState(0);
+  const total = images.length;
+  const thumbsRef = useRef<HTMLDivElement>(null);
+  const thumbRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const prev = () => setIndex((i) => (i - 1 + total) % total);
+  const next = () => setIndex((i) => (i + 1) % total);
+
+  // Garde la miniature active visible dans la bande (sans faire défiler la page)
+  useEffect(() => {
+    const box = thumbsRef.current;
+    const btn = thumbRefs.current[index];
+    if (!box || !btn) return;
+    box.scrollTo({
+      left: btn.offsetLeft - box.clientWidth / 2 + btn.clientWidth / 2,
+      behavior: "smooth",
+    });
+  }, [index]);
+
+  return (
+    <div
+      dir="ltr"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (total < 2) return;
+        if (e.key === "ArrowLeft") prev();
+        if (e.key === "ArrowRight") next();
+      }}
+      className="space-y-3 outline-none"
+    >
+      {/* Grande image */}
+      <div className="group relative aspect-square bg-muted rounded-3xl overflow-hidden">
+        <AnimatePresence initial={false}>
+          <motion.div
+            key={index}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            drag={total > 1 ? "x" : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={(_, info) => {
+              if (info.offset.x < -70 || info.velocity.x < -500) next();
+              else if (info.offset.x > 70 || info.velocity.x > 500) prev();
+            }}
+            style={{ touchAction: "pan-y" }}
+            className="absolute inset-0"
+          >
+            <img
+              src={getImageUrl(images[index])}
+              alt={`${name} ${index + 1}`}
+              draggable={false}
+              className="w-full h-full object-cover select-none"
+            />
+          </motion.div>
+        </AnimatePresence>
+
+        {total > 1 && (
+          <>
+            {/* Compteur */}
+            <span className="absolute bottom-4 left-4 z-10 rounded-full bg-background/85 backdrop-blur px-3 py-1 text-xs font-bold tabular-nums shadow-sm">
+              {index + 1} / {total}
+            </span>
+
+            {/* Flèches */}
+            <button
+              type="button"
+              onClick={prev}
+              aria-label="Image précédente"
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-background/85 backdrop-blur shadow flex items-center justify-center transition-opacity md:opacity-0 md:group-hover:opacity-100 hover:bg-background"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={next}
+              aria-label="Image suivante"
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-background/85 backdrop-blur shadow flex items-center justify-center transition-opacity md:opacity-0 md:group-hover:opacity-100 hover:bg-background"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Petites images */}
+      {total > 1 && (
+        <div
+          ref={thumbsRef}
+          className="relative flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {images.map((img, i) => (
+            <button
+              key={i}
+              type="button"
+              ref={(el) => {
+                thumbRefs.current[i] = el;
+              }}
+              onClick={() => setIndex(i)}
+              aria-label={`Voir l'image ${i + 1}`}
+              aria-current={i === index}
+              className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${i === index
+                  ? "border-primary"
+                  : "border-border opacity-70 hover:opacity-100 hover:border-primary/50"
+                }`}
+            >
+              <img src={getImageUrl(img)} alt="" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ProduitDetail() {
   const { t, isRTL } = useLanguage();
@@ -83,8 +223,8 @@ export default function ProduitDetail() {
   const { data: gammes } = useGammes();
   const { settings } = useSettings();
   const [selectedSize, setSelectedSize] = useState<any>(null);
+  const [pendingOrderSize, setPendingOrderSize] = useState<ProductSize | null>(null);
   const [qty, setQty] = useState(1);
-  const [activeImg, setActiveImg] = useState(0);
   const [added, setAdded] = useState(false);
 
   // Reviews state (moved up so hooks order is stable)
@@ -100,6 +240,7 @@ export default function ProduitDetail() {
   const dimensions = useDimensions()
   const [submittingReview, setSubmittingReview] = useState(false)
   const [selectedNbPlaces, setSelectedNbPlaces] = useState<string | null>(null)
+  const [selectedDimensionType, setSelectedDimensionType] = useState<DimensionTypeFilter>("all")
   const hasPlaceOptions = Boolean(product && hasPlaceOptionsForProduct(product.sizes, dimensions));
 
   const TUNIS_CITIES = [
@@ -132,14 +273,24 @@ export default function ProduitDetail() {
     setSelectedNbPlaces(nbPlacesParam);
   }, [searchParams]);
 
-  // Track Meta Pixel ViewContent
+  // Track Meta Pixel ViewContent & GA4 view_item
   useEffect(() => {
     if (!product) return;
+    const price = selectedSize?.price ?? (product.sizes?.[0]?.price || 0);
+    const category = product.categorie;
+
     trackViewContent({
       id: product.id,
       name: product.name,
-      price: selectedSize?.price ?? (product.sizes?.[0]?.price || 0),
-      category: product.category,
+      price,
+      category,
+    });
+
+    trackGAViewItem({
+      id: product.id,
+      name: product.name,
+      price,
+      category,
     });
   }, [product?.id]);
 
@@ -147,15 +298,15 @@ export default function ProduitDetail() {
   useEffect(() => {
     if (!product || product.sizes.length === 0) return;
 
-    const visibleSizes = getVisibleSizes(
+    const filteredSizes = getVisibleSizes(
       product.sizes,
       dimensions,
-      hasPlaceOptions ? selectedNbPlaces : null
+      hasPlaceOptions ? selectedNbPlaces : null,
+      hasPlaceOptions ? selectedDimensionType : "all"
     );
 
-    const candidateSizes = visibleSizes.length > 0
-      ? visibleSizes
-      : product.sizes;
+    if (filteredSizes.length === 0 && selectedDimensionType !== "all") return;
+    const candidateSizes = filteredSizes.length > 0 ? filteredSizes : product.sizes;
 
 
     // Détecter changement du nombre de places
@@ -217,6 +368,7 @@ export default function ProduitDetail() {
     searchParams,
     dimensions,
     selectedNbPlaces,
+    selectedDimensionType,
     hasPlaceOptions
   ]);
 
@@ -296,7 +448,11 @@ export default function ProduitDetail() {
   // Check if user is B2B
   const isB2B = false; // Will be set from profile context
   const displayPrice = isB2B && selectedSize.resellerPrice ? selectedSize.resellerPrice : selectedSize.price;
-
+  const productGalleryImages = [product.image, ...product.images].filter(
+    (image, index, images) =>
+      Boolean(image) &&
+      images.findIndex((candidate) => getImageUrl(candidate) === getImageUrl(image)) === index
+  );
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -341,8 +497,14 @@ export default function ProduitDetail() {
   const visibleSizes = getVisibleSizes(
     product?.sizes || [],
     dimensions,
-    hasPlaceOptions ? selectedNbPlaces : null
+    hasPlaceOptions ? selectedNbPlaces : null,
+    hasPlaceOptions ? selectedDimensionType : "all"
   );
+  const dimensionTypeOptions: { value: DimensionTypeFilter; label: string }[] = [
+    { value: "all", label: t.product.all },
+    { value: "standard", label: t.shop.standard },
+    { value: "special", label: t.shop.special },
+  ];
 
   const handlePlacesSelection = (value: string | null) => {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -366,26 +528,39 @@ export default function ProduitDetail() {
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        <div className="space-y-3">
-          <div className="aspect-square bg-muted rounded-3xl overflow-hidden">
-            <img src={getImageUrl(product.images[activeImg] || product.image)} alt={product.name} className="w-full h-full object-cover" />
-          </div>
-          {product.images.length > 1 && (
-            <div className="flex gap-2">
-              {product.images.map((img, i) => (
-                <button key={i} onClick={() => setActiveImg(i)} className={`w-20 h-20 rounded-xl overflow-hidden border-2 transition-colors ${activeImg === i ? "border-primary" : "border-border"}`}>
-                  <img src={getImageUrl(img)} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* ================= GALERIE ================= */}
+        <ProductGallery
+          key={product.id}
+          images={productGalleryImages.length ? productGalleryImages : [product.image]}
+          name={product.name}
+        />
+        {/* ================= FIN GALERIE ================= */}
 
         <div className="space-y-6">
           <div>
             <span className="text-xs font-bold text-primary uppercase tracking-widest">{product.categorie}</span>
             {product.badge && <span className="ml-2 bg-secondary text-secondary-foreground text-xs font-bold px-2.5 py-0.5 rounded-full">{product.badge}</span>}
-            <h1 className="text-3xl md:text-4xl font-black mt-2">{product.name}</h1>
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <h1 className="min-w-0 text-3xl font-black md:text-4xl">{product.name}</h1>
+              {settings.contact_phone && (
+                <>
+                  <a
+                    href={`tel:${settings.contact_phone.replace(/\s+/g, '')}`}
+                    onClick={() => trackGAContactClick("call", settings.contact_phone)}
+                    className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-primary/20 bg-primary/5 px-2 py-1.5 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10 sm:gap-1.5 sm:px-2.5 sm:text-xs lg:hidden"
+                    dir="ltr"
+                    aria-label={`Appeler ${settings.contact_phone}`}
+                  >
+                    <Phone className="h-3 w-3 shrink-0" aria-hidden="true" />
+                    {settings.contact_phone}
+                  </a>
+                  <span className="hidden shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-lg font-bold text-primary lg:inline-flex" dir="ltr">
+                    <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    {settings.contact_phone}
+                  </span>
+                </>
+              )}
+            </div>
             {product.grammage && (
               <p className="text-lg font-black  mt-2 flex items-center gap-2">
                 {t.product.supportsUpTo} <span className="text-red-600">{product.grammage} kg</span> {t.product.kgPerPerson}
@@ -425,80 +600,126 @@ export default function ProduitDetail() {
           <p className="text-muted-foreground leading-relaxed">{product.description}</p>
 
           <div>
-            {hasPlaceOptions && searchParams.get("nbPlaces") ? (
-              // Accès via URL avec nbPlaces → badge verrouillé (lecture seule)
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-sm font-bold text-muted-foreground">{t.product.category} :</span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold bg-primary text-primary-foreground">
-                  {selectedNbPlaces === "1" ? t.product.onePlace : selectedNbPlaces === "1.5" ? t.product.placeAndHalf : selectedNbPlaces === "2" ? t.product.twoPlaces : selectedNbPlaces}
-                </span>
-              </div>
-            ) : hasPlaceOptions ? (
-              // Accès libre → sélecteur toujours visible
-              <>
-                <h3 className="text-sm font-bold mb-3">{t.product.choosePlaceCategory}</h3>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {[
-                    { value: null, label: t.product.all, title: t.product.all },
-                    { value: "1", label: t.product.onePlace, title: t.product.onePlace },
-                    { value: "1.5", label: t.product.placeAndHalf, title: t.product.placeAndHalf },
-                    { value: "2", label: t.product.twoPlaces, title: t.product.twoPlaces },
-                  ].map((option) => (
-                    <button
-                      key={option.value ?? "tous"}
-                      onClick={() => setSelectedNbPlaces(option.value)}
-                      className={`px-3 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${selectedNbPlaces === option.value
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border hover:border-primary"
-                        }`}
-                      title={option.title}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+            {hasPlaceOptions && (
+              <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-12">
+                {/* col-md-7 */}
+                <div className="min-w-0 md:col-span-7">
+                  <h3 className="mb-3 text-sm font-bold whitespace-nowrap">
+                    {searchParams.get("nbPlaces") ? t.product.category : t.product.choosePlaceCategory}
+                  </h3>
+
+                  <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
+                    {searchParams.get("nbPlaces") ? (
+                      <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-xl border-2 border-primary bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
+                        {selectedNbPlaces === "1"
+                          ? t.product.onePlace
+                          : selectedNbPlaces === "1.5"
+                            ? t.product.placeAndHalf
+                            : selectedNbPlaces === "2"
+                              ? t.product.twoPlaces
+                              : selectedNbPlaces}
+                      </span>
+                    ) : (
+                      [
+                        { value: null, label: t.product.all },
+                        { value: "1", label: t.product.onePlace },
+                        { value: "1.5", label: t.product.placeAndHalf },
+                        { value: "2", label: t.product.twoPlaces },
+                      ].map((option) => (
+                        <button
+                          key={option.value ?? "tous"}
+                          onClick={() => setSelectedNbPlaces(option.value)}
+                          aria-pressed={selectedNbPlaces === option.value}
+                          title={option.label}
+                          className={`shrink-0 whitespace-nowrap rounded-xl border-2 px-3 py-2 text-sm font-semibold transition-all ${selectedNbPlaces === option.value
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border hover:border-primary"
+                            }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </>
-            ) : null}
+
+                {/* col-md-5 */}
+                <div className="min-w-0 md:col-span-5">
+                  <h3 className="mb-3 text-sm font-bold whitespace-nowrap">{t.product.dimensionType}</h3>
+
+                  <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
+                    {dimensionTypeOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setSelectedDimensionType(option.value)}
+                        aria-pressed={selectedDimensionType === option.value}
+                        className={`shrink-0 whitespace-nowrap rounded-xl border-2 px-3 py-2 text-sm font-semibold transition-all ${selectedDimensionType === option.value
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border hover:border-primary"
+                          }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <h3 className="text-sm font-bold mb-3">{t.product.chooseSize}</h3>
 
-            {selectedNbPlaces && visibleSizes.length === 0 ? (
+            {visibleSizes.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                {t.product.noDimensionAvailable}
+                {selectedNbPlaces && selectedDimensionType === "all"
+                  ? t.product.noDimensionAvailable
+                  : t.shop.noDimensions}
               </p>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {(selectedNbPlaces ? visibleSizes : product.sizes).map((size) => {
+                {visibleSizes.map((size) => {
                   const isSelected = selectedSize?.label === size.label;
                   const isSurCommande = size.price === 0;
+                  const dimension = dimensions.find(
+                    (item) => normalizeDimensionLabel(item.label) === normalizeDimensionLabel(size.label)
+                  );
+                  const isStandard = dimension
+                    ? normalizeBooleanValue(dimension.is_standard)
+                    : true;
 
                   const baseClass = "relative grow px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all";
-
-                  const selectedClass = "border-primary bg-primary text-primary-foreground ring-2 ring-[hsl(var(--primary))] ring-offset-2 shadow-md";
-
-                  const normalClass = "border-border hover:border-primary";
-
-                  const surCommandeClass = "border-amber-300 bg-amber-50 text-amber-800";
-
-                  const selectedSurCommandeClass = "border-amber-500 bg-amber-500 text-white ring-2 ring-amber-300 ring-offset-2 shadow-md";
-
-                  let cls = normalClass;
-
-                  if (isSelected && isSurCommande) {
-                    cls = selectedSurCommandeClass;
-                  } else if (isSelected) {
-                    cls = selectedClass;
-                  } else if (isSurCommande) {
-                    cls = surCommandeClass;
-                  }
+                  const selectedClass = isStandard
+                    ? "border-primary bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 shadow-md"
+                    : "border-amber-500 bg-amber-500 text-white ring-2 ring-amber-300 ring-offset-2 shadow-md";
+                  const normalClass = isStandard
+                    ? "border-primary bg-primary/5 hover:bg-primary hover:text-primary-foreground hover:shadow-md"
+                    : "border-amber-200 bg-amber-50/30 text-amber-900 hover:border-amber-400 hover:bg-amber-100";
 
                   return (
                     <button
                       key={size.label}
-                      onClick={() => setSelectedSize(size)}
-                      className={`${baseClass} ${cls}`}
+                      onClick={() => {
+                        if (!isStandard) {
+                          setPendingOrderSize(size);
+                          return;
+                        }
+                        setSelectedSize(size);
+                      }}
+                      aria-pressed={isSelected}
+                      className={`${baseClass} ${isSelected ? selectedClass : normalClass}`}
                     >
-                      {size.label}
+                      <span className="flex items-center justify-between gap-2">
+                        <span>{size.label}</span>
+                        <span
+                          className={`shrink-0 rounded-md px-1.5 py-0.5 text-[8px] font-black uppercase tracking-tight ${isSelected
+                              ? "bg-white/20 text-white"
+                              : isStandard
+                                ? "bg-primary/10 text-primary"
+                                : "bg-amber-500 text-white"
+                            }`}
+                        >
+                          {isStandard ? t.shop.standard : t.shop.special}
+                        </span>
+                      </span>
 
                       <span className="block text-xs mt-1 opacity-75">
                         {isSurCommande
@@ -871,6 +1092,16 @@ export default function ProduitDetail() {
         open={orderModalOpen}
         onOpenChange={(open) => setOrderModalOpen(open)}
         sizeGroup={orderModalGroup ?? "1 Place"}
+      />
+      <OrderAdvanceAlert
+        open={Boolean(pendingOrderSize)}
+        onOpenChange={(open) => {
+          if (!open) setPendingOrderSize(null);
+        }}
+        onConfirm={() => {
+          if (pendingOrderSize) setSelectedSize(pendingOrderSize);
+          setPendingOrderSize(null);
+        }}
       />
     </main>
 

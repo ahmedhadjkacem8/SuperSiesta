@@ -9,6 +9,8 @@ import { api } from "@/lib/apiClient";
 import { formatPrice } from "@/lib/utils";
 import { getImageUrl } from "@/utils/imageUtils";
 import { generateEventId, trackInitiateCheckout, trackPurchase, getFbpCookie, getFbcCookie } from "@/services/metaPixel";
+import { trackGABeginCheckout, trackGAPurchase, trackGAContactClick } from "@/services/analytics";
+import { getAdsClickIds } from "@/services/adsAttribution";
 import { useLanguage } from "@/context/LanguageContext";
 
 const villes = [
@@ -96,7 +98,7 @@ export default function Commander() {
   const [isProspectSaved, setIsProspectSaved] = useState(false);
   const purchaseEventIdRef = useRef<string>(generateEventId());
 
-  // Track Meta Pixel InitiateCheckout on mount
+  // Track Meta Pixel InitiateCheckout & GA4 begin_checkout on mount
   useEffect(() => {
     if (items.length > 0) {
       const checkoutItems = items.map((i) => ({
@@ -104,6 +106,7 @@ export default function Commander() {
         name: i.product.name,
         price: i.size.price,
         quantity: i.quantity,
+        category: (i.product as any).categorie || i.product.category,
       }));
       trackInitiateCheckout(
         checkoutItems,
@@ -111,6 +114,7 @@ export default function Commander() {
         undefined,
         user ? { email: user.email, full_name: user.name } : undefined
       );
+      trackGABeginCheckout(checkoutItems, total);
     }
   }, []);
 
@@ -231,6 +235,7 @@ export default function Commander() {
     setBlSending(true);
     try {
       await api.put(`/orders/${lastOrderId}/bl-contact`, { bl_contact: blContact.trim() });
+      trackGAContactClick("whatsapp", blContact.trim());
       setBlSent(true);
     } catch {
       // silent — non-blocking
@@ -385,12 +390,14 @@ export default function Commander() {
         event_source_url: typeof window !== "undefined" ? window.location.href : undefined,
         fbp: getFbpCookie(),
         fbc: getFbcCookie(),
+        ...getAdsClickIds(),
       };
 
       const response = await api.post<any>("/orders", payload);
       
-      // Track Meta Pixel Purchase client-side (deduplicated by meta_event_id)
       const orderId = response?.order?.id || response?.id || orderNumber;
+
+      // Track Meta Pixel Purchase client-side (deduplicated by meta_event_id)
       trackPurchase(
         {
           orderId: String(orderId),
@@ -404,6 +411,52 @@ export default function Commander() {
         },
         purchaseEventIdRef.current
       );
+
+      // Track Google Ads / GA4 Purchase with anti-duplicate guard
+      try {
+        const storageKey = "ga_purchased_orders";
+        const raw = sessionStorage.getItem(storageKey);
+        const purchasedOrders: string[] = raw ? JSON.parse(raw) : [];
+        if (!purchasedOrders.includes(String(orderId))) {
+          trackGAPurchase(
+            String(orderId),
+            total,
+            items.map((i) => ({
+              id: i.product.id,
+              name: i.product.name,
+              price: i.size.price,
+              quantity: i.quantity,
+              category: (i.product as any).categorie || i.product.category,
+            })),
+            {
+              email: form.email,
+              phone: form.telephone,
+              first_name: form.full_name,
+              city: form.ville,
+            }
+          );
+          purchasedOrders.push(String(orderId));
+          sessionStorage.setItem(storageKey, JSON.stringify(purchasedOrders));
+        }
+      } catch {
+        trackGAPurchase(
+          String(orderId),
+          total,
+          items.map((i) => ({
+            id: i.product.id,
+            name: i.product.name,
+            price: i.size.price,
+            quantity: i.quantity,
+            category: (i.product as any).categorie || i.product.category,
+          })),
+          {
+            email: form.email,
+            phone: form.telephone,
+            first_name: form.full_name,
+            city: form.ville,
+          }
+        );
+      }
 
       // Mark prospect as converted if it exists
       if (prospectId) {
@@ -644,6 +697,11 @@ export default function Commander() {
                   </div>
                 </div>
               ))}
+              {surCommandeCount > 0 && (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm leading-relaxed text-amber-950">
+                  {t.checkout.advanceNotice}
+                </div>
+              )}
             </div>
 
             <div className="border-t border-border pt-4 space-y-3">

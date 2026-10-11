@@ -1,4 +1,4 @@
-import { ShoppingCart, Menu, X, User, Globe, Check } from "lucide-react";
+import { ShoppingCart, Menu, X, User, Globe, Check, Phone } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/hooks/useAuthSecure";
 import { useLanguage } from "@/context/LanguageContext";
@@ -8,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useSettings } from "@/hooks/useSettings";
 import { useSocialNetworks } from "@/hooks/useSocialNetworks";
 import LucideIcon from "@/components/common/LucideIcon";
+import { trackGAContactClick } from "@/services/analytics";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,6 +95,25 @@ export default function Navbar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
+          {settings.contact_phone && (
+            <>
+              <a
+                href={`tel:${settings.contact_phone.replace(/\s+/g, '')}`}
+                onClick={() => trackGAContactClick("call", settings.contact_phone)}
+                className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-primary/20 bg-primary/5 px-2 py-1.5 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10 sm:gap-1.5 sm:px-2.5 sm:text-xs lg:hidden"
+                dir="ltr"
+                aria-label={`Appeler ${settings.contact_phone}`}
+              >
+                <Phone className="h-3 w-3 shrink-0" aria-hidden="true" />
+                {settings.contact_phone}
+              </a>
+              <span className="hidden items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-sm font-bold text-primary lg:inline-flex" dir="ltr">
+                <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                {settings.contact_phone}
+              </span>
+            </>
+          )}
+
           {/* User Account / Login */}
           <Link 
             to={user ? "/mon-compte" : "/connexion"} 
@@ -105,19 +125,27 @@ export default function Navbar() {
 
           {/* Socials */}
           <div className="hidden lg:flex items-center gap-1.5">
-            {socials.filter(s => s.is_active).slice(0, 3).map((s) => (
-              <a
-                key={s.id}
-                href={s.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={s.name}
-                className="w-8 h-8 flex items-center justify-center bg-accent rounded-full transition-all hover:scale-110"
-                style={{ color: s.icon?.hex_color || 'currentColor' }}
-              >
-                <LucideIcon name={s.icon?.lucide_name} label={s.name} className="w-4 h-4" />
-              </a>
-            ))}
+            {socials.filter(s => s.is_active).slice(0, 3).map((s) => {
+              const isWhatsapp = s.name.toLowerCase().includes('whatsapp') || s.icon?.lucide_name?.toLowerCase().includes('message');
+              return (
+                <a
+                  key={s.id}
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    if (isWhatsapp) {
+                      trackGAContactClick("whatsapp", s.name);
+                    }
+                  }}
+                  title={s.name}
+                  className="w-8 h-8 flex items-center justify-center bg-accent rounded-full transition-all hover:scale-110"
+                  style={{ color: s.icon?.hex_color || 'currentColor' }}
+                >
+                  <LucideIcon name={s.icon?.lucide_name} label={s.name} className="w-4 h-4" />
+                </a>
+              );
+            })}
           </div>
 
           {/* Cart Trigger */}

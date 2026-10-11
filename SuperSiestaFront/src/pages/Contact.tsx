@@ -8,6 +8,7 @@ import LucideIcon from "@/components/common/LucideIcon";
 import { useAuth } from "@/hooks/useAuthSecure";
 import CachedImage from "@/components/CachedImage";
 import { trackLead } from "@/services/metaPixel";
+import { trackGALead, trackGAContactClick } from "@/services/analytics";
 import { useLanguage } from "@/context/LanguageContext";
 
 interface Showroom {
@@ -77,6 +78,12 @@ export default function Contact() {
       await api.post("/reviews", { ...form, rating });
       trackLead("Contact Form", undefined, {
         full_name: form.name,
+        email: form.email,
+        phone: form.phone,
+        city: form.city,
+      });
+      trackGALead("Contact Form", {
+        first_name: form.name,
         email: form.email,
         phone: form.phone,
         city: form.city,
@@ -172,7 +179,17 @@ export default function Contact() {
             <div className="bg-card border border-border rounded-2xl p-6 space-y-4 mb-8">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center"><Phone className="w-5 h-5 text-primary" /></div>
-                <div><p className="text-sm font-bold">{t.contact.phone}</p><p className="text-sm text-muted-foreground" dir="ltr">{settings.contact_phone || "+216 71 000 000"}</p></div>
+                <div>
+                  <p className="text-sm font-bold">{t.contact.phone}</p>
+                  <a 
+                    href={`tel:${(settings.contact_phone || "+21671000000").replace(/\s+/g, '')}`} 
+                    onClick={() => trackGAContactClick("call", settings.contact_phone || "+216 71 000 000")}
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors" 
+                    dir="ltr"
+                  >
+                    {settings.contact_phone || "+216 71 000 000"}
+                  </a>
+                </div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center"><Mail className="w-5 h-5 text-primary" /></div>

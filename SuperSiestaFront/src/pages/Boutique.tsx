@@ -8,6 +8,7 @@ import { SlidersHorizontal, Loader2, ChevronDown, Check, X } from "lucide-react"
 import { formatPrice } from "@/lib/utils";
 import { api } from "@/lib/apiClient";
 import { trackSearch } from "@/services/metaPixel";
+import { trackGASearch } from "@/services/analytics";
 import { useLanguage } from "@/context/LanguageContext";
 
 // ------------------------------------------------------------------
@@ -240,6 +241,7 @@ export default function Boutique() {
 
     if (searchTerms) {
       trackSearch(searchTerms);
+      trackGASearch(searchTerms);
     }
 
     // Update URL params to reflect active filters

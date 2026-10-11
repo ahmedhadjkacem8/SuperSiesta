@@ -178,6 +178,7 @@ export const ar = {
     placeAndHalf: "بلاصة و نص",
     twoPlaces: "2 بلايص",
     choosePlaceCategory: "اختار صنف البلاصات",
+    dimensionType: "نوع الأبعاد",
     chooseSize: "اختار المقاس",
     noDimensionAvailable: "ما فمّاش مقاسات متوفّرة لهذا الصنف.",
     warrantyYears: "سنة",
@@ -317,6 +318,11 @@ export const ar = {
     cityRequired: "المدينة إجبارية",
     orderError: "حدث خطأ أثناء تسجيل الطلبية: ",
     size: "المقاس",
+    advanceTitle: "منتج يُصنع حسب الطلب",
+    advanceNotice: "يتطلب هذا المقاس تصنيعًا حسب الطلب. سيتم طلب تسبيق لتأكيد التصنيع. سيتصل بكم فريقنا هاتفياً بعد تأكيد طلبكم لإبلاغكم بمبلغ التسبيق وطرق الدفع.",
+    advanceCallout: "سيتصل بكم فريقنا بعد تأكيد الطلب لشرح مبلغ التسبيق وطرق الدفع.",
+    confirmSelection: "متابعة بهذا المقاس",
+    cancelSelection: "اختيار مقاس آخر",
   },
 
   // Login & Register
@@ -376,6 +382,11 @@ export const ar = {
       { label: "حسابي", href: "/connexion" },
     ],
     contact: "اتّصل بينا",
+    legalNotices: "الإشعارات القانونية",
+    privacy: "الخصوصية",
+    conditions: "الشروط",
+    security: "الأمان",
+    cookies: "ملفات تعريف الارتباط",
     copyright: "Super Siesta الرسمي. جميع الحقوق محفوظة.",
   },
 

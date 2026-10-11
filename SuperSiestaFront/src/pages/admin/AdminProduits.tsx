@@ -7,12 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import ImageUpload from "@/components/ImageUpload";
+import MultiImageUpload from "@/components/MultiImageUpload";
 import { api } from "@/lib/apiClient";
 import { Plus, Trash2, Pencil, X, DollarSign, Gift } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { confirmDelete } from "@/lib/swal";
+import { getImageUrl } from "@/utils/imageUtils";
 
 interface Product {
   id: string;
@@ -48,6 +50,8 @@ interface FormState {
   fermete: string;
   image_file: File | null;
   image_preview: string;
+  gallery_files: File[];
+  gallery_preview: string[];
   description: string;
   badge: string;
   in_promo: boolean;
@@ -68,7 +72,8 @@ export default function AdminProduits() {
 
   const [form, setForm] = useState<FormState>({
     name: "", slug: "", categorie: "", fermete: "",
-    image_file: null, image_preview: "", description: "", badge: "", in_promo: false, specs: "", gamme: "", grammage: ""
+    image_file: null, image_preview: "", gallery_files: [], gallery_preview: [],
+    description: "", badge: "", in_promo: false, specs: "", gamme: "", grammage: ""
   });
   const [sizes, setSizes] = useState<ProductSize[]>([
     { label: "80×190", price: 0, reseller_price: null, original_price: null }
@@ -96,7 +101,11 @@ export default function AdminProduits() {
   useEffect(() => { load(); }, []);
 
   const resetForm = () => {
-    setForm({ name: "", slug: "", categorie: "", fermete: "", image_file: null, image_preview: "", description: "", badge: "", in_promo: false, specs: "", gamme: "", grammage: "" });
+    setForm({
+      name: "", slug: "", categorie: "", fermete: "", image_file: null, image_preview: "",
+      gallery_files: [], gallery_preview: [], description: "", badge: "", in_promo: false,
+      specs: "", gamme: "", grammage: ""
+    });
     setSizes([{ label: "80×190", price: 0, reseller_price: null, original_price: null }]);
 
     setEditing(null);
@@ -131,6 +140,9 @@ export default function AdminProduits() {
     if (form.image_file) {
       formData.append("image", form.image_file);
     }
+    formData.append("images_present", "1");
+    form.gallery_preview.forEach((image) => formData.append("images[]", image));
+    form.gallery_files.forEach((image) => formData.append("new_images[]", image));
 
     try {
       let productId = editing?.id;
@@ -181,12 +193,17 @@ export default function AdminProduits() {
     setForm({
       name: p.name, slug: p.slug, categorie: p.categorie, fermete: p.fermete,
       image_file: null, image_preview: p.image, description: p.description, badge: p.badge || "",
+      gallery_files: [], gallery_preview: (p.images || []).map(getImageUrl),
       in_promo: p.in_promo, specs: (p.specs || []).join("\n"), gamme: p.gamme || "", grammage: p.grammage || ""
     });
     const [productData, sizesData] = await Promise.all([
       api.get<Product>(`/products/${p.id}`),
       api.get<any[]>(`/products/${p.id}/sizes`).catch(() => [])
     ]);
+    setForm((current) => ({
+      ...current,
+      gallery_preview: (productData.images || p.images || []).map(getImageUrl),
+    }));
     
     if (sizesData && sizesData.length > 0) {
       setSizes(sizesData.map((d: any) => ({
@@ -257,6 +274,17 @@ export default function AdminProduits() {
                 preview={form.image_preview}
                 label="Image principale du produit"
                 placeholder="Glissez ou cliquez pour uploader l'image"
+              />
+              <MultiImageUpload
+                value={form.gallery_files}
+                onChange={(files) => setForm({ ...form, gallery_files: files })}
+                onRemoveExisting={(index) => setForm({
+                  ...form,
+                  gallery_preview: form.gallery_preview.filter((_, imageIndex) => imageIndex !== index),
+                })}
+                preview={form.gallery_preview}
+                label="Catalogue d'images du produit"
+                placeholder="Glissez ou cliquez pour ajouter des images au catalogue"
               />
               <Textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} />
               <Textarea placeholder="Spécifications (une par ligne)" value={form.specs} onChange={(e) => setForm({ ...form, specs: e.target.value })} rows={4} />

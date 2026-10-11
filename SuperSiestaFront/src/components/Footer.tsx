@@ -5,6 +5,8 @@ import { useSettings } from "@/hooks/useSettings";
 import { useSocialNetworks } from "@/hooks/useSocialNetworks";
 import LucideIcon from "@/components/common/LucideIcon";
 
+import { trackGAContactClick } from "@/services/analytics";
+
 export default function Footer() {
   const { t } = useLanguage();
   const { settings } = useSettings();
@@ -12,7 +14,7 @@ export default function Footer() {
 
   return (
     <footer className="bg-foreground text-background mt-20">
-      <div className="max-w-7xl mx-auto px-4 py-14 grid grid-cols-1 md:grid-cols-4 gap-10">
+      <div className="max-w-7xl mx-auto px-4 py-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
         <div className="md:col-span-1">
           <div className="flex items-center gap-2 mb-4">
             <img src="/images/logo.png" alt="Super Siesta" className="h-10 w-auto" />
@@ -21,18 +23,26 @@ export default function Footer() {
             {settings.footer_description || `${t.footer.tagline} ${t.footer.taglineSub}`}
           </p>
           <div className="flex gap-3 mt-4">
-            {socials.filter(s => s.is_active).map((s) => (
-              <a 
-                key={s.id} 
-                href={s.url} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="p-2 bg-background/10 rounded-xl transition-all hover:scale-110"
-                style={{ color: s.icon?.hex_color || 'currentColor' }}
-              >
-                <LucideIcon name={s.icon?.lucide_name} label={s.name} className="w-4 h-4" />
-              </a>
-            ))}
+            {socials.filter(s => s.is_active).map((s) => {
+              const isWhatsapp = s.name.toLowerCase().includes('whatsapp') || s.icon?.lucide_name?.toLowerCase().includes('message');
+              return (
+                <a 
+                  key={s.id} 
+                  href={s.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  onClick={() => {
+                    if (isWhatsapp) {
+                      trackGAContactClick("whatsapp", s.name);
+                    }
+                  }}
+                  className="p-2 bg-background/10 rounded-xl transition-all hover:scale-110"
+                  style={{ color: s.icon?.hex_color || 'currentColor' }}
+                >
+                  <LucideIcon name={s.icon?.lucide_name} label={s.name} className="w-4 h-4" />
+                </a>
+              );
+            })}
           </div>
         </div>
 
@@ -79,11 +89,24 @@ export default function Footer() {
           <ul className="space-y-3 text-sm text-background/70">
             <li className="flex items-center gap-2">
               <Phone className="w-4 h-4 text-primary flex-shrink-0" />
-              <span dir="ltr">{settings.contact_phone || "+216 71 000 000"}</span>
+              <a
+                href={`tel:${(settings.contact_phone || "+21671000000").replace(/\s+/g, '')}`}
+                onClick={() => trackGAContactClick("call", settings.contact_phone || "+216 71 000 000")}
+                className="hover:text-primary transition-colors"
+                dir="ltr"
+              >
+                {settings.contact_phone || "+216 71 000 000"}
+              </a>
             </li>
             <li className="flex items-center gap-2">
               <Mail className="w-4 h-4 text-primary flex-shrink-0" />
-              <span dir="ltr">{settings.contact_email || "contact@supersiesta.tn"}</span>
+              <a
+                href={`mailto:${settings.contact_email || "contact@supersiesta.tn"}`}
+                className="hover:text-primary transition-colors"
+                dir="ltr"
+              >
+                {settings.contact_email || "contact@supersiesta.tn"}
+              </a>
             </li>
             <li className="flex items-start gap-2">
               <MapPin className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
@@ -91,9 +114,27 @@ export default function Footer() {
             </li>
           </ul>
         </div>
+
+        <div>
+          <h3 className="font-bold mb-4 text-background">{t.footer.legalNotices}</h3>
+          <ul className="space-y-2 text-sm text-background/70">
+            {[
+              { label: t.footer.privacy, href: "/mentions-legales#confidentialite" },
+              { label: t.footer.conditions, href: "/mentions-legales#conditions" },
+              { label: t.footer.security, href: "/mentions-legales#securite" },
+              { label: t.footer.cookies, href: "/mentions-legales#cookies" },
+            ].map((link) => (
+              <li key={link.href}>
+                <Link to={link.href} className="hover:text-primary transition-colors">
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
-      <div className="border-t border-background/10 py-5 text-center text-xs text-background/40">
+      <div className="border-t border-background/10 px-4 py-5 text-center text-xs text-background/40">
         © {new Date().getFullYear()} {t.footer.copyright}
       </div>
     </footer>

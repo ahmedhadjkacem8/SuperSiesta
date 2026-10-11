@@ -18,6 +18,7 @@ import Connexion from "./pages/Connexion";
 import MonCompte from "./pages/MonCompte";
 import APropos from "./pages/APropos";
 import Contact from "./pages/Contact";
+import MentionsLegales from "./pages/MentionsLegales";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import NotFound from "./pages/NotFound";
@@ -53,11 +54,16 @@ const queryClient = new QueryClient();
 
 import { usePageViewTracking } from "@/hooks/usePageViewTracking";
 import { initAdvancedMatching } from "@/services/metaPixel";
+import { initAdsAttribution } from "@/services/adsAttribution";
 import { useAuth } from "@/hooks/useAuthSecure";
 
 function PageViewTracker() {
   usePageViewTracking();
   const { user } = useAuth();
+
+  React.useEffect(() => {
+    initAdsAttribution();
+  }, []);
 
   React.useEffect(() => {
     if (user) {
@@ -75,15 +81,19 @@ function PageViewTracker() {
 }
 
 function PublicLayout({ children }: { children: React.ReactNode }) {
-  // Ensure we scroll to top on each navigation so the user doesn't stay stuck at footer
   const loc = useLocation();
   React.useEffect(() => {
-    try {
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    } catch (e) {
-      window.scrollTo(0, 0);
-    }
-  }, [loc.pathname]);
+    const frame = window.requestAnimationFrame(() => {
+      if (loc.hash) {
+        document.getElementById(loc.hash.slice(1))?.scrollIntoView({ block: "start" });
+        return;
+      }
+
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [loc.pathname, loc.hash]);
 
   return (
     <>
@@ -116,6 +126,7 @@ const App = () => (
               <Route path="/mon-compte" element={<PublicLayout><MonCompte /></PublicLayout>} />
               <Route path="/a-propos" element={<PublicLayout><APropos /></PublicLayout>} />
               <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
+              <Route path="/mentions-legales" element={<PublicLayout><MentionsLegales /></PublicLayout>} />
               <Route path="/blog" element={<PublicLayout><Blog /></PublicLayout>} />
               <Route path="/blog/:slug" element={<PublicLayout><BlogPost /></PublicLayout>} />
               <Route path="/showrooms" element={<PublicLayout><Showrooms /></PublicLayout>} />

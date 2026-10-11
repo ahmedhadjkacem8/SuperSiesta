@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, Check, Loader2, ArrowLeft, ArrowRight } from "lucide-react";
 import { Product } from "@/hooks/useProducts";
@@ -8,6 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { formatPrice } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
 import { useDimensions } from "@/hooks/useDimensions";
+import { useAuth } from "@/hooks/useAuthSecure";
+import { generateEventId, trackPurchase, getFbpCookie, getFbcCookie } from "@/services/metaPixel";
+import { trackGAPurchase, trackGAContactClick } from "@/services/analytics";
+import { getAdsClickIds } from "@/services/adsAttribution";
+import OrderAdvanceAlert from "@/components/OrderAdvanceAlert";
 
 export type OrderSizeGroup = "1 Place" | "1 Place et Demi" | "2 Places";
 
@@ -60,6 +65,7 @@ interface OrderModalProps {
 export default function OrderModal({ product, open, onOpenChange, sizeGroup, skipSizeSelection = false }: OrderModalProps) {
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
+  const { user } = useAuth();
   const dimensions = useDimensions();
 
   const dimensionByLabel = useMemo(() => {
@@ -92,6 +98,7 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup, ski
   }, [product.sizes, sizeGroup, skipSizeSelection, dimensionByLabel]);
 
   const [selectedSizeId, setSelectedSizeId] = useState<string>("");
+  const [pendingOrderSizeId, setPendingOrderSizeId] = useState<string | null>(null);
   const selectedSize = availableSizes.find((size) => size.id === selectedSizeId) || availableSizes[0];
   const [step, setStep] = useState(1);
   const [qty, setQty] = useState(1);
@@ -101,6 +108,8 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup, ski
   const [blContact, setBlContact] = useState("");
   const [blSent, setBlSent] = useState(false);
   const [blSending, setBlSending] = useState(false);
+  const purchaseEventIdRef = useRef<string>(generateEventId());
+
   const [form, setForm] = useState({
     full_name: "",
     telephone: "",
@@ -143,6 +152,9 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup, ski
     return Object.keys(nextErrors).length === 0;
   };
 
+  const isSurCommande = selectedSize ? selectedSize.price <= 0 : false;
+  const totalPrice = selectedSize && !isSurCommande ? selectedSize.price * qty : 0;
+
   const handleSubmit = async () => {
     if (!selectedSize) return;
     setSubmitting(true);
@@ -154,6 +166,11 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup, ski
         address: form.adresse || "",
         city: form.ville,
         notes: form.notes || "",
+        meta_event_id: purchaseEventIdRef.current,
+        event_source_url: typeof window !== "undefined" ? window.location.href : undefined,
+        fbp: getFbpCookie(),
+        fbc: getFbcCookie(),
+        ...getAdsClickIds(),
         items: [
           {
             product_id: product.id,
@@ -165,7 +182,79 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup, ski
         ],
       });
       const orderId = response?.order?.id || response?.id;
-      if (orderId) setLastOrderId(orderId);
+      if (orderId) {
+        setLastOrderId(orderId);
+
+        // Track Meta Pixel Purchase client-side (deduplicated by meta_event_id with backend CAPI)
+        trackPurchase(
+          {
+            orderId: String(orderId),
+            value: totalPrice,
+            items: [
+              {
+                id: product.id,
+                name: product.name,
+                price: selectedSize.price,
+                quantity: qty,
+              },
+            ],
+          },
+          purchaseEventIdRef.current
+        );
+
+        // Track Google Ads / GA4 Purchase with anti-duplicate guard
+        try {
+          const storageKey = "ga_purchased_orders";
+          const raw = sessionStorage.getItem(storageKey);
+          const purchasedOrders: string[] = raw ? JSON.parse(raw) : [];
+          if (!purchasedOrders.includes(String(orderId))) {
+            trackGAPurchase(
+              String(orderId),
+              totalPrice,
+              [
+                {
+                  id: product.id,
+                  name: product.name,
+                  price: selectedSize.price,
+                  quantity: qty,
+                  category: product.categorie || product.category,
+                },
+              ],
+              {
+                email: user?.email || undefined,
+                phone: form.telephone,
+                first_name: form.full_name,
+                city: form.ville,
+              }
+            );
+            purchasedOrders.push(String(orderId));
+            sessionStorage.setItem(storageKey, JSON.stringify(purchasedOrders));
+          }
+        } catch {
+          trackGAPurchase(
+            String(orderId),
+            totalPrice,
+            [
+              {
+                id: product.id,
+                name: product.name,
+                price: selectedSize.price,
+                quantity: qty,
+                category: product.categorie || product.category,
+              },
+            ],
+            {
+              email: user?.email || undefined,
+              phone: form.telephone,
+              first_name: form.full_name,
+              city: form.ville,
+            }
+          );
+        }
+
+        // Generate new eventId for next possible order
+        purchaseEventIdRef.current = generateEventId();
+      }
       setSuccess(true);
     } catch (error: any) {
       toast.error(`Erreur lors de l'envoi de la commande : ${error?.message || "Veuillez réessayer"}`);
@@ -173,9 +262,6 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup, ski
       setSubmitting(false);
     }
   };
-
-  const isSurCommande = selectedSize ? selectedSize.price <= 0 : false;
-  const totalPrice = selectedSize && !isSurCommande ? selectedSize.price * qty : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -257,11 +343,22 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup, ski
                       placeholder="WhatsApp ou Email"
                       value={blContact}
                       onChange={(e) => setBlContact(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && blContact.trim() && lastOrderId) { setBlSending(true); api.put(`/orders/${lastOrderId}/bl-contact`, { bl_contact: blContact.trim() }).finally(() => { setBlSending(false); setBlSent(true); }); } }}
+                      onKeyDown={(e) => { 
+                        if (e.key === 'Enter' && blContact.trim() && lastOrderId) { 
+                          setBlSending(true); 
+                          trackGAContactClick("whatsapp", blContact.trim());
+                          api.put(`/orders/${lastOrderId}/bl-contact`, { bl_contact: blContact.trim() }).finally(() => { setBlSending(false); setBlSent(true); }); 
+                        } 
+                      }}
                       className="flex-1 px-4 py-2.5 border-2 border-border rounded-xl bg-background text-sm focus:outline-none focus:border-primary transition-colors"
                     />
                     <button
-                      onClick={() => { if (!blContact.trim() || !lastOrderId) return; setBlSending(true); api.put(`/orders/${lastOrderId}/bl-contact`, { bl_contact: blContact.trim() }).finally(() => { setBlSending(false); setBlSent(true); }); }}
+                      onClick={() => { 
+                        if (!blContact.trim() || !lastOrderId) return; 
+                        setBlSending(true); 
+                        trackGAContactClick("whatsapp", blContact.trim());
+                        api.put(`/orders/${lastOrderId}/bl-contact`, { bl_contact: blContact.trim() }).finally(() => { setBlSending(false); setBlSent(true); }); 
+                      }}
                       disabled={!blContact.trim() || blSending}
                       className="px-4 py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 flex-shrink-0"
                     >
@@ -320,7 +417,13 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup, ski
                           <button
                             key={size.id}
                             type="button"
-                            onClick={() => setSelectedSizeId(size.id)}
+                            onClick={() => {
+                              if (size.price <= 0) {
+                                setPendingOrderSizeId(size.id);
+                                return;
+                              }
+                              setSelectedSizeId(size.id);
+                            }}
                             className={`${baseClass} ${sizeClass}`}
                           >
                             <div className="flex h-full flex-col justify-between">
@@ -493,6 +596,16 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup, ski
           )}
         </div>
       </DialogContent>
+      <OrderAdvanceAlert
+        open={pendingOrderSizeId !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setPendingOrderSizeId(null);
+        }}
+        onConfirm={() => {
+          if (pendingOrderSizeId !== null) setSelectedSizeId(pendingOrderSizeId);
+          setPendingOrderSizeId(null);
+        }}
+      />
     </Dialog>
   );
 }

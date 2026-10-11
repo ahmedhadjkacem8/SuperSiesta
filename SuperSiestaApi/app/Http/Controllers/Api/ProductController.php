@@ -64,8 +64,8 @@ class ProductController extends BaseController
             'fermete'     => 'required|string',
             'gamme'       => 'nullable|string',
             'image'       => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:204800',
-            'images'      => 'nullable|array',
-            'images.*'    => 'image|mimes:jpeg,png,jpg,gif,webp|max:204800',
+            'new_images'  => 'nullable|array',
+            'new_images.*'=> 'image|mimes:jpeg,png,jpg,gif,webp|max:204800',
             'description' => 'nullable|string',
             'specs'       => 'nullable|array',
             'badge'       => 'nullable|string',
@@ -79,8 +79,8 @@ class ProductController extends BaseController
             $product->image = $product->saveUploadedImage($request->file('image'));
         }
 
-        if ($request->hasFile('images')) {
-            $product->images = $product->saveUploadedImages($request->file('images'));
+        if ($request->hasFile('new_images')) {
+            $product->images = $product->saveUploadedImages($request->file('new_images'));
         }
 
         $product->save();
@@ -99,8 +99,11 @@ class ProductController extends BaseController
             'fermete'     => 'string',
             'gamme'       => 'nullable|string',
             'image'       => 'nullable|image|mimes:jpeg,png,jpg,gif,webp',
-            'images'      => 'nullable|array',
-            'images.*'    => 'image|mimes:jpeg,png,jpg,gif,webp',
+            'images_present' => 'sometimes|boolean',
+            'images'      => 'sometimes|array',
+            'images.*'    => 'string',
+            'new_images'  => 'nullable|array',
+            'new_images.*'=> 'image|mimes:jpeg,png,jpg,gif,webp|max:204800',
             'description' => 'nullable|string',
             'specs'       => 'nullable|array',
             'badge'       => 'nullable|string',
@@ -115,12 +118,34 @@ class ProductController extends BaseController
             );
         }
 
-        if ($request->hasFile('images')) {
-            $validated['images'] = $product->saveUploadedImages(
-                $request->file('images'),
-                $product->images ?? []
-            );
+        if ($request->boolean('images_present') || $request->exists('images') || $request->hasFile('new_images')) {
+            $storedImages = $product->getRawOriginal('images');
+            $storedImages = is_array($storedImages) ? $storedImages : (json_decode($storedImages ?: '[]', true) ?: []);
+            $requestedImages = $request->input('images', []);
+            $requestedPaths = array_fill_keys(array_map(
+                static fn (string $image) => parse_url($image, PHP_URL_PATH) ?: $image,
+                $requestedImages
+            ), true);
+
+            $keptImages = array_values(array_filter($storedImages, static function ($image) use ($requestedPaths) {
+                $path = parse_url($image, PHP_URL_PATH) ?: $image;
+                return isset($requestedPaths[$path]);
+            }));
+
+            foreach (array_diff($storedImages, $keptImages) as $removedImage) {
+                $path = parse_url($removedImage, PHP_URL_PATH) ?: $removedImage;
+                if (str_starts_with($path, '/storage/products/') || str_starts_with($path, '/uploads/products/')) {
+                    $product->deleteLocalImage($removedImage);
+                }
+            }
+
+            $newImages = $request->hasFile('new_images')
+                ? $product->saveUploadedImages($request->file('new_images'))
+                : [];
+
+            $validated['images'] = array_values(array_merge($keptImages, $newImages));
         }
+        unset($validated['images_present'], $validated['new_images']);
 
         $product->update($validated);
 

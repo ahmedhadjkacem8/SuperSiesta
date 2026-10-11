@@ -137,11 +137,11 @@ return (
           {slide.mobile_image_url && (
             <source
               media="(max-width: 767px)"
-              srcSet={`${getImageUrl(slide.mobile_image_url)}${slide.mobile_image_url.includes('?') ? '&' : '?'}_=${Date.now()}`}
+              srcSet={getImageUrl(slide.mobile_image_url)}
             />
           )}
           <img
-            src={`${getImageUrl(slide.image_url)}${slide.image_url.includes('?') ? '&' : '?'}_=${Date.now()}`}
+            src={getImageUrl(slide.image_url)}
             alt={slide.title || ""}
             className="w-full h-full object-cover"
             loading="eager"

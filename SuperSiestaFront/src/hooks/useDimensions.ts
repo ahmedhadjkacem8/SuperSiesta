@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/apiClient";
+import type { FreeGift } from "@/hooks/useFreegifts";
 
 export interface Dimension {
   id?: string;
   label: string;
   is_standard?: boolean;
   nb_places?: number | string | null;
+  free_gifts?: FreeGift[];
 }
 
 let cachedDimensions: Dimension[] | null = null;

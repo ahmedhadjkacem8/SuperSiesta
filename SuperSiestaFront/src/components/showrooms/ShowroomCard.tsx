@@ -1,4 +1,5 @@
 import { MapPin, Phone, Mail, Clock, User, ExternalLink, Calendar } from 'lucide-react';
+import { trackGAContactClick } from '@/services/analytics';
 
 interface Showroom {
   id: string;
@@ -163,7 +164,11 @@ export function ShowroomCard({ showroom, viewMode = 'grid', isActive = false, on
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <Phone className="w-5 h-5 text-primary" />
                 </div>
-                <a href={`tel:${showroom.phone}`} className="text-sm font-bold hover:text-primary transition-colors pt-1">
+                <a 
+                  href={`tel:${showroom.phone}`} 
+                  onClick={() => trackGAContactClick("call", showroom.phone || undefined)}
+                  className="text-sm font-bold hover:text-primary transition-colors pt-1"
+                >
                   {showroom.phone}
                 </a>
               </div>
@@ -213,7 +218,13 @@ export function ShowroomCard({ showroom, viewMode = 'grid', isActive = false, on
                 <div className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-0.5">Responsable</div>
                 <div className="text-sm font-black text-foreground truncate leading-tight">{showroom.contact_person_name || 'Équipe Supersiesta'}</div>
                 {showroom.contact_person_phone && (
-                  <a href={`tel:${showroom.contact_person_phone}`} className="text-xs text-primary font-bold hover:underline whitespace-nowrap block mt-0.5">{showroom.contact_person_phone}</a>
+                  <a 
+                    href={`tel:${showroom.contact_person_phone}`} 
+                    onClick={() => trackGAContactClick("call", showroom.contact_person_phone || undefined)}
+                    className="text-xs text-primary font-bold hover:underline whitespace-nowrap block mt-0.5"
+                  >
+                    {showroom.contact_person_phone}
+                  </a>
                 )}
               </div>
             </div>

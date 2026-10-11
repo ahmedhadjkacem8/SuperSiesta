@@ -41,6 +41,14 @@ return [
         'test_event_code' => env('META_TEST_EVENT_CODE'),
     ],
 
+    'google_ads' => [
+        'conversion_id' => env('GOOGLE_ADS_CONVERSION_ID', 'AW-18183643721'),
+        'offline_conversion_name' => env('GOOGLE_ADS_OFFLINE_CONVERSION_NAME', 'Purchase'),
+        'conversion_currency' => env('GOOGLE_ADS_CONVERSION_CURRENCY', 'TND'),
+        'eligible_statuses' => explode(',', env('GOOGLE_ADS_ELIGIBLE_STATUSES', 'accepté,accepte,livré,livre,en_attente')),
+        'timezone' => env('GOOGLE_ADS_TIMEZONE', '+0100'), // Tunis GMT+1
+    ],
+
     'push' => [
         'firebase' => [
             'credentials_file' => env('FIREBASE_CREDENTIALS_FILE', '/run/secrets/firebase-service-account.json'),
