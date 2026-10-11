@@ -6,7 +6,7 @@ import { useCart } from "@/context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { formatPrice } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { getResponsiveImageSrcSet, getResponsiveImageUrl } from "@/utils/imageUtils";
+import ResponsiveImage from "@/components/ResponsiveImage";
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useLanguage } from "@/context/LanguageContext";
@@ -446,9 +446,10 @@ export default function ProductCard({
       >
         {/* Image */}
         <div className="relative overflow-hidden aspect-square sm:aspect-[4/3] bg-muted">
-          <img
-            src={getResponsiveImageUrl(product.image, 768)}
-            srcSet={getResponsiveImageSrcSet(product.image, [384, 768, 1200])}
+          <ResponsiveImage
+            imagePath={product.image}
+            width={768}
+            widths={[384, 768, 1200]}
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"

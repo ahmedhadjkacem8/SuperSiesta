@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Loader2, Calendar, Tag, ArrowRight, ChevronRight, ChevronLeft, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import useEmblaCarousel from "embla-carousel-react";
-import { getResponsiveImageSrcSet, getResponsiveImageUrl } from "@/utils/imageUtils";
+import ResponsiveImage from "@/components/ResponsiveImage";
 import { useBlogPosts } from "@/hooks/useBlog";
 
 const fadeInUp = {
@@ -58,9 +58,10 @@ export default function Blog() {
                         <div className="relative overflow-hidden">
                           <div className="aspect-[4/3] md:aspect-square">
                             {post.image_url ? (
-                              <img
-                                src={getResponsiveImageUrl(post.image_url, 768)}
-                                srcSet={getResponsiveImageSrcSet(post.image_url, [384, 768, 1200])}
+                              <ResponsiveImage
+                                imagePath={post.image_url}
+                                width={768}
+                                widths={[384, 768, 1200]}
                                 sizes="(min-width: 1024px) 33vw, 85vw"
                                 alt={post.title}
                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -160,9 +161,10 @@ export default function Blog() {
                   <div className="relative overflow-hidden">
                     <div className="aspect-[4/3] md:aspect-square">
                       {post.image_url ? (
-                        <img
-                          src={getResponsiveImageUrl(post.image_url, 768)}
-                          srcSet={getResponsiveImageSrcSet(post.image_url, [384, 768, 1200])}
+                        <ResponsiveImage
+                          imagePath={post.image_url}
+                          width={768}
+                          widths={[384, 768, 1200]}
                           sizes="(min-width: 768px) 33vw, 50vw"
                           alt={post.title}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"

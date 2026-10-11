@@ -18,7 +18,8 @@ import { useSettings } from "@/hooks/useSettings";
 import { api } from "@/lib/apiClient";
 import { Star, Shield, Truck, CreditCard, ChevronLeft, ChevronRight, Plus, Minus, Check, Loader2, Play, Gift, Phone } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
-import { getImageUrl, getResponsiveImageSrcSet, getResponsiveImageUrl } from "@/utils/imageUtils";
+import ResponsiveImage from "@/components/ResponsiveImage";
+import { getImageUrl } from "@/utils/imageUtils";
 import { trackViewContent, trackAddToCart } from "@/services/metaPixel";
 import { trackGAContactClick, trackGAViewItem } from "@/services/analytics";
 import LucideIcon from "@/components/common/LucideIcon";
@@ -145,9 +146,10 @@ function ProductGallery({ images, name }: { images: string[]; name: string }) {
             style={{ touchAction: "pan-y" }}
             className="absolute inset-0"
           >
-            <img
-              src={getResponsiveImageUrl(images[index], 1200)}
-              srcSet={getResponsiveImageSrcSet(images[index], [384, 768, 1200, 1600])}
+            <ResponsiveImage
+              imagePath={images[index]}
+              width={1200}
+              widths={[384, 768, 1200, 1600]}
               sizes="(min-width: 1024px) 50vw, 100vw"
               alt={`${name} ${index + 1}`}
               draggable={false}
@@ -205,9 +207,10 @@ function ProductGallery({ images, name }: { images: string[]; name: string }) {
                   : "border-border opacity-70 hover:opacity-100 hover:border-primary/50"
                 }`}
             >
-              <img
-                src={getResponsiveImageUrl(img, 96)}
-                srcSet={getResponsiveImageSrcSet(img, [96, 192, 384])}
+              <ResponsiveImage
+                imagePath={img}
+                width={96}
+                widths={[96, 192, 384]}
                 sizes="80px"
                 alt=""
                 className="w-full h-full object-cover"
@@ -831,9 +834,10 @@ export default function ProduitDetail() {
                     <div key={gift.id} className="flex items-center gap-3 bg-accent/30 p-3 rounded-2xl border border-primary/10 animate-in slide-in-from-bottom-2 duration-500">
                       {gift.image ? (
                         <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-white">
-                          <img
-                            src={getResponsiveImageUrl(gift.image, 384)}
-                            srcSet={getResponsiveImageSrcSet(gift.image, [96, 192, 384])}
+                          <ResponsiveImage
+                            imagePath={gift.image}
+                            width={384}
+                            widths={[96, 192, 384]}
                             sizes="112px"
                             alt={gift.titre}
                             className="w-full h-full object-cover"

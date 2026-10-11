@@ -15,7 +15,8 @@ import ThreeDShowcase from "@/components/ThreeDShowcase";
 import { api } from "@/lib/apiClient";
 
 import { useHeroSlides } from "@/hooks/useHeroSlides";
-import { getImageUrl, getResponsiveImageSrcSet, getResponsiveImageUrl } from "@/utils/imageUtils";
+import ResponsiveImage from "@/components/ResponsiveImage";
+import { getImageUrl } from "@/utils/imageUtils";
 import { useSettings } from "@/hooks/useSettings";
 import { useNewsletters } from "@/hooks/useNewsletters";
 import { trackSubscribe } from "@/services/metaPixel";
@@ -403,9 +404,10 @@ useEffect(() => {
                   >
                     <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-muted/50">
                       {post.image_url ? (
-                        <img
-                          src={getResponsiveImageUrl(post.image_url, 96)}
-                          srcSet={getResponsiveImageSrcSet(post.image_url, [96, 192, 384])}
+                        <ResponsiveImage
+                          imagePath={post.image_url}
+                          width={96}
+                          widths={[96, 192, 384]}
                           sizes="48px"
                           alt={post.title}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
@@ -448,9 +450,10 @@ useEffect(() => {
                     aria-label={post.title}
                   >
                     {post.image_url ? (
-                      <img
-                        src={getResponsiveImageUrl(post.image_url, 384)}
-                        srcSet={getResponsiveImageSrcSet(post.image_url, [384, 768, 1200])}
+                      <ResponsiveImage
+                        imagePath={post.image_url}
+                        width={384}
+                        widths={[384, 768, 1200]}
                         sizes="(min-width: 1024px) 33vw, 85vw"
                         alt=""
                         className="w-full h-full object-cover"
@@ -594,9 +597,10 @@ return (
                   <button type="button" onClick={handleNavigate} aria-label={`Afficher la gamme ${g.name}`} className="w-full text-left rtl:text-right">
                     <div className="w-full aspect-square relative overflow-hidden rounded-lg border border-border/70">
                       {g.cover_image ? (
-                        <img
-                          src={getResponsiveImageUrl(g.cover_image, 384)}
-                          srcSet={getResponsiveImageSrcSet(g.cover_image, [192, 384, 768])}
+                        <ResponsiveImage
+                          imagePath={g.cover_image}
+                          width={384}
+                          widths={[192, 384, 768]}
                           sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
                           alt={g.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
@@ -837,9 +841,10 @@ return (
                   <ChevronRight className="w-10 h-10 rotate-[-45deg]" />
                 </div>
                 {c.image ? (
-                  <img
-                    src={getResponsiveImageUrl(c.image, 96)}
-                    srcSet={getResponsiveImageSrcSet(c.image, [96, 192, 384])}
+                  <ResponsiveImage
+                    imagePath={c.image}
+                    width={96}
+                    widths={[96, 192, 384]}
                     sizes="64px"
                     alt={c.label}
                     className="w-16 h-16 object-contain mb-3 group-hover:scale-110 transition-transform duration-500"
@@ -956,9 +961,10 @@ return (
             >
               {/* Background watermark image */}
               <div className="absolute right-0 top-0 w-1/2 h-full opacity-10 pointer-events-none">
-                <img
-                  src={getResponsiveImageUrl(promoCardsList[promoIndex]?.image, 768)}
-                  srcSet={getResponsiveImageSrcSet(promoCardsList[promoIndex]?.image, [384, 768, 1200])}
+                <ResponsiveImage
+                  imagePath={promoCardsList[promoIndex]?.image}
+                  width={768}
+                  widths={[384, 768, 1200]}
                   sizes="50vw"
                   alt=""
                   className="w-full h-full object-cover"
@@ -997,9 +1003,10 @@ return (
                 whileInView={{ scale: 1, opacity: 1, rotate: 0 }}
                 className="relative z-10 hidden lg:block flex-shrink-0"
               >
-                <img
-                  src={getResponsiveImageUrl(promoCardsList[promoIndex]?.image, 768)}
-                  srcSet={getResponsiveImageSrcSet(promoCardsList[promoIndex]?.image, [384, 768, 1200])}
+                <ResponsiveImage
+                  imagePath={promoCardsList[promoIndex]?.image}
+                  width={768}
+                  widths={[384, 768, 1200]}
                   sizes="(min-width: 1280px) 320px, 288px"
                   alt={promoCardsList[promoIndex]?.title}
                   className="w-72 xl:w-80 h-52 xl:h-60 object-cover rounded-3xl shadow-2xl border-4 border-white/20"
@@ -1012,9 +1019,10 @@ return (
                 whileInView={{ opacity: 1, y: 0 }}
                 className="relative z-10 block lg:hidden w-full aspect-square max-h-64"
               >
-                <img
-                  src={getResponsiveImageUrl(promoCardsList[promoIndex]?.image, 384)}
-                  srcSet={getResponsiveImageSrcSet(promoCardsList[promoIndex]?.image, [192, 384, 768])}
+                <ResponsiveImage
+                  imagePath={promoCardsList[promoIndex]?.image}
+                  width={384}
+                  widths={[192, 384, 768]}
                   sizes="(max-width: 1023px) 100vw, 0px"
                   alt={promoCardsList[promoIndex]?.title}
                   className="w-full h-full object-cover rounded-2xl shadow-lg border-2 border-white/10"
@@ -1168,9 +1176,10 @@ return (
                   <div className="relative overflow-hidden">
                     <div className="aspect-[4/3] md:aspect-square">
                       {post.image_url ? (
-                        <img
-                          src={getResponsiveImageUrl(post.image_url, 768)}
-                          srcSet={getResponsiveImageSrcSet(post.image_url, [384, 768, 1200])}
+                        <ResponsiveImage
+                          imagePath={post.image_url}
+                          width={768}
+                          widths={[384, 768, 1200]}
                           sizes="(min-width: 1024px) 33vw, 85vw"
                           alt={post.title}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"

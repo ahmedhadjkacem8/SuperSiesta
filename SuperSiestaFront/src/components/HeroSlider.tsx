@@ -2,7 +2,8 @@ import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getResponsiveImageSrcSet, getResponsiveImageUrl } from "@/utils/imageUtils";
+import ResponsiveImage from "@/components/ResponsiveImage";
+import { getResponsiveImageSrcSet } from "@/utils/imageUtils";
 import { useLanguage } from "@/context/LanguageContext";
 
 interface HeroSlide {
@@ -141,9 +142,10 @@ return (
               sizes="100vw"
             />
           )}
-          <img
-            src={getResponsiveImageUrl(slide.image_url, 1200)}
-            srcSet={getResponsiveImageSrcSet(slide.image_url, [768, 1200, 1600])}
+          <ResponsiveImage
+            imagePath={slide.image_url}
+            width={1200}
+            widths={[768, 1200, 1600]}
             sizes="100vw"
             alt={slide.title || ""}
             className="w-full h-full object-cover"

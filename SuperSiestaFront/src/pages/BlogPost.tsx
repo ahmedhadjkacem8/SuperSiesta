@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { Loader2, ChevronLeft, Calendar, Tag, Share2 } from "lucide-react";
-import { getResponsiveImageSrcSet, getResponsiveImageUrl } from "@/utils/imageUtils";
+import ResponsiveImage from "@/components/ResponsiveImage";
 import { useBlogPost } from "@/hooks/useBlog";
 
 export default function BlogPost() {
@@ -40,9 +40,10 @@ export default function BlogPost() {
       <article>
         {post.image_url && (
           <div className="aspect-square rounded-3xl overflow-hidden mb-8 bg-muted">
-            <img
-              src={getResponsiveImageUrl(post.image_url, 1200)}
-              srcSet={getResponsiveImageSrcSet(post.image_url, [384, 768, 1200])}
+            <ResponsiveImage
+              imagePath={post.image_url}
+              width={1200}
+              widths={[384, 768, 1200]}
               sizes="(min-width: 1024px) 896px, 100vw"
               alt={post.title}
               className="w-full h-full object-cover"
