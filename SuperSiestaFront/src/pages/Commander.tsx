@@ -92,7 +92,6 @@ export default function Commander() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [dimensions, setDimensions] = useState<any[]>([]);
   const [useSaved, setUseSaved] = useState(false);
-  const [prospectId, setProspectId] = useState<string | null>(sessionStorage.getItem("current_prospect_id"));
   const prospectIdRef = useRef<string | null>(sessionStorage.getItem("current_prospect_id"));
   const isSavingProspect = useRef(false);
   const [isProspectSaved, setIsProspectSaved] = useState(false);
@@ -202,7 +201,6 @@ export default function Commander() {
         if (res && res.id && !currentId) {
           // Update ref synchronously to block any concurrent POST
           prospectIdRef.current = res.id;
-          setProspectId(res.id);
           sessionStorage.setItem("current_prospect_id", res.id);
         }
         setIsProspectSaved(true);
@@ -456,12 +454,6 @@ export default function Commander() {
             city: form.ville,
           }
         );
-      }
-
-      // Mark prospect as converted if it exists
-      if (prospectId) {
-        api.put(`/prospects/${prospectId}`, { status: 'converti' }).catch(() => {});
-        sessionStorage.removeItem("current_prospect_id");
       }
 
       if (response.token) {

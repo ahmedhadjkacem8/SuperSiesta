@@ -1,5 +1,26 @@
-import * as LucideIcons from 'lucide-react';
-import { LucideProps } from 'lucide-react';
+import { lazy, Suspense, useMemo, type ComponentType } from "react";
+import { HelpCircle, type LucideProps } from "lucide-react";
+
+const iconLoaders: Record<string, () => Promise<{ default: ComponentType<LucideProps> }>> = {
+  "bed-double": () => import("lucide-react/dist/esm/icons/bed-double.js"),
+  "check": () => import("lucide-react/dist/esm/icons/check.js"),
+  "clock": () => import("lucide-react/dist/esm/icons/clock.js"),
+  "credit-card": () => import("lucide-react/dist/esm/icons/credit-card.js"),
+  "globe": () => import("lucide-react/dist/esm/icons/globe.js"),
+  "instagram": () => import("lucide-react/dist/esm/icons/instagram.js"),
+  "linkedin": () => import("lucide-react/dist/esm/icons/linkedin.js"),
+  "mail": () => import("lucide-react/dist/esm/icons/mail.js"),
+  "map-pin": () => import("lucide-react/dist/esm/icons/map-pin.js"),
+  "message-circle": () => import("lucide-react/dist/esm/icons/message-circle.js"),
+  "music": () => import("lucide-react/dist/esm/icons/music.js"),
+  "phone": () => import("lucide-react/dist/esm/icons/phone.js"),
+  "pin": () => import("lucide-react/dist/esm/icons/pin.js"),
+  "shield": () => import("lucide-react/dist/esm/icons/shield.js"),
+  "shield-check": () => import("lucide-react/dist/esm/icons/shield-check.js"),
+  "star": () => import("lucide-react/dist/esm/icons/star.js"),
+  "truck": () => import("lucide-react/dist/esm/icons/truck.js"),
+  "youtube": () => import("lucide-react/dist/esm/icons/youtube.js"),
+};
 
 interface BrandIconProps extends LucideProps {
   name: string; // The lucide_name or a special brand identifier
@@ -9,7 +30,14 @@ interface BrandIconProps extends LucideProps {
 const BrandIcon = ({ name, label, ...props }: BrandIconProps) => {
   // Brand color/path mapping for specific ones
   // We check for both name (lucide selector) and label (brand name)
-  const identifier = (label || name).toLowerCase();
+  const identifier = `${label || ""} ${name}`.toLowerCase();
+  const iconKey = name
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .toLowerCase();
+  const IconComponent = useMemo(() => {
+    const loadIcon = iconLoaders[iconKey];
+    return loadIcon ? lazy(loadIcon) : null;
+  }, [iconKey]);
 
   // Modern X (Twitter) icon
   if (identifier.includes('twitter') || identifier === 'x') {
@@ -27,7 +55,7 @@ const BrandIcon = ({ name, label, ...props }: BrandIconProps) => {
   }
 
   // Modern Meta Facebook Logo
-  if (identifier === 'facebook') {
+  if (identifier.includes('facebook')) {
     return (
       <svg
         viewBox="0 0 24 24"
@@ -42,7 +70,7 @@ const BrandIcon = ({ name, label, ...props }: BrandIconProps) => {
   }
 
   // WhatsApp
-  if (identifier === 'whatsapp' || identifier === 'messagecircle') {
+  if (identifier.includes('whatsapp') || iconKey === 'message-circle') {
      return (
       <svg
         viewBox="0 0 24 24"
@@ -56,12 +84,12 @@ const BrandIcon = ({ name, label, ...props }: BrandIconProps) => {
     );
   }
 
-  // Fallback to Lucide Icons
-  const IconComponent = (LucideIcons as any)[name];
-  if (!IconComponent) {
-    return <LucideIcons.HelpCircle {...props} />;
-  }
-  return <IconComponent {...props} />;
+  if (!IconComponent) return <HelpCircle {...props} />;
+  return (
+    <Suspense fallback={<HelpCircle {...props} />}>
+      <IconComponent {...props} />
+    </Suspense>
+  );
 };
 
 export default BrandIcon;

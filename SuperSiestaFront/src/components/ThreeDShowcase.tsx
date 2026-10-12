@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import { Maximize2, Sparkles, ShieldCheck, Wind, Zap } from "lucide-react";
-
+import { Maximize2 } from "lucide-react";
+import { useLazyModelViewer } from "@/hooks/useLazyModelViewer";
 
 import LucideIcon from "@/components/common/LucideIcon";
 import { useLanguage } from "@/context/LanguageContext";
@@ -31,7 +31,8 @@ export default function ThreeDShowcase({
   poster = "/images/tendresse.jpg",
   features = []
 }: ThreeDShowcaseProps) {
-  const { t, language } = useLanguage();
+  const { lang } = useLanguage();
+  const { ref, isLoaded, hasError, setHasError } = useLazyModelViewer();
 
   const positions = [
     "top-[-5%] left-[10%]",
@@ -60,9 +61,9 @@ export default function ThreeDShowcase({
           whileInView={{ y: 0, opacity: 1 }}
           className="text-2xl md:text-3xl font-black text-slate-900"
         >
-          {language === 'ar' ? (
+          {lang === 'ar' ? (
             <>تجربة <span className="text-primary tracking-tighter">3D</span> تفاعلية</>
-          ) : language === 'en' ? (
+          ) : lang === 'en' ? (
             <>Interactive <span className="text-primary tracking-tighter">3D</span> Experience</>
           ) : (
             <>Expérience <span className="text-primary tracking-tighter">3D</span> Interactive</>
@@ -70,7 +71,7 @@ export default function ThreeDShowcase({
         </motion.h2>
       </div>
 
-      <div className="relative max-w-4xl mx-auto">
+      <div ref={ref} className="relative max-w-4xl mx-auto">
         {/* Floating Feature Badges */}
         {showcaseFeatures.map((f, i) => (
           <motion.div
@@ -93,40 +94,49 @@ export default function ThreeDShowcase({
         
         <div className="relative bg-white border border-slate-100 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.08)] overflow-hidden h-[400px] md:h-[500px]">
 
-          <model-viewer
-            src={modelPath}
-            poster={poster}
-            alt="Modèle 3D d'un matelas Super Siesta"
-            shadow-intensity="1.2"
-            auto-rotate
-            camera-controls
-            touch-action="none"
-            enable-pan
-            style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}
-            camera-orbit="45deg 75deg 105%"
-            field-of-view="32deg"
-            loading="eager"
-            ar
-            ar-modes="webxr scene-viewer quick-look"
-            environment-image="neutral"
-            exposure="1.2"
-          >
-            {/* AR Button */}
-            <button 
-              slot="ar-button" 
-              className="absolute bottom-6 right-6 bg-primary text-primary-foreground px-5 py-2.5 rounded-2xl font-black text-xs flex items-center gap-2 shadow-2xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all z-30"
+          {!isLoaded || hasError ? (
+            <img
+              src={poster}
+              alt=""
+              width={1200}
+              height={800}
+              className="h-full w-full object-contain"
+            />
+          ) : (
+            <model-viewer
+              src={modelPath}
+              poster={poster}
+              alt="Modèle 3D d'un matelas Super Siesta"
+              shadow-intensity="1.2"
+              auto-rotate
+              camera-controls
+              touch-action="none"
+              enable-pan
+              style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}
+              camera-orbit="45deg 75deg 105%"
+              field-of-view="32deg"
+              loading="lazy"
+              ar
+              ar-modes="webxr scene-viewer quick-look"
+              environment-image="neutral"
+              exposure="1.2"
+              onError={() => setHasError(true)}
             >
-              <Maximize2 className="w-4 h-4" /> Voir dans ma chambre
-            </button>
-            
-            {/* Minimal interaction hint for mobile */}
-            <div className="absolute bottom-6 left-6 block md:hidden pointer-events-none z-30">
-              <div className="bg-slate-900/60 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg">
-                 <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
-                 <span className="text-[10px] text-white font-bold">Touchez pour pivoter</span>
+              <button
+                slot="ar-button"
+                className="absolute bottom-6 right-6 bg-primary text-primary-foreground px-5 py-2.5 rounded-2xl font-black text-xs flex items-center gap-2 shadow-2xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all z-30"
+              >
+                <Maximize2 className="w-4 h-4" /> Voir dans ma chambre
+              </button>
+
+              <div className="absolute bottom-6 left-6 block md:hidden pointer-events-none z-30">
+                <div className="bg-slate-900/60 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg">
+                  <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+                  <span className="text-[10px] text-white font-bold">Touchez pour pivoter</span>
+                </div>
               </div>
-            </div>
-          </model-viewer>
+            </model-viewer>
+          )}
         </div>
       </div>
       
@@ -144,4 +154,3 @@ export default function ThreeDShowcase({
     </motion.section>
   );
 }
-

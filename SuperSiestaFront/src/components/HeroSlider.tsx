@@ -1,9 +1,9 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import ResponsiveImage from "@/components/ResponsiveImage";
-import { getResponsiveImageSrcSet } from "@/utils/imageUtils";
+import { getResponsiveImageSrcSet, getResponsiveImageUrl } from "@/utils/imageUtils";
 import { useLanguage } from "@/context/LanguageContext";
 
 interface HeroSlide {
@@ -76,11 +76,44 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
     return () => clearInterval(timer);
   }, [next, slides.length]);
 
+  useLayoutEffect(() => {
+    const firstSlide = slides[0];
+    if (!firstSlide?.image_url) return;
+
+    const preload = document.createElement("link");
+    preload.rel = "preload";
+    preload.as = "image";
+    preload.href = getResponsiveImageUrl(firstSlide.image_url, 1200);
+    preload.imageSrcset = getResponsiveImageSrcSet(firstSlide.image_url, [768, 1200, 1600]);
+    preload.imageSizes = "100vw";
+    if (firstSlide.mobile_image_url) {
+      preload.media = "(min-width: 768px)";
+    }
+    document.head.appendChild(preload);
+
+    if (firstSlide.mobile_image_url) {
+      const mobilePreload = document.createElement("link");
+      mobilePreload.rel = "preload";
+      mobilePreload.as = "image";
+      mobilePreload.href = getResponsiveImageUrl(firstSlide.mobile_image_url, 768);
+      mobilePreload.imageSrcset = getResponsiveImageSrcSet(firstSlide.mobile_image_url, [384, 768, 1200]);
+      mobilePreload.imageSizes = "100vw";
+      mobilePreload.media = "(max-width: 767px)";
+      document.head.appendChild(mobilePreload);
+      return () => {
+        preload.remove();
+        mobilePreload.remove();
+      };
+    }
+
+    return () => preload.remove();
+  }, [slides]);
+
   if (!slides || slides.length === 0) return null;
 
   const slide = slides[current];
 
-  const variants: any = {
+  const variants: Variants = {
     enter: (direction: number) => ({
       x: direction > 0 ? 1000 : -1000,
       opacity: 0,
@@ -109,7 +142,7 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
     })
   };
 
-  const textVariants: any = {
+  const textVariants: Variants = {
     hidden: { opacity: 0, y: 30 },
     visible: (i: number) => ({
       opacity: 1,
@@ -124,6 +157,47 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
 
 return (
   <section className="relative overflow-hidden h-[450px] sm:h-[530px] md:h-[650px] w-full">
+    {slides.map((imageSlide, index) => (
+      <motion.div
+        key={`${imageSlide.id}-image`}
+        initial={false}
+        animate={{
+          opacity: index === current ? 1 : 0,
+          scale: index === current ? 1 : 1.1
+        }}
+        transition={{
+          opacity: { duration: 0.8 },
+          scale: { duration: 1.2 }
+        }}
+        aria-hidden="true"
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        style={{ zIndex: index === current ? 1 : 0 }}
+      >
+        <picture>
+          {imageSlide.mobile_image_url && (
+            <source
+              media="(max-width: 767px)"
+              srcSet={getResponsiveImageSrcSet(imageSlide.mobile_image_url, [384, 768, 1200])}
+              sizes="100vw"
+            />
+          )}
+          <ResponsiveImage
+            imagePath={imageSlide.image_url}
+            width={1200}
+            widths={[768, 1200, 1600]}
+            sizes="100vw"
+            alt=""
+            className="w-full h-full object-cover"
+            intrinsicWidth={1600}
+            intrinsicHeight={650}
+            loading={index === 0 ? "eager" : "lazy"}
+            fetchPriority={index === 0 ? "high" : "auto"}
+            decoding="async"
+          />
+        </picture>
+      </motion.div>
+    ))}
+
     <AnimatePresence initial={false} custom={direction}>
       <motion.div
         key={current}
@@ -132,27 +206,8 @@ return (
         initial="enter"
         animate="center"
         exit="exit"
-        className="absolute inset-0 w-full h-full"
+        className="absolute inset-0 z-10 w-full h-full"
       >
-        <picture>
-          {slide.mobile_image_url && (
-            <source
-              media="(max-width: 767px)"
-              srcSet={getResponsiveImageSrcSet(slide.mobile_image_url, [384, 768, 1200])}
-              sizes="100vw"
-            />
-          )}
-          <ResponsiveImage
-            imagePath={slide.image_url}
-            width={1200}
-            widths={[768, 1200, 1600]}
-            sizes="100vw"
-            alt={slide.title || ""}
-            className="w-full h-full object-cover"
-            loading="eager"
-            {...({ fetchpriority: "high" } as any)}
-          />
-        </picture>
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10 sm:bg-gradient-to-r sm:from-black/80 sm:via-black/40 sm:to-transparent md:from-black/70 md:via-black/30 md:to-transparent" />
 
         {/* Content */}
@@ -218,7 +273,7 @@ return (
                 setCurrent(i);
               }}
               aria-label={`Aller à la diapositive ${i + 1}`}
-              className={`h-1.5 sm:h-2 rounded-full transition-all duration-500 shadow-lg ${
+              className={`relative h-1.5 sm:h-2 rounded-full transition-all duration-500 shadow-lg after:absolute after:-inset-x-[18px] after:-inset-y-[19px] ${
                 i === current ? "bg-primary w-8 sm:w-12" : "bg-white/30 w-2 sm:w-3 hover:bg-white/50"
               }`}
             />

@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { formatPrice } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import ResponsiveImage from "@/components/ResponsiveImage";
-import { useState, useEffect, useMemo } from "react";
+import { memo, useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useLanguage } from "@/context/LanguageContext";
 import { useDimensions } from "@/hooks/useDimensions";
@@ -335,7 +335,7 @@ function DimensionModal({
 }
 
 // ─── ProductCard ─────────────────────────────────────────────────────────────
-export default function ProductCard({
+function ProductCard({
   product,
   selectedDimension,
   selectedCategorie,
@@ -451,9 +451,12 @@ export default function ProductCard({
             width={768}
             widths={[384, 768, 1200]}
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-            alt={product.name}
+            alt=""
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
             loading="lazy"
+            decoding="async"
+            intrinsicWidth={1200}
+            intrinsicHeight={900}
           />
           <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/10 to-transparent pointer-events-none sm:hidden" />
 
@@ -474,7 +477,7 @@ export default function ProductCard({
               <button
                 onClick={(e) => { e.stopPropagation(); navigate(`/produit/${product.slug}${selectedDimension && selectedDimension !== "Tous" ? `?dimension=${encodeURIComponent(selectedDimension)}` : ''}`); }}
                 aria-label={`Voir le détail de ${product.name}`}
-                className="p-2 sm:p-2.5 bg-card/90 text-foreground rounded-full shadow-lg active:scale-90 hover:bg-card transition-colors border border-border"
+                className="flex min-h-11 min-w-11 items-center justify-center p-2 sm:p-2.5 bg-card/90 text-foreground rounded-full shadow-lg active:scale-90 hover:bg-card transition-colors border border-border"
                 title="Voir les détails"
               >
                 <Search className="w-4 h-4" aria-hidden="true" />
@@ -482,7 +485,7 @@ export default function ProductCard({
               <button
                 onClick={handleCartButtonClick}
                 aria-label={`Choisir une dimension pour ${product.name}`}
-                className="p-2 sm:p-2.5 bg-primary text-primary-foreground rounded-full shadow-lg active:scale-90 hover:bg-primary/90 transition-colors"
+                className="flex min-h-11 min-w-11 items-center justify-center p-2 sm:p-2.5 bg-primary text-primary-foreground rounded-full shadow-lg active:scale-90 hover:bg-primary/90 transition-colors"
                 title="Ajouter au panier"
               >
                 <ShoppingCart className="w-4 h-4" aria-hidden="true" />
@@ -655,3 +658,5 @@ export default function ProductCard({
     </>
   );
 }
+
+export default memo(ProductCard);

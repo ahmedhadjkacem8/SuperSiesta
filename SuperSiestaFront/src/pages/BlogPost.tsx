@@ -45,7 +45,7 @@ export default function BlogPost() {
               width={1200}
               widths={[384, 768, 1200]}
               sizes="(min-width: 1024px) 896px, 100vw"
-              alt={post.title}
+              alt=""
               className="w-full h-full object-cover"
             />
           </div>

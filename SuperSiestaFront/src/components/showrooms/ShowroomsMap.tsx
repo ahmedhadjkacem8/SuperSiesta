@@ -112,12 +112,13 @@ export function ShowroomsMap({ showrooms, activeShowroomId, onActiveItemChange }
         maxBounds={tunisiaBounds}
         maxBoundsViscosity={1.0}
         scrollWheelZoom={true}
-        attributionControl={false}
+        attributionControl
         className="w-full h-full"
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          subdomains={['a', 'b', 'c', 'd']}
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          subdomains={['a', 'b', 'c']}
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
         />
 
         <MapUpdater showrooms={showrooms} activeId={activeShowroomId} />

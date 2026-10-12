@@ -30,7 +30,7 @@ export default function CartDrawer() {
               {items.length}
             </span>
           </div>
-          <button onClick={closeCart} aria-label="Fermer le panier" className="p-2 rounded-xl hover:bg-muted transition-colors">
+          <button onClick={closeCart} aria-label="Fermer le panier" className="flex min-h-11 min-w-11 items-center justify-center rounded-xl hover:bg-muted transition-colors">
             <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
@@ -62,7 +62,7 @@ export default function CartDrawer() {
                         updateQty(item.product.id, item.size.label, item.quantity - 1)
                       }
                       aria-label={`Diminuer la quantité de ${item.product.name} (${item.size.label})`}
-                      className="w-7 h-7 rounded-lg bg-background border border-border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
+                      className="min-h-11 min-w-11 rounded-lg bg-background border border-border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
                     >
                       <Minus className="w-3 h-3" aria-hidden="true" />
                     </button>
@@ -72,7 +72,7 @@ export default function CartDrawer() {
                         updateQty(item.product.id, item.size.label, item.quantity + 1)
                       }
                       aria-label={`Augmenter la quantité de ${item.product.name} (${item.size.label})`}
-                      className="w-7 h-7 rounded-lg bg-background border border-border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
+                      className="min-h-11 min-w-11 rounded-lg bg-background border border-border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
                     >
                       <Plus className="w-3 h-3" aria-hidden="true" />
                     </button>
@@ -82,7 +82,7 @@ export default function CartDrawer() {
                   <button
                     onClick={() => removeItem(item.product.id, item.size.label)}
                     aria-label={`Retirer ${item.product.name} (${item.size.label}) du panier`}
-                    className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                    className="flex min-h-11 min-w-11 items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
                   >
                     <Trash2 className="w-4 h-4" aria-hidden="true" />
                   </button>

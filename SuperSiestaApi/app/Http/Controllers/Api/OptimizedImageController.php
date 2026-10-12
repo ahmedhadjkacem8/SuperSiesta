@@ -46,7 +46,7 @@ class OptimizedImageController
         if ($disk->exists($variantPath)) {
             return response()->file($disk->path($variantPath), [
                 'Content-Type' => 'image/webp',
-                'Cache-Control' => 'public, max-age=86400, stale-while-revalidate=604800',
+                'Cache-Control' => 'public, max-age=31536000, immutable',
                 'ETag' => '"' . basename($variantPath, '.webp') . '"',
             ]);
         }
@@ -113,7 +113,7 @@ class OptimizedImageController
 
         return response()->file($absoluteVariantPath, [
             'Content-Type' => 'image/webp',
-            'Cache-Control' => 'public, max-age=86400, stale-while-revalidate=604800',
+            'Cache-Control' => 'public, max-age=31536000, immutable',
             'ETag' => '"' . basename($variantPath, '.webp') . '"',
         ]);
     }

@@ -17,7 +17,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 py-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
         <div className="md:col-span-1">
           <div className="flex items-center gap-2 mb-4">
-            <img src="/images/logo.png" alt="Super Siesta" className="h-10 w-auto" />
+            <img src="/images/logo.png" alt="Super Siesta" width={160} height={48} className="h-10 w-auto" />
           </div>
           <p className="text-sm text-background/70 leading-relaxed">
             {settings.footer_description || `${t.footer.tagline} ${t.footer.taglineSub}`}
@@ -37,7 +37,7 @@ export default function Footer() {
                       trackGAContactClick("whatsapp", s.name);
                     }
                   }}
-                  className="p-2 bg-background/10 rounded-xl transition-all hover:scale-110"
+                  className="flex min-h-11 min-w-11 items-center justify-center p-2 bg-background/10 rounded-xl transition-all hover:scale-110"
                   style={{ color: s.icon?.hex_color || 'currentColor' }}
                 >
                   <LucideIcon name={s.icon?.lucide_name} className="w-4 h-4" aria-hidden="true" />
@@ -58,7 +58,7 @@ export default function Footer() {
               { label: t.nav.about, href: "/a-propos" },
               { label: t.nav.contact, href: "/contact" },
             ].map((l) => (
-              <li key={l.href}><Link to={l.href} className="hover:text-background transition-colors">{l.label}</Link></li>
+              <li key={l.href}><Link to={l.href} className="inline-flex min-h-11 items-center hover:text-background transition-colors">{l.label}</Link></li>
             ))}
           </ul>
         </div>
@@ -76,7 +76,7 @@ export default function Footer() {
                 <Link 
                   to={l.href} 
                   onClick={l.onClick}
-                  className="hover:text-background transition-colors"
+                  className="inline-flex min-h-11 items-center hover:text-background transition-colors"
                 >
                   {l.label}
                 </Link>
@@ -93,7 +93,7 @@ export default function Footer() {
               <a
                 href={`tel:${(settings.contact_phone || "+21671000000").replace(/\s+/g, '')}`}
                 onClick={() => trackGAContactClick("call", settings.contact_phone || "+216 71 000 000")}
-                className="hover:text-background transition-colors"
+                className="inline-flex min-h-11 items-center hover:text-background transition-colors"
                 dir="ltr"
               >
                 {settings.contact_phone || "+216 71 000 000"}
@@ -103,7 +103,7 @@ export default function Footer() {
               <Mail className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
               <a
                 href={`mailto:${settings.contact_email || "contact@supersiesta.tn"}`}
-                className="hover:text-primary transition-colors"
+                className="inline-flex min-h-11 items-center hover:text-primary transition-colors"
                 dir="ltr"
               >
                 {settings.contact_email || "contact@supersiesta.tn"}
@@ -126,7 +126,7 @@ export default function Footer() {
               { label: t.footer.cookies, href: "/mentions-legales#cookies" },
             ].map((link) => (
               <li key={link.href}>
-                <Link to={link.href} className="hover:text-background transition-colors">
+                <Link to={link.href} className="inline-flex min-h-11 items-center hover:text-background transition-colors">
                   {link.label}
                 </Link>
               </li>

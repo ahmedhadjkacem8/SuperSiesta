@@ -20,6 +20,19 @@ declare global {
 
 export const META_PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID || "1012351344935449";
 export const META_CURRENCY = "TND"; // Fixed currency for Super Siesta
+let metaPixelInitialized = false;
+
+export function initializeMetaPixel(
+  userData?: Record<string, string>,
+): boolean {
+  if (typeof window === "undefined" || !window.fbq || metaPixelInitialized) {
+    return false;
+  }
+
+  window.fbq("init", META_PIXEL_ID, userData);
+  metaPixelInitialized = true;
+  return true;
+}
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
 const isDebug = import.meta.env.VITE_META_PIXEL_DEBUG === "true" || import.meta.env.DEV;
@@ -164,8 +177,13 @@ export async function initAdvancedMatching(user: {
     if (norm) advancedMatching.ln = await sha256(norm);
   }
 
-  window.fbq("init", META_PIXEL_ID, advancedMatching);
-  logDebug("fbq('init') with Advanced Matching", advancedMatching);
+  const initialized = initializeMetaPixel(advancedMatching);
+  logDebug(
+    initialized
+      ? "fbq('init') with Advanced Matching"
+      : "Advanced Matching skipped because the Pixel is already initialized",
+    advancedMatching,
+  );
 }
 
 /**

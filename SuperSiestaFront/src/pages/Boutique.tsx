@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useDeferredValue, useMemo, useTransition } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useOptimizedProducts } from "@/hooks/useOptimizedProducts";
 import { useGammes } from "@/hooks/useGammes";
@@ -10,6 +10,7 @@ import { api } from "@/lib/apiClient";
 import { trackSearch } from "@/services/metaPixel";
 import { trackGASearch } from "@/services/analytics";
 import { useLanguage } from "@/context/LanguageContext";
+import { yieldToMain } from "@/utils/yieldToMain";
 
 // ------------------------------------------------------------------
 // Composants définis EN DEHORS de Boutique() : leur identité ne change
@@ -21,7 +22,7 @@ function FilterButton({ active, onClick, children }: { active: boolean; onClick:
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left text-sm px-3 py-1.5 rounded-xl transition-colors capitalize ${
+      className={`w-full min-h-11 text-left text-sm px-3 py-1.5 rounded-xl transition-colors capitalize ${
         active ? "bg-primary text-primary-foreground font-bold" : "hover:bg-muted text-foreground"
       }`}
     >
@@ -46,7 +47,7 @@ function MobileFilterTrigger({
   return (
 <button
   onClick={onClick}
-  className={`w-full flex items-center justify-between px-3 py-2 rounded-full border text-xs font-semibold transition-all ${
+  className={`w-full min-h-11 flex items-center justify-between px-3 py-2 rounded-full border text-xs font-semibold transition-all ${
     isActive
       ? "bg-primary text-primary-foreground border-primary"
       : "bg-background text-foreground border-border hover:bg-muted"
@@ -107,7 +108,7 @@ function MobileSheet({
               Effacer
             </button>
           )}
-          <button onClick={onClose} aria-label="Fermer les filtres" className="p-1 rounded-full hover:bg-muted">
+          <button onClick={onClose} aria-label="Fermer les filtres" className="flex min-h-11 min-w-11 items-center justify-center rounded-full hover:bg-muted">
             <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
@@ -129,6 +130,17 @@ export default function Boutique() {
 
   const { products, loading, hasMore, loadMore, search, filterClientSide } = useOptimizedProducts(initialFilters as any, { preloadAll: true, maxPerPage: 10000 });
   const { data: gammesData } = useGammes();
+  const deferredProducts = useDeferredValue(products);
+  const [, startTransition] = useTransition();
+  const sortedProducts = useMemo(() => {
+    const order = (gammesData || []).map((gamme) => gamme.name);
+    const indexFor = (name: string | undefined) => {
+      if (!name) return Number.MAX_SAFE_INTEGER;
+      const index = order.indexOf(name);
+      return index < 0 ? Number.MAX_SAFE_INTEGER : index;
+    };
+    return [...deferredProducts].sort((a, b) => indexFor(a.gamme) - indexFor(b.gamme));
+  }, [deferredProducts, gammesData]);
   const gammesList = ["Tous", ...(gammesData || []).map((g) => g.name)];
 
   const [dbCategories, setDbCategories] = useState<string[]>([]);
@@ -254,9 +266,10 @@ export default function Boutique() {
 
     // Immediate client-side filtering for snappy UI
     try {
-      filterClientSide(filters);
+      await yieldToMain();
+      startTransition(() => filterClientSide(filters));
     } catch (err) {
-      // ignore, fallback to server search below
+      console.error("Error applying product filters:", err);
     }
 
     // Debounce server call: wait for user to finish changing filters
@@ -531,7 +544,7 @@ export default function Boutique() {
             </MobileSheet>
           </div>
 
-          {products.length === 0 ? (
+          {sortedProducts.length === 0 ? (
             <div className="text-center py-16 sm:py-20 text-muted-foreground px-4">
               <p className="text-base sm:text-lg font-medium">{t.shop.noProducts}</p>
               <button onClick={() => { setCategories(["Tous"]); setFermetes(["Tous"]); setGammes(["Tous"]); setDimensions(["Tous"]); }} className="mt-4 text-primary hover:underline text-sm">{t.shop.resetFilters}</button>
@@ -539,18 +552,8 @@ export default function Boutique() {
           ) : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6">
-                {
-                  // Sort products according to gammes order (if available)
-                  (() => {
-                    const order = (gammesData || []).map(g => g.name);
-                    const idx = (g: string | undefined) => {
-                      if (!g) return Number.MAX_SAFE_INTEGER;
-                      const i = order.indexOf(g);
-                      return i === -1 ? Number.MAX_SAFE_INTEGER : i;
-                    }
-                    const sorted = [...products].sort((a, b) => idx(a.gamme) - idx(b.gamme));
-                    return sorted.map((p) => (
-                      <ProductCard
+                {sortedProducts.map((p) => (
+                  <ProductCard
                   key={p.id}
                   product={p}
                   selectedDimension={dimensions[0]}
@@ -558,9 +561,7 @@ export default function Boutique() {
                   selectedGamme={gammes[0]}
                   selectedFermete={fermetes[0]}
                 />
-                    ));
-                  })()
-                }
+                ))}
               </div>
               <LoadMore hasMore={hasMore} isLoading={loading} onLoadMore={loadMore} className="mt-10" />
             </>

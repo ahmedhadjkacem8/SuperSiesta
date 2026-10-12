@@ -16,7 +16,6 @@ import { api } from "@/lib/apiClient";
 
 import { useHeroSlides } from "@/hooks/useHeroSlides";
 import ResponsiveImage from "@/components/ResponsiveImage";
-import { getImageUrl } from "@/utils/imageUtils";
 import { useSettings } from "@/hooks/useSettings";
 import { useNewsletters } from "@/hooks/useNewsletters";
 import { trackSubscribe } from "@/services/metaPixel";
@@ -25,6 +24,7 @@ import { useSocialNetworks } from "@/hooks/useSocialNetworks";
 import LucideIcon from "@/components/common/LucideIcon";
 import { useBlogPosts } from "@/hooks/useBlog";
 import { useLanguage } from "@/context/LanguageContext";
+import { useDimensions } from "@/hooks/useDimensions";
 
 interface BlogPreview {
   id: string;
@@ -41,6 +41,7 @@ export default function Index() {
   const { t, isRTL } = useLanguage();
   const { data: products, isLoading: productsLoading } = useProducts();
   const { allDimensions } = useCategories(products);
+  const dbDimensions = useDimensions();
   const allProducts = (products || []).filter(p => p.sizes && p.sizes.length > 0).slice(0, 6);
 
   const [showAllDimensions, setShowAllDimensions] = useState(false);
@@ -54,7 +55,6 @@ export default function Index() {
   const [reviewsPageIndex, setReviewsPageIndex] = useState(0);
   const [expandedReviews, setExpandedReviews] = useState<number[]>([]);
   const [gammes, setGammes] = useState<any[]>([]);
-  const [dbDimensions, setDbDimensions] = useState<{ id: string, label: string, is_standard: boolean }[]>([]);
   const [categories, setCategories] = useState<{ id: string, label: string, image: string | null, description: string | null, color: string | null, text_color: string | null }[]>([]);
   const [dynamicReviews, setDynamicReviews] = useState<any[]>([]);
   const [averageRating, setAverageRating] = useState<number>(5.0);
@@ -147,19 +147,11 @@ export default function Index() {
   useEffect(() => {
     const fetchGammes = async () => {
       try {
-        const data = await api.get<any[]>(`/gammes?per_page=20&t=${Date.now()}`);
+        const data = await api.get<any[]>("/gammes?per_page=20");
         const sorted = (data || []).sort((a: any, b: any) => a.sort_order - b.sort_order);
         setGammes(sorted);
       } catch (err) {
         console.error("Erreur gammes:", err);
-      }
-    };
-    const fetchDimensions = async () => {
-      try {
-        const data = await api.get<{ id: string, label: string, is_standard: boolean }[]>("/dimensions");
-        setDbDimensions(data || []);
-      } catch (err) {
-        console.error("Erreur dimensions:", err);
       }
     };
     const fetchCategories = async () => {
@@ -184,7 +176,6 @@ export default function Index() {
     };
 
     fetchGammes();
-    fetchDimensions();
     fetchCategories();
     fetchReviews();
   }, []);
@@ -208,16 +199,6 @@ export default function Index() {
     }, 10000);
     return () => clearInterval(interval);
   }, [reviewsList.length, reviewsItemsPerPage]);
-
-  // Précharger les images quand les slides arrivent
-  useEffect(() => {
-    if (heroSlides.length > 0) {
-      heroSlides.slice(0, 2).forEach(slide => {
-        const img = new Image();
-        img.src = getImageUrl(slide.image_url);
-      });
-    }
-  }, [heroSlides]);
 
   const standardDimensionLabels = dbDimensions.filter(d => d.is_standard).map(d => d.label);
   const allApiDimensions = dbDimensions.map(d => d.label);
@@ -306,6 +287,13 @@ export default function Index() {
 
 const [carouselIndex, setCarouselIndex] = useState(0);
 const [isPaused, setIsPaused] = useState(false);
+const [hasUserScrolled, setHasUserScrolled] = useState(false);
+
+useEffect(() => {
+  const pauseCarouselOnScroll = () => setHasUserScrolled(true);
+  window.addEventListener("scroll", pauseCarouselOnScroll, { once: true, passive: true });
+  return () => window.removeEventListener("scroll", pauseCarouselOnScroll);
+}, []);
 
 useEffect(() => {
   const handleResize = () => setWindowWidth(window.innerWidth);
@@ -319,14 +307,14 @@ useEffect(() => {
 
 // Défilement automatique, un item à la fois
 useEffect(() => {
-  if (gammes.length <= 1 || isPaused) return;
+  if (gammes.length <= 1 || isPaused || hasUserScrolled) return;
 
   const timer = setInterval(() => {
     setCarouselIndex((prev) => (prev + 1) % gammes.length);
   }, 3500);
 
   return () => clearInterval(timer);
-}, [gammes.length, isPaused]);
+}, [gammes.length, hasUserScrolled, isPaused]);
 
 
 
@@ -409,7 +397,7 @@ useEffect(() => {
                           width={96}
                           widths={[96, 192, 384]}
                           sizes="48px"
-                          alt={post.title}
+                          alt=""
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           loading="lazy"
                         />
@@ -565,7 +553,7 @@ return (
       >
         <AnimatePresence mode="popLayout">
           <motion.div
-            key={carouselIndex}
+            key="gammes-carousel"
             initial={{ opacity: 0, x: 24 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -24 }}
@@ -602,7 +590,7 @@ return (
                           width={384}
                           widths={[192, 384, 768]}
                           sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
-                          alt={g.name}
+                          alt=""
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
                           draggable={false}
                           loading="lazy"
@@ -846,7 +834,7 @@ return (
                     width={96}
                     widths={[96, 192, 384]}
                     sizes="64px"
-                    alt={c.label}
+                    alt=""
                     className="w-16 h-16 object-contain mb-3 group-hover:scale-110 transition-transform duration-500"
                     loading="lazy"
                   />
@@ -1181,7 +1169,7 @@ return (
                           width={768}
                           widths={[384, 768, 1200]}
                           sizes="(min-width: 1024px) 33vw, 85vw"
-                          alt={post.title}
+                          alt=""
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                           loading="lazy"
                         />

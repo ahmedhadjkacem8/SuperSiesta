@@ -229,39 +229,23 @@ export default function AdminShowrooms() {
     }
   };
 
-  const getEmbedUrl = (url: string | null, address: string, city: string) => {
-    // CASE 1: No URL provided -> fallback to address/city
-    if (!url) {
-      const fallback = `${address}, ${city}`;
-      return `https://maps.google.com/maps?q=${encodeURIComponent(fallback)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  const getOpenStreetMapEmbedUrl = (
+    latitude: string | number | null | undefined,
+    longitude: string | number | null | undefined,
+  ) => {
+    if (latitude === "" || longitude === "" || latitude == null || longitude == null) {
+      return null;
     }
 
-    // CASE 2: URL is provided -> IGNORE address, only use the URL/CID
-    // Extract src if it's an iframe code
-    const srcMatch = url.match(/src="([^"]+)"/);
-    const cleanUrl = srcMatch ? srcMatch[1] : url.trim();
-
-    // 1. CID format (like the user's example) - prioritize this as it's the most accurate
-    const cidMatch = cleanUrl.match(/cid=(\d+)/);
-    if (cidMatch) return `https://maps.google.com/maps?cid=${cidMatch[1]}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-
-    // 2. If it's already a Google Embed URL or has pre-formatted parameters
-    if (cleanUrl.includes('/maps/embed') || cleanUrl.includes('pb=')) {
-      return cleanUrl;
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return null;
     }
 
-    // 3. Extract place name (common in full URLs)
-    const placeMatch = cleanUrl.match(/\/maps\/place\/([^/@?&]+)/);
-    if (placeMatch) return `https://maps.google.com/maps?q=${placeMatch[1]}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-
-    // 4. Coordinates format @lat,lng
-    const coordMatch = cleanUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (coordMatch) return `https://maps.google.com/maps?q=${coordMatch[1]},${coordMatch[2]}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-
-    // 5. Shortened Shared Links (maps.app.goo.gl) or any other format
-    // Use the URL itself as the query. We don't fallback to address anymore
-    // to respect the user's choice of specific location.
-    return `https://maps.google.com/maps?q=${encodeURIComponent(cleanUrl)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+    const offset = 0.01;
+    const bbox = `${lng - offset},${lat - offset},${lng + offset},${lat + offset}`;
+    return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;
   };
 
   // DRAG AND DROP LOGIC
@@ -541,24 +525,34 @@ export default function AdminShowrooms() {
             </section>
 
             {/* Aperçu Map */}
-            {(form.address || form.city || form.google_maps_url) && (
+            {(form.address || form.city || form.google_maps_url || form.lat || form.lng) && (
               <div className="space-y-3">
                 <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Aperçu Localisation</h3>
-                <a 
-                  href={form.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(form.address + ', ' + form.city)}`}
-                  target="_blank" rel="noopener noreferrer"
-                  aria-label={`Afficher l’aperçu de l’adresse ${form.address}, ${form.city} sur Google Maps (s'ouvre dans un nouvel onglet)`}
-                  className="block rounded-2xl overflow-hidden border border-border bg-muted aspect-video group relative cursor-pointer"
-                >
-                  <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-colors z-10 flex items-center justify-center">
-                    <span className="bg-background shadow-xl text-foreground px-4 py-2 rounded-xl text-xs font-bold opacity-0 group-hover:opacity-100 transition-all transform scale-90 group-hover:scale-100">Voir sur Maps</span>
+                {getOpenStreetMapEmbedUrl(form.lat, form.lng) ? (
+                  <a
+                    href={`https://www.openstreetmap.org/?mlat=${Number(form.lat)}&mlon=${Number(form.lng)}#map=15/${Number(form.lat)}/${Number(form.lng)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Afficher l’emplacement du showroom ${form.name || form.address} sur OpenStreetMap (s'ouvre dans un nouvel onglet)`}
+                    className="block rounded-2xl overflow-hidden border border-border bg-muted aspect-video group relative cursor-pointer"
+                  >
+                    <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-colors z-10 flex items-center justify-center">
+                      <span className="bg-background shadow-xl text-foreground px-4 py-2 rounded-xl text-xs font-bold opacity-0 group-hover:opacity-100 transition-all transform scale-90 group-hover:scale-100">Voir sur OpenStreetMap</span>
+                    </div>
+                    <iframe
+                      title={`Carte de ${form.name || form.address}`}
+                      width="100%"
+                      height="100%"
+                      loading="lazy"
+                      src={getOpenStreetMapEmbedUrl(form.lat, form.lng) ?? undefined}
+                      className="pointer-events-none"
+                    />
+                  </a>
+                ) : (
+                  <div className="flex aspect-video items-center justify-center rounded-2xl border border-border bg-muted px-6 text-center text-sm text-muted-foreground">
+                    Saisissez la latitude et la longitude pour afficher l’aperçu sans clé API.
                   </div>
-                  <iframe
-                    width="100%" height="100%" frameBorder="0" scrolling="no"
-                    src={getEmbedUrl(form.google_maps_url, form.address, form.city)}
-                    className="filter contrast-125 pointer-events-none"
-                  ></iframe>
-                </a>
+                )}
               </div>
             )}
           </div>
@@ -680,23 +674,33 @@ export default function AdminShowrooms() {
                 </div>
 
                 {/* Map Preview in list */}
-                <a 
-                  href={s.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.address + ', ' + s.city)}`}
-                  target="_blank" rel="noopener noreferrer"
-                  aria-label={`Afficher ${s.name} sur Google Maps (s'ouvre dans un nouvel onglet)`}
-                  className="w-full md:w-80 h-40 md:h-auto rounded-2xl overflow-hidden border border-border shrink-0 bg-muted group relative cursor-pointer"
-                >
-                  <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-all z-10 flex items-center justify-center">
-                     <div className="bg-primary text-primary-foreground p-3 rounded-full opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all shadow-xl">
-                        <MapPin className="w-5 h-5" />
-                     </div>
+                {getOpenStreetMapEmbedUrl(s.lat, s.lng) ? (
+                  <a
+                    href={`https://www.openstreetmap.org/?mlat=${s.lat}&mlon=${s.lng}#map=15/${s.lat}/${s.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Afficher ${s.name} sur OpenStreetMap (s'ouvre dans un nouvel onglet)`}
+                    className="w-full md:w-80 h-40 md:h-auto rounded-2xl overflow-hidden border border-border shrink-0 bg-muted group relative cursor-pointer"
+                  >
+                    <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-all z-10 flex items-center justify-center">
+                      <div className="bg-primary text-primary-foreground p-3 rounded-full opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all shadow-xl">
+                        <MapPin className="w-5 h-5" aria-hidden="true" />
+                      </div>
+                    </div>
+                    <iframe
+                      title={`Carte de ${s.name}`}
+                      width="100%"
+                      height="100%"
+                      loading="lazy"
+                      src={getOpenStreetMapEmbedUrl(s.lat, s.lng) ?? undefined}
+                      className="pointer-events-none opacity-70 transition-opacity group-hover:opacity-100"
+                    />
+                  </a>
+                ) : (
+                  <div className="flex w-full md:w-80 h-40 md:h-auto shrink-0 items-center justify-center rounded-2xl border border-border bg-muted px-4 text-center text-xs text-muted-foreground">
+                    Coordonnées GPS non renseignées
                   </div>
-                  <iframe
-                    width="100%" height="100%" frameBorder="0"
-                    src={getEmbedUrl(s.google_maps_url, s.address, s.city)}
-                    className="opacity-70 group-hover:opacity-100 transition-opacity pointer-events-none"
-                  ></iframe>
-                </a>
+                )}
               </div>
             </div>
           ))}

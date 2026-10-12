@@ -46,12 +46,16 @@ export function getImageUrl(imagePath: string | null | undefined): string {
     }
   }
 
-  // Chemin relatif vers /storage/, /uploads/, /videos/ ou /images/ → servi directement par Nginx
+  const publicImagePath = imagePath.replace(/^\/+/, '')
+  if (publicImagePath.startsWith('images/')) {
+    return `/${publicImagePath}`
+  }
+
+  // Les images /storage, uploads et vidéos sont servies par le backend.
   if (
     imagePath.startsWith('/storage/') ||
     imagePath.startsWith('/uploads/') ||
-    imagePath.startsWith('/videos/') ||
-    imagePath.startsWith('/images/')
+    imagePath.startsWith('/videos/')
   ) {
     if (API_URL.startsWith('http://') || API_URL.startsWith('https://')) {
       const base = API_URL.replace(/\/api\/?$/, '')

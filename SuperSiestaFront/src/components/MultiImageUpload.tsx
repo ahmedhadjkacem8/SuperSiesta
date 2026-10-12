@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // Allow JSX intrinsic element for model-viewer in this file
 declare global {
@@ -98,6 +98,16 @@ export default function MultiImageUpload({
       index: value.length + i,
     }))
   ];
+  const hasModelPreview = allImages.some((image) =>
+    image.name.toLowerCase().endsWith(".glb") || image.name.toLowerCase().endsWith(".gltf")
+  );
+
+  useEffect(() => {
+    if (!hasModelPreview) return;
+    import("@google/model-viewer").catch((error) => {
+      console.error("Erreur de chargement du visualiseur 3D:", error);
+    });
+  }, [hasModelPreview]);
 
   return (
     <div className="space-y-3">
@@ -137,7 +147,15 @@ export default function MultiImageUpload({
                       </div>
                     ) : isModel(name) ? (
                       <div className="w-full h-24">
-                        <model-viewer src={previewUrl} alt={`Model ${img.index}`} style={{ width: '100%', height: '100%' }} camera-controls auto-rotate interaction-prompt="none" />
+                        <model-viewer
+                          src={previewUrl}
+                          alt=""
+                          style={{ width: '100%', height: '100%' }}
+                          camera-controls
+                          auto-rotate
+                          interaction-prompt="none"
+                          onError={() => handlePreviewError(img.index)}
+                        />
                       </div>
                     ) : (
                       <img

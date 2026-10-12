@@ -51,7 +51,7 @@ export default function Navbar() {
 
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
         {/* Logo */}
-        <button onClick={() => navigate("/")} aria-label="Accueil Super Siesta" className="flex items-center gap-2">
+        <button onClick={() => navigate("/")} aria-label="Accueil Super Siesta" className="flex min-h-11 items-center gap-2">
           <img 
             src="/images/logo.png" 
             alt="Siesta Officiel" 
@@ -62,7 +62,7 @@ export default function Navbar() {
         {/* Desktop Navigation Links */}
         <nav aria-label="Navigation principale" className="hidden md:flex items-center gap-6">
           {links.map((l) => (
-            <Link key={l.href} to={l.href} className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+            <Link key={l.href} to={l.href} className="inline-flex min-h-11 items-center text-sm font-medium text-foreground hover:text-primary transition-colors">
               {l.label}
             </Link>
           ))}
@@ -72,7 +72,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Language Switcher Dropdown */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1.5 text-xs bg-muted hover:bg-accent px-2.5 py-1.5 rounded-full transition-colors font-bold text-foreground focus:outline-none">
+            <DropdownMenuTrigger className="flex min-h-11 items-center gap-1.5 text-xs bg-muted hover:bg-accent px-2.5 py-1.5 rounded-full transition-colors font-bold text-foreground focus:outline-none">
               <Globe className="w-3.5 h-3.5 text-primary" />
               <span>{currentLangObj.flag} {currentLangObj.shortLabel}</span>
             </DropdownMenuTrigger>
@@ -100,7 +100,7 @@ export default function Navbar() {
               <a
                 href={`tel:${settings.contact_phone.replace(/\s+/g, '')}`}
                 onClick={() => trackGAContactClick("call", settings.contact_phone)}
-                className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-primary/20 bg-primary/5 px-2 py-1.5 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10 sm:gap-1.5 sm:px-2.5 sm:text-xs lg:hidden"
+                className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border border-primary/20 bg-primary/5 px-2 py-1.5 text-[10px] font-bold text-primary transition-colors hover:bg-primary/10 sm:gap-1.5 sm:px-2.5 sm:text-xs lg:hidden"
                 dir="ltr"
                 aria-label={`Appeler ${settings.contact_phone}`}
               >
@@ -117,7 +117,7 @@ export default function Navbar() {
           {/* User Account / Login */}
           <Link 
             to={user ? "/mon-compte" : "/connexion"} 
-            className="hidden sm:flex items-center gap-1.5 text-xs bg-accent text-accent-foreground px-3 py-1.5 rounded-full hover:bg-primary hover:text-primary-foreground transition-colors"
+            className="hidden sm:flex min-h-11 items-center gap-1.5 text-xs bg-accent text-accent-foreground px-3 py-1.5 rounded-full hover:bg-primary hover:text-primary-foreground transition-colors"
           >
             <User className="w-3 h-3" aria-hidden="true" />
             {user ? t.nav.myAccount : t.nav.login}
@@ -140,7 +140,7 @@ export default function Navbar() {
                     }
                   }}
                   title={s.name}
-                  className="w-8 h-8 flex items-center justify-center bg-accent rounded-full transition-all hover:scale-110"
+                  className="flex min-h-11 min-w-11 items-center justify-center bg-accent rounded-full transition-all hover:scale-110"
                   style={{ color: s.icon?.hex_color || 'currentColor' }}
                 >
                   <LucideIcon name={s.icon?.lucide_name} label={s.name} className="w-4 h-4" aria-hidden="true" />
@@ -153,7 +153,7 @@ export default function Navbar() {
           <button 
             onClick={openCart} 
             aria-label="Ouvrir le panier"
-            className="relative p-2 rounded-xl bg-muted hover:bg-primary hover:text-primary-foreground transition-colors"
+            className="relative flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-muted hover:bg-primary hover:text-primary-foreground transition-colors"
             title={t.nav.cart}
           >
             <ShoppingCart className="w-5 h-5" aria-hidden="true" />
@@ -166,7 +166,7 @@ export default function Navbar() {
 
           {/* Mobile Menu Toggle */}
           <button
-            className="md:hidden p-2 rounded-xl bg-muted"
+            className="md:hidden flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-muted"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-expanded={menuOpen}
             aria-controls="navigation-mobile"
@@ -183,7 +183,7 @@ export default function Navbar() {
             <Link 
               key={l.href} 
               to={l.href} 
-              className="text-sm font-medium py-2 text-foreground hover:text-primary" 
+              className="inline-flex min-h-11 items-center text-sm font-medium py-2 text-foreground hover:text-primary" 
               onClick={() => setMenuOpen(false)}
             >
               {l.label}
@@ -192,7 +192,7 @@ export default function Navbar() {
           <div className="pt-2 border-t border-border flex items-center justify-between">
             <Link 
               to={user ? "/mon-compte" : "/connexion"} 
-              className="text-sm font-medium py-2 text-primary flex items-center gap-2" 
+              className="inline-flex min-h-11 items-center text-sm font-medium py-2 text-primary gap-2" 
               onClick={() => setMenuOpen(false)}
             >
               <User className="w-4 h-4" aria-hidden="true" />
@@ -204,7 +204,7 @@ export default function Navbar() {
                 <button
                   key={l.code}
                   onClick={() => setLang(l.code)}
-                  className={`px-2 py-1 text-xs rounded-md ${
+                  className={`min-h-11 min-w-11 px-2 py-1 text-xs rounded-md ${
                     lang === l.code ? "bg-primary text-primary-foreground font-bold" : "bg-muted text-foreground"
                   }`}
                 >

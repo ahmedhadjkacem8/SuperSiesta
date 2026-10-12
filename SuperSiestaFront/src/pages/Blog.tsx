@@ -63,7 +63,7 @@ export default function Blog() {
                                 width={768}
                                 widths={[384, 768, 1200]}
                                 sizes="(min-width: 1024px) 33vw, 85vw"
-                                alt={post.title}
+                                alt=""
                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                 loading="lazy"
                               />
@@ -166,7 +166,7 @@ export default function Blog() {
                           width={768}
                           widths={[384, 768, 1200]}
                           sizes="(min-width: 768px) 33vw, 50vw"
-                          alt={post.title}
+                          alt=""
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                           loading="lazy"
                         />

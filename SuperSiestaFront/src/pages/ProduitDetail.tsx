@@ -28,11 +28,54 @@ import OrderAdvanceAlert from "@/components/OrderAdvanceAlert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLanguage } from "@/context/LanguageContext";
 import { useDimensions } from "@/hooks/useDimensions";
+import { useLazyModelViewer } from "@/hooks/useLazyModelViewer";
 
 const normalizeDimensionLabel = (label: string | undefined | null) => {
   if (!label) return "";
   return label.toString().replace(/\s*[x×]\s*/gi, "×").trim();
 };
+
+function LazyGammeModel({
+  src,
+  poster,
+  alt,
+  viewInAR,
+}: {
+  src: string;
+  poster?: string;
+  alt: string;
+  viewInAR: string;
+}) {
+  const { ref, isLoaded, hasError, setHasError } = useLazyModelViewer();
+
+  return (
+    <div ref={ref} className="bg-white border border-border rounded-2xl shadow-lg overflow-hidden h-80 flex items-center justify-center">
+      {!isLoaded || hasError ? (
+        <img src={poster || "/images/tendresse.jpg"} alt="" width={800} height={600} className="h-full w-full object-contain" />
+      ) : (
+        <model-viewer
+          src={src}
+          alt={alt}
+          poster={poster}
+          shadow-intensity="1"
+          camera-controls
+          auto-rotate
+          interaction-prompt="auto"
+          style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}
+          camera-orbit="45deg 75deg 105%"
+          loading="lazy"
+          ar
+          ar-modes="webxr scene-viewer quick-look"
+          onError={() => setHasError(true)}
+        >
+          <button slot="ar-button" className="absolute bottom-4 right-4 min-h-11 min-w-11 bg-primary text-primary-foreground px-4 py-2 rounded-2xl font-black text-xs">
+            {viewInAR}
+          </button>
+        </model-viewer>
+      )}
+    </div>
+  );
+}
 
 type DimensionTypeFilter = "all" | "standard" | "special";
 
@@ -96,7 +139,7 @@ const hasPlaceOptionsForProduct = (sizes: any[], dimensions: any[]) => {
   });
 };
 
-function ProductGallery({ images, name }: { images: string[]; name: string }) {
+function ProductGallery({ images }: { images: string[] }) {
   const [index, setIndex] = useState(0);
   const total = images.length;
   const thumbsRef = useRef<HTMLDivElement>(null);
@@ -151,9 +194,13 @@ function ProductGallery({ images, name }: { images: string[]; name: string }) {
               width={1200}
               widths={[384, 768, 1200, 1600]}
               sizes="(min-width: 1024px) 50vw, 100vw"
-              alt={`${name} ${index + 1}`}
+              alt=""
               draggable={false}
               className="w-full h-full object-cover select-none"
+              intrinsicWidth={1200}
+              intrinsicHeight={1200}
+              loading={index === 0 ? "eager" : "lazy"}
+              fetchPriority={index === 0 ? "high" : "auto"}
             />
           </motion.div>
         </AnimatePresence>
@@ -170,7 +217,7 @@ function ProductGallery({ images, name }: { images: string[]; name: string }) {
               type="button"
               onClick={prev}
               aria-label="Image précédente"
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-background/85 backdrop-blur shadow flex items-center justify-center transition-opacity md:opacity-0 md:group-hover:opacity-100 hover:bg-background"
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-background/85 backdrop-blur shadow flex items-center justify-center transition-opacity md:opacity-0 md:group-hover:opacity-100 hover:bg-background"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -178,7 +225,7 @@ function ProductGallery({ images, name }: { images: string[]; name: string }) {
               type="button"
               onClick={next}
               aria-label="Image suivante"
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-background/85 backdrop-blur shadow flex items-center justify-center transition-opacity md:opacity-0 md:group-hover:opacity-100 hover:bg-background"
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-background/85 backdrop-blur shadow flex items-center justify-center transition-opacity md:opacity-0 md:group-hover:opacity-100 hover:bg-background"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -544,7 +591,6 @@ export default function ProduitDetail() {
         <ProductGallery
           key={product.id}
           images={productGalleryImages.length ? productGalleryImages : [product.image]}
-          name={product.name}
         />
         {/* ================= FIN GALERIE ================= */}
 
@@ -880,12 +926,6 @@ export default function ProduitDetail() {
 
         if (!videoUrl && !modelUrl) return null;
 
-        // Debug: log the raw and resolved URLs to help diagnose 404 /api/storage issues
-        const resolvedModelUrl = modelUrl ? getImageUrl(modelUrl) : null;
-        const resolvedVideoUrl = videoUrl ? getImageUrl(videoUrl) : null;
-        // eslint-disable-next-line no-console
-        console.debug('ProduitDetail media URLs', { modelUrl, resolvedModelUrl, videoUrl, resolvedVideoUrl });
-
         return (
           <section className="mt-16">
             <div className="flex items-center gap-3 mb-6">
@@ -896,24 +936,12 @@ export default function ProduitDetail() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
               {/* 3D model (if available) */}
               {modelUrl && (
-                <div className="bg-white border border-border rounded-2xl shadow-lg overflow-hidden h-80 flex items-center justify-center">
-                  <model-viewer
-                    src={getImageUrl(modelUrl)}
-                    alt={`3D modèle gamme ${gamme.name}`}
-                    poster={getImageUrl(gamme.photos?.[0]) || undefined}
-                    shadow-intensity="1"
-                    camera-controls
-                    auto-rotate
-                    interaction-prompt="auto"
-                    style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }}
-                    camera-orbit="45deg 75deg 105%"
-                    loading="eager"
-                    ar
-                    ar-modes="webxr scene-viewer quick-look"
-                  >
-                    <button slot="ar-button" className="absolute bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-2xl font-black text-xs">{t.product.viewInAR}</button>
-                  </model-viewer>
-                </div>
+                <LazyGammeModel
+                  src={getImageUrl(modelUrl)}
+                  poster={getImageUrl(gamme.photos?.[0]) || undefined}
+                  alt={`3D modèle gamme ${gamme.name}`}
+                  viewInAR={t.product.viewInAR}
+                />
               )}
 
               {/* Video reel (if available) */}

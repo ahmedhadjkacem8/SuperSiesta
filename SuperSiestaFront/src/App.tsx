@@ -11,44 +11,43 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import Index from "./pages/Index";
-import Boutique from "./pages/Boutique";
-import ProduitDetail from "./pages/ProduitDetail";
-import Commander from "./pages/Commander";
-import Connexion from "./pages/Connexion";
-import MonCompte from "./pages/MonCompte";
-import APropos from "./pages/APropos";
-import Contact from "./pages/Contact";
-import MentionsLegales from "./pages/MentionsLegales";
-import Blog from "./pages/Blog";
-import BlogPost from "./pages/BlogPost";
-import NotFound from "./pages/NotFound";
-import AdminLogin from "./pages/admin/AdminLogin";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminProduits from "./pages/admin/AdminProduits";
-import AdminClients from "./pages/admin/AdminClients";
-import AdminDevis from "./pages/admin/AdminDevis";
-// import AdminFactures from "./pages/admin/AdminFactures";
-// import AdminTresorerie from "./pages/admin/AdminTresorerie";
-import AdminCMS from "./pages/admin/AdminCMS";
-import AdminBlog from "./pages/admin/AdminBlog";
-import AdminShowrooms from "./pages/admin/AdminShowrooms";
-import AdminAPropos from "./pages/admin/AdminAPropos";
-import AdminCommandes from "./pages/admin/AdminCommandes";
-import AdminHeroSlides from "./pages/admin/AdminHeroSlides";
-import AdminGammes from "./pages/admin/AdminGammes";
-import AdminBonLivraison from "./pages/admin/AdminBonLivraison";
-import AdminLivreurs from "./pages/admin/AdminLivreurs";
-import AdminSettings from "./pages/admin/AdminSettings";
-import AdminReviews from "./pages/admin/AdminReviews";
-import AdminNewsletter from "./pages/admin/AdminNewsletter";
-import AdminAdministrateurs from "./pages/admin/AdminAdministrateurs";
-import AdminProspects from "./pages/admin/AdminProspects";
-import GammeDetail from "./pages/GammeDetail";
-import Register from "./pages/Register";
-import Showrooms from "./pages/Showrooms";
 import ProtectedRoute from "@/components/admin/ProtectedRoute";
-import React from "react";
-import SeoPanel from "./pages/admin/SeoPanel";
+import React, { lazy, Suspense } from "react";
+
+const Boutique = lazy(() => import("./pages/Boutique"));
+const ProduitDetail = lazy(() => import("./pages/ProduitDetail"));
+const Commander = lazy(() => import("./pages/Commander"));
+const Connexion = lazy(() => import("./pages/Connexion"));
+const MonCompte = lazy(() => import("./pages/MonCompte"));
+const APropos = lazy(() => import("./pages/APropos"));
+const Contact = lazy(() => import("./pages/Contact"));
+const MentionsLegales = lazy(() => import("./pages/MentionsLegales"));
+const Blog = lazy(() => import("./pages/Blog"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminProduits = lazy(() => import("./pages/admin/AdminProduits"));
+const AdminClients = lazy(() => import("./pages/admin/AdminClients"));
+const AdminDevis = lazy(() => import("./pages/admin/AdminDevis"));
+const AdminCMS = lazy(() => import("./pages/admin/AdminCMS"));
+const AdminBlog = lazy(() => import("./pages/admin/AdminBlog"));
+const AdminShowrooms = lazy(() => import("./pages/admin/AdminShowrooms"));
+const AdminAPropos = lazy(() => import("./pages/admin/AdminAPropos"));
+const AdminCommandes = lazy(() => import("./pages/admin/AdminCommandes"));
+const AdminHeroSlides = lazy(() => import("./pages/admin/AdminHeroSlides"));
+const AdminGammes = lazy(() => import("./pages/admin/AdminGammes"));
+const AdminBonLivraison = lazy(() => import("./pages/admin/AdminBonLivraison"));
+const AdminLivreurs = lazy(() => import("./pages/admin/AdminLivreurs"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminReviews = lazy(() => import("./pages/admin/AdminReviews"));
+const AdminNewsletter = lazy(() => import("./pages/admin/AdminNewsletter"));
+const AdminAdministrateurs = lazy(() => import("./pages/admin/AdminAdministrateurs"));
+const AdminProspects = lazy(() => import("./pages/admin/AdminProspects"));
+const GammeDetail = lazy(() => import("./pages/GammeDetail"));
+const Register = lazy(() => import("./pages/Register"));
+const Showrooms = lazy(() => import("./pages/Showrooms"));
+const SeoPanel = lazy(() => import("./pages/admin/SeoPanel"));
 
 const queryClient = new QueryClient();
 
@@ -115,6 +114,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
             <PageViewTracker />
+            <Suspense fallback={<div className="min-h-screen" aria-busy="true" />}>
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<PublicLayout><Index /></PublicLayout>} />
@@ -167,6 +167,7 @@ const App = () => (
 
               <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
             </Routes>
+            </Suspense>
           </BrowserRouter>
         </CartProvider>
       </AuthProvider>
