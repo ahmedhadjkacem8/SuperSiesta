@@ -5,12 +5,16 @@ type ResponsiveImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src" | "s
   imagePath: string | null | undefined;
   width: number;
   widths: number[];
+  intrinsicWidth?: number;
+  intrinsicHeight?: number;
 };
 
 export default function ResponsiveImage({
   imagePath,
   width,
   widths,
+  intrinsicWidth,
+  intrinsicHeight,
   onError,
   ...imageProps
 }: ResponsiveImageProps) {
@@ -39,6 +43,8 @@ export default function ResponsiveImage({
   return (
     <img
       {...imageProps}
+      width={intrinsicWidth}
+      height={intrinsicHeight}
       src={useOriginal ? originalUrl : optimizedUrl}
       srcSet={useOriginal ? undefined : getResponsiveImageSrcSet(imagePath, widths)}
       onError={handleError}
