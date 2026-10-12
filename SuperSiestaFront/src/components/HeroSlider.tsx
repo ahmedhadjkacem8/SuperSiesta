@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ResponsiveImage from "@/components/ResponsiveImage";
-import { getResponsiveImageSrcSet, getResponsiveImageUrl } from "@/utils/imageUtils";
+import { getResponsiveImageSrcSet } from "@/utils/imageUtils";
 import { useLanguage } from "@/context/LanguageContext";
 
 interface HeroSlide {
@@ -76,36 +76,6 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
     return () => clearInterval(timer);
   }, [next, slides.length]);
 
-  useEffect(() => {
-    const firstSlide = slides[0];
-    if (!firstSlide?.image_url) return;
-
-    const preload = document.createElement("link");
-    preload.rel = "preload";
-    preload.as = "image";
-    preload.href = getResponsiveImageUrl(firstSlide.image_url, 1200);
-    preload.imageSrcset = getResponsiveImageSrcSet(firstSlide.image_url, [768, 1200, 1600]);
-    preload.imageSizes = "100vw";
-    document.head.appendChild(preload);
-
-    if (firstSlide.mobile_image_url) {
-      const mobilePreload = document.createElement("link");
-      mobilePreload.rel = "preload";
-      mobilePreload.as = "image";
-      mobilePreload.href = getResponsiveImageUrl(firstSlide.mobile_image_url, 768);
-      mobilePreload.imageSrcset = getResponsiveImageSrcSet(firstSlide.mobile_image_url, [384, 768, 1200]);
-      mobilePreload.imageSizes = "100vw";
-      mobilePreload.media = "(max-width: 767px)";
-      document.head.appendChild(mobilePreload);
-      return () => {
-        preload.remove();
-        mobilePreload.remove();
-      };
-    }
-
-    return () => preload.remove();
-  }, [slides]);
-
   if (!slides || slides.length === 0) return null;
 
   const slide = slides[current];
@@ -177,13 +147,10 @@ return (
             width={1200}
             widths={[768, 1200, 1600]}
             sizes="100vw"
-            alt=""
+            alt={slide.title || ""}
             className="w-full h-full object-cover"
-            intrinsicWidth={1600}
-            intrinsicHeight={650}
-            loading={current === 0 ? "eager" : "lazy"}
-            fetchPriority={current === 0 ? "high" : "auto"}
-            decoding="async"
+            loading="eager"
+            {...({ fetchpriority: "high" } as any)}
           />
         </picture>
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10 sm:bg-gradient-to-r sm:from-black/80 sm:via-black/40 sm:to-transparent md:from-black/70 md:via-black/30 md:to-transparent" />
