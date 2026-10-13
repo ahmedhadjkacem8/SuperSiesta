@@ -41,7 +41,17 @@ export interface OrderItem {
   unit_price: number;
   quantity: number;
   total: number;
-  parameters?: Record<string, any> | null;
+  parameters?: Record<string, unknown> | null;
+}
+
+export interface OrdersPagination {
+  data: Order[];
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+  from: number | null;
+  to: number | null;
 }
 
 interface UseOrdersOptions {
@@ -49,23 +59,26 @@ interface UseOrdersOptions {
   perPage?: number;
   status?: string;
   search?: string;
+  raw?: boolean;
   adminEndpoint?: boolean; // Si true, utilise /admin/orders au lieu de /orders
 }
 
 export function useOrders(options: UseOrdersOptions = {}) {
+  const { page, perPage, status, search, raw, adminEndpoint } = options;
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState<any>(null);
-  const optionsRef = useRef(options); // Utiliser une ref pour éviter de recréer fetchOrders
+  const [pagination, setPagination] = useState<OrdersPagination | null>(null);
+  const optionsRef = useRef(options);
+  const latestRequestRef = useRef(0);
 
-  // Mettre à jour la ref quand options change
   useEffect(() => {
-    optionsRef.current = options;
-  }, [options]);
+    optionsRef.current = { page, perPage, status, search, raw, adminEndpoint };
+  }, [page, perPage, status, search, raw, adminEndpoint]);
 
   const fetchOrders = useCallback(async (opts: UseOrdersOptions = {}) => {
     const finalOpts = { ...optionsRef.current, ...opts };
+    const requestId = ++latestRequestRef.current;
 
     try {
       setLoading(true);
@@ -73,30 +86,29 @@ export function useOrders(options: UseOrdersOptions = {}) {
       if (finalOpts.page) params.append('page', finalOpts.page.toString());
       if (finalOpts.perPage) params.append('per_page', finalOpts.perPage.toString());
       if (finalOpts.status) params.append('status', finalOpts.status);
-      // allow requesting raw paginator metadata when needed
-      if ((finalOpts as any).raw) params.append('_raw', '1');
+      if (finalOpts.search?.trim()) params.append('search', finalOpts.search.trim());
+      if (finalOpts.raw) params.append('_raw', '1');
       params.append('t', Date.now().toString());
 
-      // Déterminer l'endpoint à utiliser
       const baseEndpoint = finalOpts.adminEndpoint ? '/admin/orders' : '/orders';
       const endpoint = `${baseEndpoint}?${params.toString()}`;
-      const response = await api.get<any>(endpoint);
+      const response = await api.get<Order[] | OrdersPagination>(endpoint);
 
-      // Handle pagination response
-      const orderData = response.data || response;
-      const ordersList = Array.isArray(orderData) ? orderData : (orderData.data || []);
+      if (requestId !== latestRequestRef.current) return;
 
+      const ordersList = Array.isArray(response) ? response : response.data;
       setOrders(ordersList);
-      setPagination(response.meta || response);
+      setPagination(Array.isArray(response) ? null : response);
       setError(null);
-    } catch (err: any) {
-      const errorMsg = err.message || 'Erreur lors du chargement des commandes';
+    } catch (err: unknown) {
+      if (requestId !== latestRequestRef.current) return;
+      const errorMsg = err instanceof Error ? err.message : 'Erreur lors du chargement des commandes';
       setError(errorMsg);
       console.error('Error fetching orders:', err);
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestRef.current) setLoading(false);
     }
-  }, []); // Pas de dépendance - on utilise une ref à la place
+  }, []);
 
   const updateOrderStatus = useCallback(async (orderId: string, status: string) => {
     try {
@@ -109,8 +121,8 @@ export function useOrders(options: UseOrdersOptions = {}) {
         )
       );
       return response;
-    } catch (err: any) {
-      const errorMsg = err.message || 'Erreur lors de la mise à jour';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Erreur lors de la mise à jour';
       setError(errorMsg);
       throw err;
     }
@@ -120,8 +132,8 @@ export function useOrders(options: UseOrdersOptions = {}) {
     try {
       await api.delete(`/orders/${orderId}`);
       setOrders((prev) => prev.filter((o) => o.id !== orderId));
-    } catch (err: any) {
-      const errorMsg = err.message || 'Erreur lors de la suppression';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Erreur lors de la suppression';
       setError(errorMsg);
       throw err;
     }
@@ -129,7 +141,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [fetchOrders, page, perPage, status, search, raw, adminEndpoint]);
 
   return {
     orders,
@@ -160,8 +172,8 @@ export function useOrderDetail(orderId: string) {
       setOrder(orderData);
       setItems(itemsData || []);
       setError(null);
-    } catch (err: any) {
-      const errorMsg = err.message || 'Erreur lors du chargement';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Erreur lors du chargement';
       setError(errorMsg);
       console.error('Error fetching order detail:', err);
     } finally {

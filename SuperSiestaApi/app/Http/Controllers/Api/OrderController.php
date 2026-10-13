@@ -51,15 +51,65 @@ class OrderController extends BaseController
     {
         $this->authorize('viewAny', Order::class);
 
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+        ]);
+        $search = trim($validated['search'] ?? '');
         $query = Order::query();
 
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
 
+        if ($search !== '') {
+            $escapedSearch = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], mb_strtolower($search));
+            $like = "%{$escapedSearch}%";
+            $phoneDigits = preg_replace('/\D+/', '', $search);
+            $phoneDigits = preg_replace('/^(?:00216|216)(?=\d{6,}$)/', '', $phoneDigits);
+
+            $query->where(function ($searchQuery) use ($like, $phoneDigits) {
+                foreach (['orders.order_number', 'orders.full_name', 'orders.email'] as $column) {
+                    $searchQuery->orWhereRaw("LOWER({$column}) LIKE ? ESCAPE '!'", [$like]);
+                }
+
+                foreach (['orders.phone', 'orders.phone2'] as $column) {
+                    $searchQuery->orWhereRaw("LOWER({$column}) LIKE ? ESCAPE '!'", [$like]);
+                }
+
+                if ($phoneDigits !== '') {
+                    foreach (['orders.phone', 'orders.phone2'] as $column) {
+                        $searchQuery->orWhereRaw($this->normalizedPhoneExpression($column) . ' LIKE ?', ["%{$phoneDigits}%"]);
+                    }
+                }
+
+                $searchQuery->orWhereHas('client', function ($clientQuery) use ($like, $phoneDigits) {
+                    $clientQuery->where(function ($contactQuery) use ($like, $phoneDigits) {
+                        foreach (['full_name', 'email'] as $column) {
+                            $contactQuery->orWhereRaw("LOWER({$column}) LIKE ? ESCAPE '!'", [$like]);
+                        }
+
+                        if ($phoneDigits !== '') {
+                            $contactQuery->orWhereRaw($this->normalizedPhoneExpression('phone') . ' LIKE ?', ["%{$phoneDigits}%"]);
+                        }
+                    });
+                });
+            });
+        }
+
         $orders = $query->with(['items', 'invoice', 'user.profile', 'deliveryNotes'])->orderBy('created_at', 'desc')->paginate($request->get('per_page', 15));
 
         return $this->sendResponse($orders, 'All orders retrieved successfully');
+    }
+
+    private function normalizedPhoneExpression(string $column): string
+    {
+        $digits = "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE({$column}, ' ', ''), '-', ''), '.', ''), '+', ''), '(', ''), ')', ''), '/', '')";
+
+        return "CASE
+            WHEN {$digits} LIKE '00216%' THEN SUBSTR({$digits}, 6)
+            WHEN {$digits} LIKE '216%' THEN SUBSTR({$digits}, 4)
+            ELSE {$digits}
+        END";
     }
 
     /**

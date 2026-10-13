@@ -24,38 +24,41 @@ const STATUSES = [
 
 export default function AdminCommandes() {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-
-  // Use optimized hook with admin endpoint
-  const { orders, loading, fetchOrders, updateOrderStatus, pagination } = useOrders({ adminEndpoint: true });
   const [perPage, setPerPage] = useState<number>(25);
-  const [page, setPage] = useState<number>(1);
-
-  const filtered = orders.filter((o) => {
-    const matchSearch = !search || 
-      o.full_name.toLowerCase().includes(search.toLowerCase()) || 
-      o.order_number.toLowerCase().includes(search.toLowerCase()) || 
-      o.phone.includes(search) ||
-      (o.phone2 && o.phone2.includes(search));
-    const matchStatus = !filterStatus || o.status === filterStatus;
-    return matchSearch && matchStatus;
+  const [page, setPage] = useState(1);
+  const { orders, loading, error, fetchOrders, updateOrderStatus, pagination } = useOrders({
+    adminEndpoint: true,
+    page,
+    perPage,
+    status: filterStatus,
+    search: debouncedSearch,
+    raw: true,
   });
+  const isLoading = loading || search.trim() !== debouncedSearch;
 
   const getStatusInfo = (s: string) => STATUSES.find((st) => st.value === s) || STATUSES[0];
 
-  // Refetch when filter changes or on interval
   useEffect(() => {
-    const fetchData = () => {
-      const opts: any = { adminEndpoint: true, perPage, page, raw: true };
-      if (filterStatus) opts.status = filterStatus;
-      fetchOrders(opts);
-    };
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 400);
+    return () => window.clearTimeout(timeout);
+  }, [search]);
 
-    fetchData();
-  }, [filterStatus, perPage, page]);
+  const updateSearch = (value: string) => {
+    setSearch(value);
+  };
+
+  const updateStatusFilter = (status: string) => {
+    setFilterStatus(status);
+    setPage(1);
+  };
 
   const viewDetail = (o: Order) => {
     setSelectedOrder(o);
@@ -83,8 +86,8 @@ export default function AdminCommandes() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       toast.success("Facture téléchargée");
-    } catch (err: any) {
-      toast.error(err.message || "Erreur lors du téléchargement");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors du téléchargement");
     }
   };
 
@@ -94,8 +97,8 @@ export default function AdminCommandes() {
       await api.delete(`/orders/${o.id}`);
       toast.success("Commande supprimée");
       fetchOrders();
-    } catch (err: any) {
-      toast.error(err.message || "Erreur lors de la suppression");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de la suppression");
     }
   };
 
@@ -107,11 +110,11 @@ export default function AdminCommandes() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => fetchOrders({ adminEndpoint: true, perPage, page, raw: true })}
-            disabled={loading}
+            onClick={() => fetchOrders()}
+            disabled={isLoading}
             className="gap-2"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             Rafraîchir
           </Button>
           <Button
@@ -124,6 +127,11 @@ export default function AdminCommandes() {
           <Badge variant="outline">{pagination?.total ?? orders.length} commande{(pagination?.total ?? orders.length) > 1 ? "s" : ""}</Badge>
         </div>
       </div>
+      {error && (
+        <div role="alert" className="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          Impossible de charger les commandes : {error}
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <label className="flex items-center gap-2 rounded-2xl border border-border bg-background px-4 py-2 text-sm shadow-sm shadow-slate-900/5">
           <span className="text-sm text-muted-foreground">Afficher</span>
@@ -141,15 +149,19 @@ export default function AdminCommandes() {
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
-            placeholder="Rechercher par nom, n° ou tél..." 
+            type="search"
+            placeholder="Rechercher par n° commande, nom, email ou téléphone"
             value={search} 
-            onChange={(e) => setSearch(e.target.value)} 
+            onChange={(e) => updateSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.preventDefault();
+            }}
             className="pl-9" 
           />
         </div>
         <div className="flex flex-wrap gap-1">
           <button 
-            onClick={() => setFilterStatus("")} 
+            onClick={() => updateStatusFilter("")}
             className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
               !filterStatus ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border hover:bg-accent"
             }`}
@@ -157,11 +169,11 @@ export default function AdminCommandes() {
             Tous ({orders.length})
           </button>
           {STATUSES.map((s) => {
-            const count = orders.filter(o => o.status === s.value).length;
+            const count = orders.reduce((total, order) => total + Number(order.status === s.value), 0);
             return (
               <button 
                 key={s.value} 
-                onClick={() => setFilterStatus(filterStatus === s.value ? "" : s.value)} 
+                onClick={() => updateStatusFilter(filterStatus === s.value ? "" : s.value)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
                   filterStatus === s.value 
                     ? s.color + " border-transparent" 
@@ -176,14 +188,14 @@ export default function AdminCommandes() {
       </div>
 
       {/* Loading state */}
-      {loading && (
+      {isLoading && (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       )}
 
       {/* Table */}
-      {!loading && (
+      {!isLoading && (
         <div className="bg-card rounded-lg border border-border overflow-hidden">
           <Table>
             <TableHeader>
@@ -198,7 +210,7 @@ export default function AdminCommandes() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 && (
+              {orders.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
                     <Package className="w-12 h-12 mx-auto mb-4 opacity-10" />
@@ -206,7 +218,7 @@ export default function AdminCommandes() {
                   </TableCell>
                 </TableRow>
               )}
-              {filtered.map((o) => {
+              {orders.map((o) => {
                 const si = getStatusInfo(o.status);
                 const StatusIcon = si.icon;
                 return (
@@ -245,13 +257,11 @@ export default function AdminCommandes() {
                               const nextIndex = (currentIndex + 1) % (STATUSES.length - 1);
                               const newStatus = STATUSES[nextIndex].value;
                               
-                              try {
-                                toast.promise(updateOrderStatus(o.id, newStatus), {
-                                  loading: 'Mise à jour...',
-                                  success: 'Statut mis à jour',
-                                  error: 'Erreur lors de la mise à jour'
-                                });
-                              } catch (err) {}
+                              toast.promise(updateOrderStatus(o.id, newStatus), {
+                                loading: 'Mise à jour...',
+                                success: 'Statut mis à jour',
+                                error: 'Erreur lors de la mise à jour'
+                              });
                             }}
                             title="Cliquer pour changer rapidement de statut"
                           >
@@ -308,21 +318,21 @@ export default function AdminCommandes() {
         </div>
       )}
 
-      {pagination && !loading && (
+      {pagination && !isLoading && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 px-2 py-3 rounded-b-lg border border-t-0 border-border bg-background">
           <div className="text-sm text-muted-foreground">Affichage {pagination.from} - {pagination.to} sur {pagination.total}</div>
           <div className="flex items-center gap-2">
             <button
               type="button"
               disabled={pagination.current_page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
               className="rounded border border-border bg-background px-3 py-1 text-sm transition hover:bg-muted/10 disabled:cursor-not-allowed disabled:opacity-50"
             >Précédent</button>
             <span className="text-sm text-muted-foreground">Page {pagination.current_page} / {pagination.last_page}</span>
             <button
               type="button"
               disabled={pagination.current_page >= pagination.last_page}
-              onClick={() => setPage((p) => Math.min(pagination.last_page, p + 1))}
+              onClick={() => setPage((current) => Math.min(pagination.last_page, current + 1))}
               className="rounded border border-border bg-background px-3 py-1 text-sm transition hover:bg-muted/10 disabled:cursor-not-allowed disabled:opacity-50"
             >Suivant</button>
           </div>
@@ -333,7 +343,7 @@ export default function AdminCommandes() {
       <AdminCreateOrderDialog 
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
-        onSuccess={() => fetchOrders({ adminEndpoint: true })}
+        onSuccess={() => fetchOrders()}
       />
 
       {/* Detail Dialog with new component */}
@@ -353,7 +363,7 @@ export default function AdminCommandes() {
             <OrderDetailPanel 
               orderId={selectedOrder.id}
               onClose={() => setDetailDialogOpen(false)}
-              onRefresh={() => fetchOrders({ adminEndpoint: true })}
+              onRefresh={() => fetchOrders()}
             />
           )}
         </DialogContent>
