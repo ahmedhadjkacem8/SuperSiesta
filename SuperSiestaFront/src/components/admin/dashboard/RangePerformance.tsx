@@ -19,9 +19,9 @@ export function RangePerformance({ ranges, loading }: RangePerformanceProps) {
       emptyMessage="Donnée non disponible"
       className="md:col-span-2 xl:col-span-1"
     >
-      <div className="h-[280px] w-full sm:h-[320px]">
+      <div className="h-[280px] w-full px-2 sm:h-[320px]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 20, right: 4, left: -22, bottom: 0 }}>
+          <BarChart data={chartData} margin={{ top: 28, right: 16, left: 12, bottom: 8 }}>
             <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 10 }} />
             <YAxis hide />
