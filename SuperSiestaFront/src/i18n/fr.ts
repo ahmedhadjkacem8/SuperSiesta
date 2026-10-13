@@ -29,7 +29,7 @@ export const fr = {
   nav: {
     promo: "🚚 Livraison gratuite partout en Tunisie | 📞 71 000 000 | Paiement à la livraison",
     home: "Accueil",
-    shop: "Boutique",
+    shop: "Matelas",
     showrooms: "Showrooms",
     blog: "Blog",
     about: "À Propos",

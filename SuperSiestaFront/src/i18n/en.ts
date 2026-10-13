@@ -29,7 +29,7 @@ export const en = {
   nav: {
     promo: "🚚 Free delivery across Tunisia | 📞 71 000 000 | Cash on delivery",
     home: "Home",
-    shop: "Shop",
+    shop: "Mattresses",
     showrooms: "Showrooms",
     blog: "Blog",
     about: "About",
