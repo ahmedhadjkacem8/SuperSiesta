@@ -1,523 +1,160 @@
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Users, TrendingUp, 
-  ShoppingCart, Truck, AlertCircle, Star, 
-  Banknote, ArrowUpRight, Package,
-  RefreshCw
-} from "lucide-react";
-import AdminLayout from "@/components/admin/AdminLayout";
-import { 
-  XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, ComposedChart, Bar, Line
-} from "recharts";
-import { api } from "@/lib/apiClient";
+import { useState } from "react";
 import { motion } from "framer-motion";
+import { Ban, Banknote, CreditCard, ShoppingCart, Star, Truck } from "lucide-react";
+import AdminLayout from "@/components/admin/AdminLayout";
+import { AverageBasketCard } from "@/components/admin/dashboard/AverageBasketCard";
+import { ClientsCard } from "@/components/admin/dashboard/ClientsCard";
+import { DashboardHeader } from "@/components/admin/dashboard/DashboardHeader";
+import { KpiCard } from "@/components/admin/dashboard/KpiCard";
+import { OrdersDonut } from "@/components/admin/dashboard/OrdersDonut";
+import { RangePerformance } from "@/components/admin/dashboard/RangePerformance";
+import { RevenueChart } from "@/components/admin/dashboard/RevenueChart";
+import { SalesByRegion } from "@/components/admin/dashboard/SalesByRegion";
+import { TopProductsTable } from "@/components/admin/dashboard/TopProductsTable";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { formatPrice } from "@/lib/utils";
+import type { DashboardRange } from "@/components/admin/dashboard/types";
+
+function localDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function initialRange(): DashboardRange {
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(end.getDate() - 6);
+  return { preset: "7days", start: localDateKey(start), end: localDateKey(end) };
+}
+
+function amount(value: number): string {
+  return value ? formatPrice(value, "DT") : "0 DT";
+}
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({ 
-    clients: 0, 
-    orders: 0, 
-    pendingPayments: 0, 
-    deliveredOrders: 0, 
-    cancelledOrders: 0,
-    caisse: 0,
-    averageRating: 5.0 
-  });
-  const [revenueData, setRevenueData] = useState<{ label: string; revenue: number }[]>([]);
-  const [period, setPeriod] = useState<'current_week' | 'month' | 'year' | 'custom'>('current_week');
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
-  const [topProducts, setTopProducts] = useState<{ name: string; count: number }[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const formatDate = (date: Date) => date.toISOString().split('T')[0];
-
-  const load = async (showLoading = true, currentPeriod = period, range = dateRange) => {
-    const now = new Date();
-    let effectiveRange = { ...range };
-
-    if (currentPeriod === 'current_week') {
-      const monday = new Date(now);
-      monday.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      effectiveRange = { start: formatDate(monday), end: formatDate(sunday) };
-    } else if (currentPeriod === 'month') {
-      const firstDay = new Date(now.getFullYear(), 0, 1);
-      const lastDay = new Date(now.getFullYear(), 11, 31);
-      effectiveRange = { start: formatDate(firstDay), end: formatDate(lastDay) };
-    } else if (currentPeriod === 'year') {
-      const firstDay = new Date(now.getFullYear() - 4, 0, 1);
-      const lastDay = new Date(now.getFullYear(), 11, 31);
-      effectiveRange = { start: formatDate(firstDay), end: formatDate(lastDay) };
-    }
-
-    if (currentPeriod !== 'custom' && (effectiveRange.start !== range.start || effectiveRange.end !== range.end)) {
-      setDateRange(effectiveRange);
-    }
-
-    try {
-      if (showLoading) setLoading(true);
-      const timestamp = Date.now();
-      const [
-        notesData, 
-        clientsData, 
-        ordersData, 
-        reviewsData
-      ] = await Promise.all([
-        api.get<any[]>(`/delivery-notes?per_page=1000&t=${timestamp}`),
-        api.get<any[]>(`/clients?per_page=1000&t=${timestamp}`),
-        api.get<any[]>(`/orders?per_page=1000&t=${timestamp}`),
-        api.get<{ average: number }>(`/published-reviews?t=${timestamp}`),
-      ]);
-
-      const orders = Array.isArray(ordersData) ? ordersData : ((ordersData as any)?.data || []);
-      const notes = Array.isArray(notesData) ? notesData : ((notesData as any)?.data || []);
-
-      const safeTotal = (val: any) => {
-        const n = parseFloat(String(val).replace(',', '.'));
-        return isNaN(n) ? 0 : n;
-      };
-
-      // Stats calculations...
-      const pendingPayments = orders
-        .filter((o: any) => {
-          const bl = notes.find((dn: any) => dn.order_id === o.id);
-          return o.status === "accepté" && bl && bl.status !== "livrée" && bl.status !== "annulée";
-        })
-        .reduce((s: number, o: any) => s + safeTotal(o.total), 0);
-
-      const caisse = orders
-        .filter((o: any) => notes.some((dn: any) => dn.order_id === o.id && dn.status === "livrée"))
-        .reduce((s: number, o: any) => s + safeTotal(o.total), 0);
-
-      const deliveredCount = notes.filter((n: any) => n.status === "livrée").length;
-    
-      const cancelledCount = orders.filter((o: any) => o.status === "annulée").length;
-
-
-
-      const clientCount = Array.isArray(clientsData) ? clientsData.length : ((clientsData as any)?.data?.length || 0);
-
-      setStats({
-        clients: clientCount,
-        orders: orders.length,
-        pendingPayments,
-        deliveredOrders: deliveredCount,
-        cancelledOrders: cancelledCount, 
-        caisse,
-        averageRating: (reviewsData as any)?.average || 5.0,
-      });
-
-      // Revenue grouping by period: Based on orders with BL status 'livrée'
-      const dataMap: Record<string, number> = {};
-      
-      if (effectiveRange.start && effectiveRange.end) {
-        const start = new Date(effectiveRange.start);
-        const end = new Date(effectiveRange.end);
-        end.setHours(23, 59, 59, 999);
-
-        // Pre-fill labels for cleaner display
-        if (currentPeriod === 'current_week') {
-          ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].forEach(d => dataMap[d] = 0);
-        } else if (currentPeriod === 'month') {
-          for (let i = 0; i < 12; i++) {
-            const m = new Date(now.getFullYear(), i, 1).toLocaleDateString("fr-TN", { month: 'short' });
-            dataMap[m] = 0;
-          }
-        } else if (currentPeriod === 'year') {
-          const startYear = start.getFullYear();
-          for (let i = 0; i < 5; i++) {
-            dataMap[String(startYear + i)] = 0;
-          }
-        }
-
-        orders.forEach((o: any) => {
-          const bl = notes.find((dn: any) => dn.order_id === o.id);
-          if (bl && bl.status === 'livrée') {
-            const d = new Date(o.created_at);
-            if (d >= start && d <= end) {
-              let key = "";
-              if (currentPeriod === 'current_week') {
-                const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-                key = dayNames[d.getDay()];
-              } else if (currentPeriod === 'month') {
-                key = d.toLocaleDateString("fr-TN", { month: 'short' });
-              } else if (currentPeriod === 'year') {
-                key = String(d.getFullYear());
-              } else {
-                key = d.toISOString().split('T')[0];
-              }
-              dataMap[key] = (dataMap[key] || 0) + safeTotal(o.total);
-            }
-          }
-        });
-      }
-
-      const processedData = Object.entries(dataMap)
-        .sort(([a], [b]) => {
-          if (currentPeriod === 'current_week') {
-            const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-            return days.indexOf(a) - days.indexOf(b);
-          }
-          if (currentPeriod === 'month') {
-            const months = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-            const getIdx = (m: string) => months.findIndex(x => m.toLowerCase().startsWith(x.replace('.', '').substring(0, 3)));
-            return getIdx(a) - getIdx(b);
-          }
-          return a.localeCompare(b);
-        })
-        .map(([key, revenue]) => {
-          let label = key;
-          if (currentPeriod === 'custom' && /^\d{4}-\d{2}-\d{2}$/.test(key)) {
-            const d = new Date(key);
-            label = d.toLocaleDateString("fr-TN", { day: '2-digit', month: 'short' });
-          }
-          return { label, revenue };
-        });
-        
-      setRevenueData(processedData);
-
-      // Top products: All-time (independent of period)
-      const productMap: Record<string, number> = {};
-
-      orders.forEach((o: any) => {
-        if (o.items) {
-          o.items.forEach((it: any) => {
-            const name = it.product_name;
-            const size = it.size_label;
-            const displayName = size ? `${name} (${size})` : name;
-            if (name) productMap[displayName] = (productMap[displayName] || 0) + (it.quantity || 1);
-          });
-        }
-      });
-
-      const tops = Object.entries(productMap)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 4)
-        .map(([name, count]) => ({ name, count }));
-      setTopProducts(tops);
-    } catch (err: any) {
-      console.error("Dashboard load error:", err);
-    } finally {
-      if (showLoading) setLoading(false);
-    }
-  };
-
-  useEffect(() => { 
-    load();
-    const interval = setInterval(() => load(false), 10000);
-    return () => clearInterval(interval);
-  }, [period, dateRange]);
+  const [range, setRange] = useState<DashboardRange>(initialRange);
+  const data = useDashboardData(range);
+  const total = data.totals.orders;
+  const deliveryRate = total ? (data.totals.delivered / total) * 100 : 0;
+  const cancellationRate = total ? (data.totals.cancelled / total) * 100 : 0;
 
   const cards = [
-    { 
-      label: "Caisse", 
-      value: formatPrice(stats.caisse), 
-      icon: Banknote, 
-      color: "from-emerald-500 to-emerald-600",
-      description: "Total encaissé (Livré)"
+    {
+      label: "Chiffre d'affaires",
+      value: amount(data.totals.revenue),
+      detail: "vs période précédente",
+      icon: Banknote,
+      iconClass: "bg-emerald-50 text-emerald-600",
+      trend: data.trends.revenue,
     },
-    { 
-      label: "En attente", 
-      value: formatPrice(stats.pendingPayments), 
-      icon: AlertCircle, 
-      color: "from-amber-400 to-amber-600",
-      description: "Paiement en attente"
+    {
+      label: "Commandes",
+      value: String(total),
+      detail: "vs période précédente",
+      icon: ShoppingCart,
+      iconClass: "bg-blue-50 text-blue-600",
+      trend: data.trends.orders,
     },
-    { 
-      label: "Commandes", 
-      value: stats.orders, 
-      icon: ShoppingCart, 
-      color: "from-blue-500 to-blue-600",
-      description: `${stats.cancelledOrders} annulée${stats.cancelledOrders > 1 ? 's' : ''}`
+    {
+      label: "Paiement en attente",
+      value: amount(data.totals.pendingPayments),
+      detail: "vs période précédente",
+      icon: CreditCard,
+      iconClass: "bg-violet-50 text-violet-600",
+      trend: data.trends.pendingPayments,
     },
-    { 
-      label: "Livraisons", 
-      value: stats.deliveredOrders, 
-      icon: Truck, 
-      color: "from-cyan-500 to-cyan-600",
-      description: "Commandes livrées"
+    {
+      label: "Livraisons",
+      value: String(data.totals.delivered),
+      detail: "vs période précédente",
+      secondary: `Taux de livraison ${deliveryRate.toFixed(1)}%`,
+      icon: Truck,
+      iconClass: "bg-cyan-50 text-cyan-600",
+      trend: data.trends.delivered,
     },
-    { 
-      label: "Clients", 
-      value: stats.clients, 
-      icon: Users, 
-      color: "from-purple-500 to-purple-600",
-      description: "Total clients"
+    {
+      label: "Annulations",
+      value: String(data.totals.cancelled),
+      detail: "vs période précédente",
+      secondary: `Taux d'annulation ${cancellationRate.toFixed(1)}%`,
+      icon: Ban,
+      iconClass: "bg-orange-50 text-orange-600",
+      trend: data.trends.cancelled,
     },
-    { 
-      label: "Avis Clients", 
-      value: `${stats.averageRating}/5`, 
-      icon: Star, 
-      color: "from-yellow-400 to-yellow-600",
-      description: "Note moyenne"
+    {
+      label: "Avis clients",
+      value: data.totals.averageRating !== null
+        ? `${data.totals.averageRating.toFixed(1)}/5`
+        : data.totals.overallAverageRating !== null
+          ? `${data.totals.overallAverageRating.toFixed(1)}/5`
+          : "Aucun avis",
+      detail: data.totals.reviewCount !== null && data.totals.reviewCount > 0
+        ? `${data.totals.reviewCount} avis sur la période`
+        : data.totals.overallReviewCount !== null && data.totals.overallReviewCount > 0
+          ? `Aucun avis sur la période · ${data.totals.overallReviewCount} publiés au total`
+          : data.totals.overallAverageRating !== null
+            ? "Aucun avis sur la période · total indisponible"
+            : data.totals.overallReviewCount === 0
+              ? "Aucun avis publié"
+              : "Données des avis indisponibles",
+      icon: Star,
+      iconClass: "bg-amber-50 text-amber-500",
     },
   ];
 
   return (
     <AdminLayout>
-      <div className="flex flex-col gap-6 p-3 md:p-8 max-w-7xl mx-auto min-h-screen">
-{/* Minimal Modern KPI Cards */}
-<div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 md:gap-3">
-  {cards.map((c, i) => {
-    const isLongValue = String(c.value).length > 10;
+      <div className="mx-auto flex min-h-full max-w-[1600px] flex-col gap-6 bg-slate-50/40 p-1 sm:gap-7 sm:p-2">
+        <DashboardHeader range={range} onRangeChange={setRange} />
+        {data.error && (
+          <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+            Les statistiques n'ont pas pu être actualisées : {data.error}
+          </div>
+        )}
+        <section aria-label="Indicateurs clés" className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6">
+          {cards.map((card, index) => (
+            <motion.div key={card.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }}>
+              <KpiCard {...card} loading={data.loading} />
+            </motion.div>
+          ))}
+        </section>
 
-    return (
-      <motion.div
-        key={c.label}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: i * 0.05 }}
-        className="h-full"
-      >
-        <Card
-          className="
-            group
-            h-full
-            border border-border/50
-            bg-background/80
-            backdrop-blur-sm
-            rounded-xl
-            shadow-sm
-            hover:shadow-lg
-            hover:-translate-y-1
-            hover:border-primary/20
-            transition-all duration-200
-            overflow-hidden
-          "
-        >
-          <CardContent className="p-3">
-            <div className="flex items-center gap-3">
-
-              {/* Icon */}
-              <div
-                className={`
-                  w-9 h-9
-                  rounded-lg
-                  bg-gradient-to-br ${c.color}
-                  flex items-center justify-center
-                  shrink-0
-                  shadow-sm
-                `}
-              >
-                <c.icon
-                  className="
-                    w-4 h-4 text-white
-                    transition-transform duration-200
-                    group-hover:scale-110
-                  "
-                />
-              </div>
-
-              {/* Content */}
-              <div className="min-w-0 flex-1">
-
-                {/* Label */}
-                <p
-                  className="
-                    text-[10px]
-                    uppercase
-                    tracking-[0.15em]
-                    text-muted-foreground
-                    truncate
-                  "
-                >
-                  {c.label}
-                </p>
-
-                {/* Value */}
-                <h3
-                  className={`
-                    font-bold
-                    text-foreground
-                    leading-tight
-                    break-words
-                    whitespace-normal
-                    transition-all
-                    duration-200
-                    ${isLongValue
-                      ? "text-xs md:text-sm"
-                      : "text-base md:text-lg"}
-                  `}
-                >
-                  {c.value}
-                </h3>
-                {/* Description ← ajouté */}
-                {c.description && (
-                  <p className="text-[9px] text-muted-foreground font-medium truncate mt-0.5">
-                    {c.description}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-
-          {/* Bottom Hover Line */}
-          <div
-            className={`
-              h-[2px]
-              w-0
-              group-hover:w-full
-              bg-gradient-to-r ${c.color}
-              transition-all duration-300
-            `}
+        <section aria-label="Commandes et chiffre d'affaires" className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <RevenueChart data={data.series} loading={data.loading} />
+          <OrdersDonut
+            total={total}
+            delivered={data.totals.delivered}
+            cancelled={data.totals.cancelled}
+            pending={data.totals.pending}
+            processing={data.totals.processing}
+            loading={data.loading}
           />
-        </Card>
-      </motion.div>
-    );
-  })}
-</div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Revenue Chart */}
-          <Card className="lg:col-span-2 border shadow-sm overflow-hidden bg-white">
-            <CardHeader className="flex flex-row flex-wrap items-center justify-between p-4 md:p-6 pb-2 gap-4 bg-slate-50/50 border-b mb-6">
-              <div className="flex flex-wrap items-center gap-3">
-                {/* Custom Date Range Picker */}
-                <div className={`flex items-center gap-1.5 bg-white p-1 rounded-lg border shadow-sm transition-all duration-300 ${period !== 'custom' ? 'opacity-40 grayscale pointer-events-none' : 'ring-2 ring-primary/5 border-primary/20'}`}>
-                  <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded-md">
-                    <span className="text-[8px] font-black uppercase text-slate-400">Du</span>
-                    <input 
-                      type="date" 
-                      className="bg-transparent text-[10px] font-bold outline-none text-slate-700 cursor-pointer"
-                      value={dateRange.start}
-                      onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                      disabled={period !== 'custom'}
-                    />
-                  </div>
-                  <div className="w-[1px] h-3 bg-slate-200" />
-                  <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded-md">
-                    <span className="text-[8px] font-black uppercase text-slate-400">Au</span>
-                    <input 
-                      type="date" 
-                      className="bg-transparent text-[10px] font-bold outline-none text-slate-700 cursor-pointer"
-                      value={dateRange.end}
-                      onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                      disabled={period !== 'custom'}
-                    />
-                  </div>
-                </div>
+        </section>
 
-                {/* Period Selector */}
-                <div className="inline-flex bg-slate-100 p-1 rounded-lg border border-slate-200/60 shadow-inner">
-                  {(['current_week', 'month', 'year', 'custom'] as const).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => setPeriod(p)}
-                      className={`relative px-3 py-1.5 text-[9px] font-black tracking-wider rounded-md transition-all duration-300 ${
-                        period === p 
-                          ? 'bg-white text-primary shadow-sm' 
-                          : 'text-slate-500 hover:text-slate-900 hover:bg-white/40'
-                      }`}
-                    >
-                      {p === 'current_week' ? 'Sem' : p === 'month' ? 'Mois' : p === 'year' ? 'An' : 'Periode'}
-                    </button>
-                  ))}
-                </div>
+        <section aria-label="Produits et gammes" className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-2">
+          <TopProductsTable products={data.topProducts} loading={data.loading} />
+          <RangePerformance ranges={data.ranges} loading={data.loading} />
+        </section>
 
-              </div>
-            </CardHeader>
-            <CardContent className="p-6 pt-0">
-              <div className="h-[400px] w-full mt-4">
-                {revenueData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={revenueData}>
-                      <defs>
-                        <linearGradient id="colorBar" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.2}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
-                      <XAxis 
-                        dataKey="label" 
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 700 }}
-                        dy={10}
-                      />
-                      <YAxis 
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 700 }}
-                        tickFormatter={(v) => `${v} DT`}
-                      />
-                      <Tooltip 
-                        cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
-                        contentStyle={{ 
-                          borderRadius: '12px', 
-                          border: '1px solid hsl(var(--border))', 
-                          boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-                          fontWeight: '700',
-                          fontSize: '11px',
-                          background: 'hsl(var(--background))'
-                        }}
-                        formatter={(v: number) => [v === 0 ? "0 DT" : formatPrice(v), "Revenu"]}
-                      />
-                      <Bar 
-                        dataKey="revenue" 
-                        fill="url(#colorBar)" 
-                        radius={[6, 6, 0, 0]} 
-                        barSize={32}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="revenue" 
-                        stroke="hsl(var(--primary))" 
-                        strokeWidth={2}
-                        dot={{ r: 4, fill: 'hsl(var(--background))', strokeWidth: 2, stroke: 'hsl(var(--primary))' }}
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground bg-muted/20 rounded-2xl border border-dashed">
-                    <Package className="w-10 h-10 opacity-20 mb-3" />
-                    <p className="text-xs font-bold uppercase tracking-widest opacity-40">Aucune donnée</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Top Products */}
-          <Card className="border shadow-sm">
-            <CardHeader className="p-6 pb-2">
-              <CardTitle className="text-lg font-bold flex items-center gap-2">
-                <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" /> Top Produits
-              </CardTitle>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-1 opacity-60">Articles les plus vendus (Global)</p>
-            </CardHeader>
-            <CardContent className="p-6 pt-4">
-              {topProducts.length > 0 ? (
-                <div className="space-y-6">
-                  {topProducts.map((p, i) => (
-                    <div key={p.name} className="relative">
-                      <div className="flex items-start justify-between mb-2 gap-3">
-                        <div className="flex items-start gap-3 flex-1">
-                          <div className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center text-[10px] font-bold ${
-                            i === 0 ? 'bg-yellow-100 text-yellow-700' : 
-                            i === 1 ? 'bg-slate-100 text-slate-700' : 
-                            i === 2 ? 'bg-orange-100 text-orange-700' : 'bg-muted text-muted-foreground'
-                          }`}>
-                            {i + 1}
-                          </div>
-                          <p className="text-xs font-bold tracking-tight leading-tight pt-1">{p.name}</p>
-                        </div>
-                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-lg shrink-0 mt-0.5">{p.count}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
-                  <Package className="w-8 h-8 opacity-20 mb-2" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Aucun produit</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        <section aria-label="Ventes par ville et indicateurs clients" className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <SalesByRegion regions={data.regions} total={total} loading={data.loading} />
+          <div className="grid grid-cols-1 gap-4 xl:h-[560px] xl:grid-rows-2">
+            <ClientsCard
+              total={data.totals.clients}
+              newClients={data.totals.newClients}
+              returningClients={data.totals.returningClients}
+              clientTrend={data.trends.clients}
+              newClientTrend={data.trends.newClients}
+              series={data.series}
+              loading={data.loading}
+            />
+            <AverageBasketCard
+              value={data.totals.averageBasket}
+              trend={data.trends.averageBasket}
+              series={data.series}
+              loading={data.loading}
+            />
+          </div>
+        </section>
       </div>
     </AdminLayout>
   );
