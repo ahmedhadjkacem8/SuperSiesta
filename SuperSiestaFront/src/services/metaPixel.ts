@@ -144,7 +144,30 @@ export function getFbpCookie(): string | null {
 export function getFbcCookie(): string | null {
   if (typeof document === "undefined") return null;
   const match = document.cookie.match(/(?:^|; )\s*_fbc\s*=\s*([^;]*)/);
-  return match ? decodeURIComponent(match[1]) : null;
+  const cookieValue = match ? decodeURIComponent(match[1]) : null;
+  if (cookieValue) return cookieValue;
+
+  const fbclid = new URLSearchParams(window.location.search).get("fbclid");
+  if (fbclid) {
+    const fbc = `fb.1.${Date.now()}.${fbclid}`;
+    try {
+      window.sessionStorage.setItem("meta_fbc", fbc);
+    } catch (err) {
+      if (isDebug) {
+        console.warn("[Meta Pixel] Could not persist the Facebook click ID:", err);
+      }
+    }
+    return fbc;
+  }
+
+  try {
+    return window.sessionStorage.getItem("meta_fbc");
+  } catch (err) {
+    if (isDebug) {
+      console.warn("[Meta Pixel] Could not read the stored Facebook click ID:", err);
+    }
+    return null;
+  }
 }
 
 /**
@@ -203,10 +226,10 @@ export async function sendCapiEvent(
       event_id: eid,
       event_source_url: typeof window !== "undefined" ? window.location.href : undefined,
       fbp: getFbpCookie(),
-      fbc: getFbcCookie(),
+      fbc: getFbcCookie() || userData?.fbc || null,
       custom_data: {
         ...customData,
-        currency: customData.currency || META_CURRENCY,
+        currency: META_CURRENCY,
       },
       user_data: userData || {},
     };
