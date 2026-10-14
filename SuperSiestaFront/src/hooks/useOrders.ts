@@ -31,6 +31,8 @@ export interface Order {
   quote_id: string | null;
   notes?: string | null;
   bl_contact?: string | null;
+  requires_special_discount?: boolean;
+  has_payment_proof?: boolean;
 }
 
 export interface OrderItem {

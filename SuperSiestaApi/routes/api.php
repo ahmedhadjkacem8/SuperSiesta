@@ -183,6 +183,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders/next-number', [OrderController::class, 'nextNumber']);
     Route::get('/admin/orders', [OrderController::class, 'adminIndex']);
     Route::get('/admin/orders/latest-id', [OrderController::class, 'latestId']);
+    Route::get('/admin/orders/{order}/payment-proof', [OrderController::class, 'showPaymentProof']);
+    Route::post('/admin/orders/{order}/payment-proof', [OrderController::class, 'storePaymentProof']);
 
     // Blog posts - Admin only
     Route::post('/blog-posts', [BlogPostController::class, 'store']);

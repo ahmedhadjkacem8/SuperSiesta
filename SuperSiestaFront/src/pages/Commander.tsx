@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/hooks/useAuthSecure";
 import { useFreegiftsByProduct } from "@/hooks/useFreegifts";
-import { Check, ChevronLeft, Package, Phone, MapPin, User, Loader2, Navigation, Gift, Mail, Sparkles, Star } from "lucide-react";
+import { Check, ChevronLeft, Package, Phone, MapPin, User, Loader2, Navigation, Gift, Mail, Sparkles, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/apiClient";
 import { formatPrice } from "@/lib/utils";
@@ -12,6 +12,7 @@ import { generateEventId, trackInitiateCheckout, trackPurchase, getFbpCookie, ge
 import { trackGABeginCheckout, trackGAPurchase, trackGAContactClick } from "@/services/analytics";
 import { getAdsClickIds } from "@/services/adsAttribution";
 import { useLanguage } from "@/context/LanguageContext";
+import { useSettings } from "@/hooks/useSettings";
 
 const villes = [
   "Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Zaghouan",
@@ -22,6 +23,34 @@ const villes = [
 
 const FORM_STORAGE_KEY = "supersiesta_commander_form";
 const FORM_TTL_MS = 24 * 60 * 60 * 1000; // 24 heures
+
+const normalizeDimensionLabel = (label: string | undefined | null) =>
+  label?.replace(/\s*[x×]\s*/gi, "×").trim() || "";
+
+const isTruthy = (value: unknown) =>
+  value === true || value === 1 || ["1", "true", "yes", "on"].includes(String(value).trim().toLowerCase());
+
+function appendFormDataValue(formData: FormData, key: string, value: unknown) {
+  if (value === null || value === undefined) {
+    formData.append(key, "");
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => appendFormDataValue(formData, `${key}[${index}]`, item));
+    return;
+  }
+  if (typeof value === "object") {
+    Object.entries(value).forEach(([childKey, childValue]) =>
+      appendFormDataValue(formData, `${key}[${childKey}]`, childValue)
+    );
+    return;
+  }
+  if (typeof value === "boolean") {
+    formData.append(key, value ? "1" : "0");
+    return;
+  }
+  formData.append(key, String(value));
+}
 
 function loadFormFromStorage() {
   try {
@@ -58,7 +87,8 @@ function generateOrderNumber() {
 
 export default function Commander() {
   const navigate = useNavigate();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
+  const { settings } = useSettings();
   const { items, total, clearCart } = useCart();
   const { user } = useAuth();
 
@@ -91,11 +121,32 @@ export default function Commander() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [dimensions, setDimensions] = useState<any[]>([]);
+  const [dimensionsLoaded, setDimensionsLoaded] = useState(false);
+  const [dimensionsLoadError, setDimensionsLoadError] = useState(false);
+  const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [paymentProofPreviewUrl, setPaymentProofPreviewUrl] = useState<string | null>(null);
   const [useSaved, setUseSaved] = useState(false);
   const prospectIdRef = useRef<string | null>(sessionStorage.getItem("current_prospect_id"));
   const isSavingProspect = useRef(false);
   const [isProspectSaved, setIsProspectSaved] = useState(false);
   const purchaseEventIdRef = useRef<string>(generateEventId());
+  const hasSpecialDimensions = items.some((item) => {
+    const dimension = dimensions.find(
+      (candidate) => normalizeDimensionLabel(candidate.label) === normalizeDimensionLabel(item.size.label)
+    );
+    return dimension ? !isTruthy(dimension.is_standard) : false;
+  });
+
+  useEffect(() => {
+    if (!paymentProof) {
+      setPaymentProofPreviewUrl(null);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(paymentProof);
+    setPaymentProofPreviewUrl(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [paymentProof]);
 
   // Track Meta Pixel InitiateCheckout & GA4 begin_checkout on mount
   useEffect(() => {
@@ -158,7 +209,10 @@ export default function Commander() {
         const res = await api.get('/dimensions')
         if (res) setDimensions(Array.isArray(res) ? res : (res as any).data || [])
       } catch (err) {
+        setDimensionsLoadError(true);
         console.error('Error fetching dimensions', err)
+      } finally {
+        setDimensionsLoaded(true);
       }
     }
     fetchDimensions()
@@ -334,6 +388,10 @@ export default function Commander() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!dimensionsLoaded || dimensionsLoadError) {
+      toast.error(t.checkout.dimensionLoadError);
+      return;
+    }
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setSubmitting(true);
@@ -391,7 +449,14 @@ export default function Commander() {
         ...getAdsClickIds(),
       };
 
-      const response = await api.post<any>("/orders", payload);
+      let orderPayload: FormData | typeof payload = payload;
+      if (paymentProof) {
+        const formData = new FormData();
+        Object.entries(payload).forEach(([key, value]) => appendFormDataValue(formData, key, value));
+        formData.append("payment_proof", paymentProof);
+        orderPayload = formData;
+      }
+      const response = await api.post<any>("/orders", orderPayload);
       
       const orderId = response?.order?.id || response?.id || orderNumber;
 
@@ -636,7 +701,65 @@ export default function Commander() {
             </div>
           </div>
 
-          <button type="submit" disabled={submitting} className="w-full bg-primary text-primary-foreground font-black py-4 rounded-2xl hover:bg-primary/90 transition-all text-lg shadow-xl disabled:opacity-50 flex items-center justify-center gap-2 transform active:scale-[0.98]">
+          {hasSpecialDimensions && (
+            <>
+              {settings[`checkout_special_dimension_notice_${lang}`]?.trim() && (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950">
+                  {settings[`checkout_special_dimension_notice_${lang}`]}
+                </div>
+              )}
+              <div className="rounded-xl border border-border bg-card p-4">
+                <label htmlFor="payment-proof" className="mb-1 block text-sm font-bold">
+                  {t.checkout.paymentProof} <span className="font-normal text-muted-foreground">({t.checkout.optional})</span>
+                </label>
+                <input
+                  id="payment-proof"
+                  type="file"
+                  accept=".pdf,image/jpeg,image/png,image/webp"
+                  onChange={(event) => setPaymentProof(event.target.files?.[0] || null)}
+                  className="w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:font-semibold file:text-primary"
+                />
+                {paymentProof && paymentProofPreviewUrl && (
+                  <div className="mt-4 space-y-3">
+                    {paymentProof.type === "application/pdf" ? (
+                      <iframe
+                        src={paymentProofPreviewUrl}
+                        title={t.checkout.paymentProof}
+                        className="h-64 w-full rounded-lg border border-border"
+                      />
+                    ) : (
+                      <img
+                        src={paymentProofPreviewUrl}
+                        alt={t.checkout.paymentProof}
+                        className="max-h-64 max-w-full rounded-lg border border-border object-contain"
+                      />
+                    )}
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="min-w-0 truncate text-xs text-muted-foreground">{paymentProof.name}</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPaymentProof(null);
+                          const input = document.getElementById("payment-proof") as HTMLInputElement | null;
+                          if (input) input.value = "";
+                        }}
+                        className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        {t.checkout.removePaymentProof}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          {dimensionsLoadError && (
+            <p role="alert" className="text-sm font-medium text-destructive">
+              {t.checkout.dimensionLoadError}
+            </p>
+          )}
+          <button type="submit" disabled={submitting || !dimensionsLoaded || dimensionsLoadError} className="w-full bg-primary text-primary-foreground font-black py-4 rounded-2xl hover:bg-primary/90 transition-all text-lg shadow-xl disabled:opacity-50 flex items-center justify-center gap-2 transform active:scale-[0.98]">
             {submitting ? <><Loader2 className="w-5 h-5 animate-spin" /> {t.checkout.sending}</> : t.checkout.confirmOrder}
           </button>
         </form>
@@ -689,11 +812,6 @@ export default function Commander() {
                   </div>
                 </div>
               ))}
-              {surCommandeCount > 0 && (
-                <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm leading-relaxed text-amber-950">
-                  {t.checkout.advanceNotice}
-                </div>
-              )}
             </div>
 
             <div className="border-t border-border pt-4 space-y-3">

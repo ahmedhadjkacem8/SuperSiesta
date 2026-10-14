@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +70,21 @@ interface Product {
   slug: string;
 }
 
+const specialNoticeLanguages = [
+  { code: "fr", label: "Français" },
+  { code: "en", label: "English" },
+  { code: "ar", label: "العربية" },
+] as const;
+
+const emptySpecialDimensionNotices = {
+  product_special_dimension_notice_fr: "",
+  product_special_dimension_notice_en: "",
+  product_special_dimension_notice_ar: "",
+  checkout_special_dimension_notice_fr: "",
+  checkout_special_dimension_notice_en: "",
+  checkout_special_dimension_notice_ar: "",
+};
+
 const normalizeNbPlacesValue = (value: number | string | null | undefined): string => {
   if (value === null || value === undefined || value === "") return "";
 
@@ -100,6 +116,7 @@ const formatNbPlacesLabel = (value: number | string | null | undefined) => {
 };
 
 export default function AdminSettings() {
+  const queryClient = useQueryClient();
   const [dimensions, setDimensions] = useState<Dimension[]>([]);
   const [dimCurrentPage, setDimCurrentPage] = useState(1);
   const [dimRowsPerPage, setDimRowsPerPage] = useState(5);
@@ -150,6 +167,7 @@ export default function AdminSettings() {
     top_banner_text: "",
     footer_description: ""
   });
+  const [specialDimensionNotices, setSpecialDimensionNotices] = useState(emptySpecialDimensionNotices);
 
   const [trustBadges, setTrustBadges] = useState([
     { icon: "Truck", title: "Livraison gratuite", sub: "Partout en Tunisie" },
@@ -245,6 +263,9 @@ export default function AdminSettings() {
           top_banner_text: data.top_banner_text || "🚚 Livraison gratuite partout en Tunisie | 📞 71 000 000 | Paiement à la livraison",
           footer_description: data.footer_description || "Matelas N°1 en Tunisie depuis 1993. Qualité, confort et hygiène pour votre sommeil."
         }));
+        setSpecialDimensionNotices(Object.fromEntries(
+          Object.keys(emptySpecialDimensionNotices).map((key) => [key, data[key] || ""])
+        ) as typeof emptySpecialDimensionNotices);
         if (data.trust_badges) {
           try {
             const parsed = JSON.parse(data.trust_badges);
@@ -272,10 +293,18 @@ export default function AdminSettings() {
       await api.post("/settings", { 
         settings: {
           ...contactSettings,
+          ...specialDimensionNotices,
           trust_badges: JSON.stringify(trustBadges),
           promo_cards: JSON.stringify(promoCards)
         }
       });
+      queryClient.setQueryData<Record<string, string>>(["site-settings"], (previous) => ({
+        ...previous,
+        ...contactSettings,
+        ...specialDimensionNotices,
+        trust_badges: JSON.stringify(trustBadges),
+        promo_cards: JSON.stringify(promoCards),
+      }));
       toast.success("Paramètres de contact enregistrés");
     } catch {
       toast.error("Erreur lors de l'enregistrement des paramètres");
@@ -593,6 +622,7 @@ export default function AdminSettings() {
       await api.post("/settings", {
         settings: {
           ...contactSettings,
+          ...specialDimensionNotices,
           trust_badges: JSON.stringify(trustBadges),
           promo_cards: JSON.stringify(newCards)
         }
@@ -614,6 +644,7 @@ export default function AdminSettings() {
       await api.post("/settings", {
         settings: {
           ...contactSettings,
+          ...specialDimensionNotices,
           trust_badges: JSON.stringify(trustBadges),
           promo_cards: JSON.stringify(newCards)
         }
@@ -1405,6 +1436,41 @@ export default function AdminSettings() {
                       onChange={e => setContactSettings({ ...contactSettings, footer_description: e.target.value })}
                     />
                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-6 md:col-span-2">
+                <h3 className="font-bold text-sm tracking-wide uppercase text-primary bg-primary/5 px-3 py-2 rounded-lg border border-primary/10">
+                  Messages pour les dimensions spéciales
+                </h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  {([
+                    { key: "product_special_dimension_notice", title: "Message affiché sur la fiche produit" },
+                    { key: "checkout_special_dimension_notice", title: "Message affiché dans la page Commander" },
+                  ] as const).map(({ key, title }) => (
+                    <div key={key} className="space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4">
+                      <h4 className="text-sm font-semibold">{title}</h4>
+                      {specialNoticeLanguages.map(({ code, label }) => {
+                        const settingKey = `${key}_${code}` as keyof typeof emptySpecialDimensionNotices;
+                        return (
+                          <div key={code} className="space-y-1">
+                            <label htmlFor={settingKey} className="text-xs font-medium text-muted-foreground">{label}</label>
+                            <textarea
+                              id={settingKey}
+                              dir={code === "ar" ? "rtl" : "ltr"}
+                              rows={2}
+                              value={specialDimensionNotices[settingKey]}
+                              onChange={(event) => setSpecialDimensionNotices((previous) => ({
+                                ...previous,
+                                [settingKey]: event.target.value,
+                              }))}
+                              className="w-full resize-y rounded-lg border border-border/60 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
               </div>
 

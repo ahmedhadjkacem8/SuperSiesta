@@ -7,13 +7,40 @@ use App\Models\Invoice;
 use App\Models\Compteur;
 use App\Models\Quote;
 use App\Models\Product;
+use App\Models\Dimension;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use App\Services\NotificationService;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class OrderController extends BaseController
 {
+    private function normalizeDimensionLabel(string $label): string
+    {
+        $normalized = preg_replace('/\s*[x×]\s*/iu', '×', trim($label)) ?? trim($label);
+
+        return mb_strtolower($normalized);
+    }
+
+    private function hasNonStandardDimension(iterable $labels): bool
+    {
+        $nonStandardLabels = Dimension::query()
+            ->where('is_standard', false)
+            ->pluck('label')
+            ->map(fn (string $label) => $this->normalizeDimensionLabel($label))
+            ->all();
+
+        foreach ($labels as $label) {
+            if ($label !== null && in_array($this->normalizeDimensionLabel((string) $label), $nonStandardLabels, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function nextNumber(): JsonResponse
     {
         return $this->sendResponse(['next_number' => Compteur::generateNumber('commande')], 'Next order number generated');
@@ -134,6 +161,10 @@ class OrderController extends BaseController
         $this->authorize('view', $order);
 
         $order->load('items', 'invoice', 'quote', 'deliveryNotes');
+        $order->setAttribute(
+            'has_payment_proof',
+            $order->payment_proof_path !== null && Storage::disk('local')->exists($order->payment_proof_path)
+        );
 
         return $this->sendResponse($order, 'Order retrieved successfully');
     }
@@ -156,6 +187,7 @@ class OrderController extends BaseController
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'notes' => 'nullable|string',
+            'payment_proof' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
             'create_account' => 'boolean',
             'password' => 'required_if:create_account,true|nullable|string|min:8',
             'items' => 'required|array|min:1',
@@ -176,7 +208,7 @@ class OrderController extends BaseController
         $clientId = null;
 
         // Si l'utilisateur n'est pas connecté et veut créer un compte
-        if (!$user && ($request->create_account === true || $request->create_account === 1)) {
+        if (!$user && $request->boolean('create_account')) {
             // Vérifier si l'email existe déjà
             if (\App\Models\User::where('email', $validated['email'])->exists()) {
                 return $this->sendError('Validation Error', ['email' => ['Cet email est déjà utilisé. Veuillez vous connecter ou utiliser un autre email.']], 422);
@@ -250,6 +282,10 @@ class OrderController extends BaseController
             }
         }
 
+        $requiresSpecialDiscount = $this->hasNonStandardDimension(
+            array_column($validated['items'], 'size_label')
+        );
+
         $order = Order::create([
             'user_id' => $user?->id,
             'client_id' => $clientId,
@@ -260,6 +296,7 @@ class OrderController extends BaseController
             'phone2' => $validated['phone2'] ?? null,
             'address' => $validated['address'],
             'city' => $validated['city'],
+            'requires_special_discount' => $requiresSpecialDiscount,
             'latitude' => $validated['latitude'] ?? null,
             'longitude' => $validated['longitude'] ?? null,
             'notes' => $validated['notes'] ?? null,
@@ -269,6 +306,20 @@ class OrderController extends BaseController
             'ads_click_captured_at' => !empty($validated['ads_click_captured_at']) ? \Carbon\Carbon::parse($validated['ads_click_captured_at']) : null,
             'status' => 'en_attente',
         ]);
+
+        if ($request->hasFile('payment_proof')) {
+            $proofPath = $request->file('payment_proof')->store('order-payment-proofs', 'local');
+            if (!$proofPath) {
+                $order->delete();
+                return $this->sendError('Could not store payment proof', [], 500);
+            }
+
+            if (!$order->update(['payment_proof_path' => $proofPath])) {
+                Storage::disk('local')->delete($proofPath);
+                $order->delete();
+                return $this->sendError('Could not save payment proof', [], 500);
+            }
+        }
 
         $subtotal = 0;
         foreach ($validated['items'] as $item) {
@@ -392,6 +443,7 @@ class OrderController extends BaseController
     {
         $this->authorize('create', Order::class);
 
+        $quoteItems = $quote->items;
         $order = Order::create([
             'order_number' => Compteur::generateNumber('commande'),
             'client_id' => $quote->client_id,
@@ -400,12 +452,13 @@ class OrderController extends BaseController
             'address' => $quote->client ? $quote->client->address : '—',
             'city' => $quote->client ? $quote->client->city : '—',
             'status' => 'en_attente',
+            'requires_special_discount' => $this->hasNonStandardDimension($quoteItems->pluck('dimension')),
             'subtotal' => $quote->total,
             'total' => $quote->total,
             'notes' => $quote->notes,
         ]);
 
-        foreach ($quote->items as $item) {
+        foreach ($quoteItems as $item) {
             $product = $item->product_slug ? Product::where('slug', $item->product_slug)->first() : null;
             
             $order->items()->create([
@@ -488,11 +541,61 @@ class OrderController extends BaseController
         return $this->sendResponse($order->load('invoice'), 'Order updated successfully');
     }
 
+    public function showPaymentProof(Order $order): BinaryFileResponse
+    {
+        $this->authorize('managePaymentProof', $order);
+
+        abort_unless(
+            $order->payment_proof_path && Storage::disk('local')->exists($order->payment_proof_path),
+            404,
+            'Payment proof not found'
+        );
+
+        $path = Storage::disk('local')->path($order->payment_proof_path);
+        $mimeType = Storage::disk('local')->mimeType($order->payment_proof_path) ?: 'application/octet-stream';
+
+        return response()->file($path, [
+            'Content-Type' => $mimeType,
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    public function storePaymentProof(Request $request, Order $order): JsonResponse
+    {
+        $this->authorize('managePaymentProof', $order);
+
+        $validated = $request->validate([
+            'payment_proof' => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
+        ]);
+
+        $newPath = $validated['payment_proof']->store('order-payment-proofs', 'local');
+        if (!$newPath) {
+            return $this->sendError('Could not store payment proof', [], 500);
+        }
+
+        $oldPath = $order->payment_proof_path;
+        $order->payment_proof_path = $newPath;
+        if (!$order->save()) {
+            Storage::disk('local')->delete($newPath);
+            return $this->sendError('Could not save payment proof', [], 500);
+        }
+
+        if ($oldPath) {
+            Storage::disk('local')->delete($oldPath);
+        }
+
+        return $this->sendResponse(['has_payment_proof' => true], 'Payment proof uploaded successfully');
+    }
+
     public function destroy(Order $order): JsonResponse
     {
         $this->authorize('delete', $order);
 
         $order->items()->delete();
+        if ($order->payment_proof_path) {
+            Storage::disk('local')->delete($order->payment_proof_path);
+        }
         $order->delete();
 
         return $this->sendResponse(null, 'Order deleted successfully');

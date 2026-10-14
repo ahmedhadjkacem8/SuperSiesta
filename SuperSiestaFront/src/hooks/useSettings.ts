@@ -11,6 +11,12 @@ export interface SiteSettings {
   contact_hours: string;
   top_banner_text: string;
   footer_description: string;
+  product_special_dimension_notice_fr?: string;
+  product_special_dimension_notice_en?: string;
+  product_special_dimension_notice_ar?: string;
+  checkout_special_dimension_notice_fr?: string;
+  checkout_special_dimension_notice_en?: string;
+  checkout_special_dimension_notice_ar?: string;
   [key: string]: string;
 }
 

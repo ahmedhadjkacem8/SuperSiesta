@@ -85,7 +85,8 @@ COPY --from=composer_deps --chown=appuser:appgroup /app/vendor ./vendor
 COPY --chown=appuser:appgroup . .
 
 # ---- Storage & cache permissions ----
-RUN mkdir -p storage/framework/{cache,sessions,views} \
+RUN mkdir -p storage/app/private \
+             storage/framework/{cache,sessions,views} \
              storage/logs \
              bootstrap/cache \
     && chown -R appuser:appgroup storage bootstrap/cache \

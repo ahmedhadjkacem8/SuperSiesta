@@ -318,11 +318,11 @@ export const fr = {
     cityRequired: "Ville requise",
     orderError: "Erreur lors de la commande: ",
     size: "Taille",
-    advanceTitle: "Fabrication sur commande",
-    advanceNotice: "Cette dimension nécessite une fabrication sur commande. Une avance sera demandée pour confirmer la fabrication. Notre équipe vous contactera par téléphone après la validation de votre commande pour vous communiquer le montant de l’avance et les modalités de paiement.",
-    advanceCallout: "Un conseiller vous appellera après validation pour préciser le montant de l’avance et les modalités de paiement.",
-    confirmSelection: "Continuer avec cette dimension",
-    cancelSelection: "Choisir une autre dimension",
+    discount: "Remise",
+    paymentProof: "Justificatif de virement (PDF ou image)",
+    removePaymentProof: "Supprimer",
+    optional: "facultatif",
+    dimensionLoadError: "Impossible de vérifier les dimensions. Actualisez la page avant de commander.",
   },
 
   // Login & Register

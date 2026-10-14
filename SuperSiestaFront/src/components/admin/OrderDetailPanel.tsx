@@ -14,6 +14,7 @@ import { api } from '@/lib/apiClient';
 import { formatPrice } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 import { useOrders, type Order, type OrderItem } from '@/hooks/useOrders';
 
@@ -38,11 +39,58 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
   const [items, setItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState<'invoice' | 'delivery' | null>(null);
+  const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
+  const [paymentProofIsPdf, setPaymentProofIsPdf] = useState(false);
+  const [selectedPaymentProof, setSelectedPaymentProof] = useState<File | null>(null);
+  const [selectedPaymentProofPreview, setSelectedPaymentProofPreview] = useState<string | null>(null);
+  const [uploadingPaymentProof, setUploadingPaymentProof] = useState(false);
+  const [zoomedPaymentProof, setZoomedPaymentProof] = useState<{ src: string; isPdf: boolean } | null>(null);
 
   // Fetch order and items
   useEffect(() => {
     fetchOrderData();
   }, [orderId]);
+
+  useEffect(() => {
+    if (!order?.has_payment_proof) {
+      setPaymentProofPreview(null);
+      return;
+    }
+
+    let active = true;
+    let previewUrl: string | null = null;
+    api.getBlob(`/admin/orders/${order.id}/payment-proof`)
+      .then((file) => {
+        previewUrl = URL.createObjectURL(file);
+        if (active) {
+          setPaymentProofPreview(previewUrl);
+          setPaymentProofIsPdf(file.type === 'application/pdf');
+        } else {
+          URL.revokeObjectURL(previewUrl);
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          toast.error(error instanceof Error ? error.message : 'Impossible de charger le justificatif');
+        }
+      });
+
+    return () => {
+      active = false;
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [order?.id, order?.has_payment_proof, order?.updated_at]);
+
+  useEffect(() => {
+    if (!selectedPaymentProof) {
+      setSelectedPaymentProofPreview(null);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(selectedPaymentProof);
+    setSelectedPaymentProofPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [selectedPaymentProof]);
 
   const fetchOrderData = async () => {
     try {
@@ -89,6 +137,24 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
       if (onRefresh) onRefresh();
     } catch (err: any) {
       toast.error(err.message || 'Erreur lors de la mise à jour');
+    }
+  };
+
+  const uploadPaymentProof = async (file: File) => {
+    if (!order) return;
+    const formData = new FormData();
+    formData.append('payment_proof', file);
+
+    try {
+      setUploadingPaymentProof(true);
+      await api.post(`/admin/orders/${order.id}/payment-proof`, formData);
+      toast.success('Justificatif ajouté à la commande');
+      setSelectedPaymentProof(null);
+      await fetchOrderData();
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de l’envoi du justificatif');
+    } finally {
+      setUploadingPaymentProof(false);
     }
   };
 
@@ -377,6 +443,78 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
                   </div>
                 ))}
               </div>
+
+              {(order.requires_special_discount || order.has_payment_proof) && (
+                <div className="mt-4 rounded-lg border border-border bg-muted/20 p-3">
+                  <div className="mb-2 flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <p className="text-xs font-semibold">Justificatif de virement</p>
+                  </div>
+
+                  {selectedPaymentProof && selectedPaymentProofPreview ? (
+                    <button
+                      type="button"
+                      onClick={() => setZoomedPaymentProof({
+                        src: selectedPaymentProofPreview,
+                        isPdf: selectedPaymentProof.type === 'application/pdf',
+                      })}
+                      className="mb-2 flex items-center gap-3 rounded-md border border-border bg-background p-2 text-left hover:border-primary"
+                      title="Cliquer pour agrandir"
+                    >
+                      {selectedPaymentProof.type === 'application/pdf' ? (
+                        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded bg-muted text-[10px] font-bold text-primary">PDF</span>
+                      ) : (
+                        <img src={selectedPaymentProofPreview} alt="Aperçu du justificatif sélectionné" className="h-14 w-14 shrink-0 rounded object-cover" />
+                      )}
+                      <span className="min-w-0 truncate text-xs text-muted-foreground">{selectedPaymentProof.name} · Cliquer pour agrandir</span>
+                    </button>
+                  ) : paymentProofPreview ? (
+                    <button
+                      type="button"
+                      onClick={() => setZoomedPaymentProof({ src: paymentProofPreview, isPdf: paymentProofIsPdf })}
+                      className="mb-2 flex items-center gap-3 rounded-md border border-border bg-background p-2 text-left hover:border-primary"
+                      title="Cliquer pour agrandir"
+                    >
+                      {paymentProofIsPdf ? (
+                        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded bg-muted text-[10px] font-bold text-primary">PDF</span>
+                      ) : (
+                        <img src={paymentProofPreview} alt="Aperçu du justificatif enregistré" className="h-14 w-14 shrink-0 rounded object-cover" />
+                      )}
+                      <span className="text-xs text-muted-foreground">Cliquer pour agrandir</span>
+                    </button>
+                  ) : (
+                    <p className="mb-2 text-xs text-muted-foreground">Aucun justificatif transmis.</p>
+                  )}
+
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <label className="min-w-0 text-xs font-medium">
+                      {order.has_payment_proof ? 'Remplacer le fichier' : 'Ajouter un fichier (facultatif)'}
+                      <input
+                        type="file"
+                        accept=".pdf,image/jpeg,image/png,image/webp"
+                        disabled={uploadingPaymentProof}
+                        onChange={(event) => {
+                          const file = event.currentTarget.files?.[0];
+                          event.currentTarget.value = '';
+                          if (file) setSelectedPaymentProof(file);
+                        }}
+                        className="mt-1 block max-w-full text-xs file:mr-2 file:rounded file:border-0 file:bg-primary/10 file:px-2 file:py-1 file:font-semibold file:text-primary"
+                      />
+                    </label>
+                    {selectedPaymentProof && (
+                      <div className="flex shrink-0 gap-2">
+                        <Button type="button" size="sm" variant="ghost" disabled={uploadingPaymentProof} onClick={() => setSelectedPaymentProof(null)}>
+                          Supprimer
+                        </Button>
+                        <Button type="button" size="sm" disabled={uploadingPaymentProof} onClick={() => void uploadPaymentProof(selectedPaymentProof)}>
+                          {uploadingPaymentProof ? 'Envoi...' : 'Enregistrer'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  {uploadingPaymentProof && <p className="mt-1 text-xs text-muted-foreground">Envoi en cours...</p>}
+                </div>
+              )}
               
               <div className="mt-4 p-4 rounded-xl bg-primary/5 border border-primary/10">
                 <div className="flex justify-between items-center text-sm mb-1">
@@ -388,6 +526,21 @@ export function OrderDetailPanel({ orderId, onClose, onRefresh }: Props) {
                   <span className="text-primary">{formatPrice(order.total)}</span>
                 </div>
               </div>
+
+              <Dialog open={zoomedPaymentProof !== null} onOpenChange={(open) => {
+                if (!open) setZoomedPaymentProof(null);
+              }}>
+                <DialogContent className="max-h-[90vh] max-w-5xl overflow-auto">
+                  <DialogHeader>
+                    <DialogTitle>Justificatif de virement</DialogTitle>
+                  </DialogHeader>
+                  {zoomedPaymentProof?.isPdf ? (
+                    <iframe src={zoomedPaymentProof.src} title="Justificatif de virement agrandi" className="h-[75vh] w-full rounded border" />
+                  ) : zoomedPaymentProof ? (
+                    <img src={zoomedPaymentProof.src} alt="Justificatif de virement agrandi" className="mx-auto max-h-[75vh] max-w-full object-contain" />
+                  ) : null}
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         </div>

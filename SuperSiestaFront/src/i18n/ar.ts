@@ -318,11 +318,11 @@ export const ar = {
     cityRequired: "المدينة إجبارية",
     orderError: "حدث خطأ أثناء تسجيل الطلبية: ",
     size: "المقاس",
-    advanceTitle: "منتج يُصنع حسب الطلب",
-    advanceNotice: "يتطلب هذا المقاس تصنيعًا حسب الطلب. سيتم طلب تسبيق لتأكيد التصنيع. سيتصل بكم فريقنا هاتفياً بعد تأكيد طلبكم لإبلاغكم بمبلغ التسبيق وطرق الدفع.",
-    advanceCallout: "سيتصل بكم فريقنا بعد تأكيد الطلب لشرح مبلغ التسبيق وطرق الدفع.",
-    confirmSelection: "متابعة بهذا المقاس",
-    cancelSelection: "اختيار مقاس آخر",
+    discount: "التخفيض",
+    paymentProof: "إثبات التحويل (PDF أو صورة)",
+    removePaymentProof: "حذف",
+    optional: "اختياري",
+    dimensionLoadError: "تعذّر التحقق من المقاسات. يرجى تحديث الصفحة قبل إتمام الطلب.",
   },
 
   // Login & Register

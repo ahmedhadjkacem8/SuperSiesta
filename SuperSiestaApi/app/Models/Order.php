@@ -18,6 +18,7 @@ class Order extends Model
         'invoice_id',
         'order_number',
         'status',
+        'requires_special_discount',
         'full_name',
         'email',
         'phone',
@@ -27,6 +28,7 @@ class Order extends Model
         'latitude',
         'longitude',
         'notes',
+        'payment_proof_path',
         'bl_contact',
         'gclid',
         'gbraid',
@@ -39,7 +41,10 @@ class Order extends Model
 
     protected $appends = ['delivery_note_id'];
 
+    protected $hidden = ['payment_proof_path'];
+
     protected $casts = [
+        'requires_special_discount' => 'boolean',
         'subtotal' => 'decimal:2',
         'total' => 'decimal:2',
         'ads_click_captured_at' => 'datetime',

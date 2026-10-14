@@ -10,7 +10,7 @@ declare global {
   }
 }
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ProductSize, useProduct } from "@/hooks/useProducts";
+import { useProduct } from "@/hooks/useProducts";
 import { useGammes } from "@/hooks/useGammes";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/hooks/useAuthSecure";
@@ -24,7 +24,6 @@ import { trackViewContent, trackAddToCart } from "@/services/metaPixel";
 import { trackGAContactClick, trackGAViewItem } from "@/services/analytics";
 import LucideIcon from "@/components/common/LucideIcon";
 import OrderModal, { OrderSizeGroup } from "@/components/OrderModal";
-import OrderAdvanceAlert from "@/components/OrderAdvanceAlert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLanguage } from "@/context/LanguageContext";
 import { useDimensions } from "@/hooks/useDimensions";
@@ -272,17 +271,16 @@ function ProductGallery({ images }: { images: string[] }) {
 }
 
 export default function ProduitDetail() {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { addItem } = useCart();
+  const { addItem, closeCart } = useCart();
   const { user } = useAuth();
 
   const { product, isLoading } = useProduct(slug);
   const { data: gammes } = useGammes();
   const { settings } = useSettings();
   const [selectedSize, setSelectedSize] = useState<any>(null);
-  const [pendingOrderSize, setPendingOrderSize] = useState<ProductSize | null>(null);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
 
@@ -507,6 +505,15 @@ export default function ProduitDetail() {
   // Check if user is B2B
   const isB2B = false; // Will be set from profile context
   const displayPrice = isB2B && selectedSize.resellerPrice ? selectedSize.resellerPrice : selectedSize.price;
+  const selectedDimension = dimensions.find(
+    (dimension) => normalizeDimensionLabel(dimension.label) === normalizeDimensionLabel(selectedSize.label)
+  );
+  const isSelectedNonStandard = selectedDimension
+    ? !normalizeBooleanValue(selectedDimension.is_standard)
+    : false;
+  const discountAmount = selectedSize.price > 0
+    ? Math.max(0, Number(selectedSize.originalPrice || 0) - Number(displayPrice || 0))
+    : 0;
   const productGalleryImages = [product.image, ...product.images].filter(
     (image, index, images) =>
       Boolean(image) &&
@@ -643,17 +650,29 @@ export default function ProduitDetail() {
           </div>
 
           <div className="bg-accent rounded-2xl p-4">
-            <div className="flex items-baseline gap-2">
-              {displayPrice === 0 ? (
-                <span className="text-4xl font-black text-amber-600">{t.product.onOrder}</span>
-              ) : (
-                <span className="text-4xl font-black text-primary">{formatPrice(displayPrice)}</span>
+            <div className="flex items-baseline justify-between gap-3">
+              <div className="flex items-baseline gap-2">
+                {displayPrice === 0 ? (
+                  <span className="text-4xl font-black text-amber-600">{t.product.onOrder}</span>
+                ) : (
+                  <span className="text-4xl font-black text-primary">{formatPrice(displayPrice)}</span>
+                )}
+                {Number(selectedSize.originalPrice) > 0 && selectedSize.price !== 0 && <span className="text-lg text-muted-foreground line-through">{formatPrice(selectedSize.originalPrice)}</span>}
+              </div>
+              {discountAmount > 0 && (
+                <span className="shrink-0 text-lg font-bold text-red-600">
+                  -{formatPrice(discountAmount)}
+                </span>
               )}
-              {Number(selectedSize.originalPrice) > 0 && selectedSize.price !== 0 && <span className="text-lg text-muted-foreground line-through">{formatPrice(selectedSize.originalPrice)}</span>}
             </div>
             <p className="text-xs text-muted-foreground mt-1">{t.product.priceForDimension} {selectedSize.label}</p>
             {isB2B && selectedSize.resellerPrice && <p className="text-xs text-primary font-bold mt-1">💼 Prix revendeur appliqué</p>}
           </div>
+          {isSelectedNonStandard && settings[`product_special_dimension_notice_${lang}`]?.trim() && (
+            <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950">
+              {settings[`product_special_dimension_notice_${lang}`]}
+            </div>
+          )}
 
           <p className="text-muted-foreground leading-relaxed">{product.description}</p>
 
@@ -756,10 +775,6 @@ export default function ProduitDetail() {
                     <button
                       key={size.label}
                       onClick={() => {
-                        if (!isStandard) {
-                          setPendingOrderSize(size);
-                          return;
-                        }
                         setSelectedSize(size);
                       }}
                       aria-pressed={isSelected}
@@ -806,7 +821,8 @@ export default function ProduitDetail() {
             </button>
             <button
               onClick={() => {
-                addItem(product as any, selectedSize, qty);
+                closeCart();
+                addItem(product as any, selectedSize, qty, false);
                 navigate("/commander");
               }}
               className="w-full bg-secondary text-secondary-foreground font-bold py-4 rounded-2xl hover:bg-secondary/90 transition-colors text-sm"
@@ -1144,16 +1160,6 @@ export default function ProduitDetail() {
         open={orderModalOpen}
         onOpenChange={(open) => setOrderModalOpen(open)}
         sizeGroup={orderModalGroup ?? "1 Place"}
-      />
-      <OrderAdvanceAlert
-        open={Boolean(pendingOrderSize)}
-        onOpenChange={(open) => {
-          if (!open) setPendingOrderSize(null);
-        }}
-        onConfirm={() => {
-          if (pendingOrderSize) setSelectedSize(pendingOrderSize);
-          setPendingOrderSize(null);
-        }}
       />
     </main>
 

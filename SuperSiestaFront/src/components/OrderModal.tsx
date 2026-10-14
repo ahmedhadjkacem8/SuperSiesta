@@ -12,7 +12,6 @@ import { useAuth } from "@/hooks/useAuthSecure";
 import { generateEventId, trackPurchase, getFbpCookie, getFbcCookie } from "@/services/metaPixel";
 import { trackGAPurchase, trackGAContactClick } from "@/services/analytics";
 import { getAdsClickIds } from "@/services/adsAttribution";
-import OrderAdvanceAlert from "@/components/OrderAdvanceAlert";
 
 export type OrderSizeGroup = "1 Place" | "1 Place et Demi" | "2 Places";
 
@@ -98,7 +97,6 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup, ski
   }, [product.sizes, sizeGroup, skipSizeSelection, dimensionByLabel]);
 
   const [selectedSizeId, setSelectedSizeId] = useState<string>("");
-  const [pendingOrderSizeId, setPendingOrderSizeId] = useState<string | null>(null);
   const selectedSize = availableSizes.find((size) => size.id === selectedSizeId) || availableSizes[0];
   const [step, setStep] = useState(1);
   const [qty, setQty] = useState(1);
@@ -419,10 +417,6 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup, ski
                             key={size.id}
                             type="button"
                             onClick={() => {
-                              if (size.price <= 0) {
-                                setPendingOrderSizeId(size.id);
-                                return;
-                              }
                               setSelectedSizeId(size.id);
                             }}
                             className={`${baseClass} ${sizeClass}`}
@@ -597,16 +591,6 @@ export default function OrderModal({ product, open, onOpenChange, sizeGroup, ski
           )}
         </div>
       </DialogContent>
-      <OrderAdvanceAlert
-        open={pendingOrderSizeId !== null}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) setPendingOrderSizeId(null);
-        }}
-        onConfirm={() => {
-          if (pendingOrderSizeId !== null) setSelectedSizeId(pendingOrderSizeId);
-          setPendingOrderSizeId(null);
-        }}
-      />
     </Dialog>
   );
 }

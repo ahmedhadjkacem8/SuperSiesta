@@ -42,4 +42,9 @@ class OrderPolicy
     {
         return $user->roles()->where('role', 'admin')->exists();
     }
+
+    public function managePaymentProof(User $user, Order $order): bool
+    {
+        return false;
+    }
 }

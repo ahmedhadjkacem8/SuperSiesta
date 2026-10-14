@@ -171,6 +171,21 @@ class SecureApiService {
     }
   }
 
+  async getBlob(endpoint: string): Promise<Blob> {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: 'GET',
+      headers: this.getHeaders({ 'Accept': 'application/pdf,image/*' }),
+      cache: 'no-store',
+    })
+
+    this.extractRateLimitInfo(response)
+    if (!response.ok) {
+      await this.handleResponse<never>(response)
+    }
+
+    return response.blob()
+  }
+
   async post<T>(endpoint: string, body: any): Promise<T> {
     this.logRequest('POST', endpoint, body)
     

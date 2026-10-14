@@ -318,11 +318,11 @@ export const en = {
     cityRequired: "City is required",
     orderError: "Error placing order: ",
     size: "Size",
-    advanceTitle: "Made-to-order product",
-    advanceNotice: "This size requires made-to-order manufacturing. A deposit will be required to confirm production. Our team will call you after your order is validated to let you know the deposit amount and payment options.",
-    advanceCallout: "Our team will call after your order is confirmed to explain the deposit amount and payment options.",
-    confirmSelection: "Continue with this size",
-    cancelSelection: "Choose another size",
+    discount: "Discount",
+    paymentProof: "Transfer receipt (PDF or image)",
+    removePaymentProof: "Remove",
+    optional: "optional",
+    dimensionLoadError: "Unable to check the dimensions. Refresh the page before placing your order.",
   },
 
   // Login & Register

@@ -24,6 +24,7 @@ services:
       # Volume partagé pour les fichiers uploadés (storage/app/public uniquement)
       # ⚠️ Ne PAS monter tout storage/ avec un volume nommé : ça écrase les fichiers
       - api_storage_public:/var/www/html/storage/app/public
+      - api_storage_private:/var/www/html/storage/app/private
       - api_logs:/var/www/html/storage/logs
       - ./test-notif-53619-firebase-adminsdk-fbsvc-042a333c78.json:/run/secrets/firebase-service-account.json:ro
 
@@ -146,7 +147,7 @@ services:
 
 volumes:
   api_storage_public:   # volume partagé api ↔ nginx pour les uploads
+  api_storage_private:  # preuves de virement privées, accessibles uniquement via l'API authentifiée
   api_logs:
   jenkins_home:
   db_data:              # volume persistant pour MySQL
-

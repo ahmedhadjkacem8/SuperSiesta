@@ -12,7 +12,7 @@ interface CartContextType {
   isOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
-  addItem: (product: Product, size: ProductSize, qty?: number) => void;
+  addItem: (product: Product, size: ProductSize, qty?: number, openCart?: boolean) => void;
   removeItem: (productId: string, sizeLabel: string) => void;
   updateQty: (productId: string, sizeLabel: string, qty: number) => void;
   total: number;
@@ -61,7 +61,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     saveCartToStorage(items);
   }, [items]);
 
-  const addItem = (product: Product, size: ProductSize, qty = 1) => {
+  const addItem = (product: Product, size: ProductSize, qty = 1, openCart = true) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.product.id === product.id && i.size.label === size.label);
       if (existing) {
@@ -90,7 +90,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       category,
     });
 
-    setIsOpen(true);
+    if (openCart) setIsOpen(true);
   };
 
   const removeItem = (productId: string, sizeLabel: string) => {
