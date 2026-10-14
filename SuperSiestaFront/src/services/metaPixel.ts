@@ -241,6 +241,13 @@ export async function sendCapiEvent(
         Accept: "application/json",
       },
       body: JSON.stringify(payload),
+    }).then((response) => {
+      if (!response.ok && isDebug) {
+        console.warn(`[Meta CAPI Relay] ${eventName} rejected by the server:`, {
+          status: response.status,
+          eventId: eid,
+        });
+      }
     }).catch((err) => {
       if (isDebug) {
         console.warn(`[Meta CAPI Relay] Error on ${eventName}:`, err);
@@ -304,21 +311,45 @@ export function trackAddToCart(
   product: {
     id: string | number;
     name: string;
-    price: number;
+    price?: number | string | null;
     quantity?: number;
     category?: string;
   },
   eventId?: string,
   userData?: MetaUserData
 ): string {
+  const price =
+    typeof product.price === "number"
+      ? product.price
+      : typeof product.price === "string" && product.price.trim() !== ""
+        ? Number(product.price)
+        : Number.NaN;
+  const qty = product.quantity === undefined ? 1 : product.quantity;
+  const value = price * qty;
+
+  if (
+    !Number.isFinite(price) ||
+    price <= 0 ||
+    !Number.isSafeInteger(qty) ||
+    qty <= 0 ||
+    !Number.isFinite(value)
+  ) {
+    if (isDebug) {
+      console.warn("[Meta Pixel] AddToCart skipped: invalid price or quantity.", {
+        price: product.price,
+        quantity: product.quantity,
+      });
+    }
+    return "";
+  }
+
   const eid = eventId || generateEventId();
-  const qty = product.quantity || 1;
   const payload = {
     content_ids: [String(product.id)],
     content_name: product.name,
     content_type: "product",
     content_category: product.category || "Matelas",
-    value: (Number(product.price) || 0) * qty,
+    value,
     currency: META_CURRENCY,
     num_items: qty,
   };

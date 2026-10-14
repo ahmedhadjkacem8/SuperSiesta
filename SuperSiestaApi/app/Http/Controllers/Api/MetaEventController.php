@@ -54,6 +54,21 @@ class MetaEventController extends BaseController
             return $this->sendError('Purchase events must be sent via /api/orders endpoint.', [], 422);
         }
 
+        $customData = $request->input('custom_data') ?? [];
+        if (strtolower($request->input('event_name')) === 'addtocart') {
+            $value = $customData['value'] ?? null;
+            if (!is_numeric($value) || !is_finite((float) $value) || (float) $value <= 0) {
+                return $this->sendError(
+                    'AddToCart events require a finite, positive numeric value.',
+                    [],
+                    422
+                );
+            }
+
+            $customData['value'] = (float) $value;
+            $customData['currency'] = 'TND';
+        }
+
         // Capture HTTP request context before dispatching to queue
         $clientIp = $request->header('CF-Connecting-IP')
             ?: ($request->header('X-Forwarded-For') ? trim(explode(',', $request->header('X-Forwarded-For'))[0]) : null)
@@ -93,8 +108,6 @@ class MetaEventController extends BaseController
                 $userData['country'] = $inputUserData['country'];
             }
         }
-
-        $customData = $request->input('custom_data', []);
 
         // Dispatch asynchronously — never block the browser's response
         SendMetaCapiEventJob::dispatch(

@@ -37,6 +37,19 @@ class MetaConversionsApiService
         ?string $eventSourceUrl = null,
         bool $throwOnRetryableError = false
     ): array {
+        if (strcasecmp($eventName, 'AddToCart') === 0) {
+            $value = $customData['value'] ?? null;
+            if (!is_numeric($value) || !is_finite((float) $value) || (float) $value <= 0) {
+                Log::warning('Meta CAPI: Skipping AddToCart with invalid value.', [
+                    'event_id' => $eventId,
+                    'value' => $value,
+                ]);
+                return ['status' => 'skipped', 'reason' => 'invalid_add_to_cart_value'];
+            }
+
+            $customData['value'] = (float) $value;
+        }
+
         if (empty($this->accessToken)) {
             Log::info("Meta CAPI: Access token not configured. Skipping event [{$eventName}].");
             return ['status' => 'skipped', 'reason' => 'missing_access_token'];

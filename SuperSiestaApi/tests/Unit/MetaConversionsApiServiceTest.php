@@ -198,6 +198,47 @@ class MetaConversionsApiServiceTest extends TestCase
     }
 
     #[Test]
+    public function it_skips_add_to_cart_with_a_missing_or_invalid_value()
+    {
+        Http::fake();
+
+        $result = $this->service->sendEvent('AddToCart', [], [], 'event-invalid-value');
+        $zeroValueResult = $this->service->sendEvent(
+            'AddToCart',
+            [],
+            ['value' => 0],
+            'event-zero-value'
+        );
+
+        $this->assertSame('skipped', $result['status']);
+        $this->assertSame('invalid_add_to_cart_value', $result['reason']);
+        $this->assertSame('skipped', $zeroValueResult['status']);
+        $this->assertSame('invalid_add_to_cart_value', $zeroValueResult['reason']);
+        Http::assertNothingSent();
+    }
+
+    #[Test]
+    public function it_normalizes_add_to_cart_value_to_a_number_and_enforces_tnd_currency()
+    {
+        Http::fake([
+            'https://graph.facebook.com/v18.0/*' => Http::response(['events_received' => 1], 200),
+        ]);
+
+        $this->service->sendEvent(
+            'AddToCart',
+            [],
+            ['value' => '24.5', 'currency' => 'eur'],
+            'event-valid-value',
+        );
+
+        Http::assertSent(function ($request) {
+            $custom = (json_decode($request->body(), true)['data'][0]['custom_data'] ?? []);
+            return $custom['currency'] === 'TND'
+                && $custom['value'] === 24.5;
+        });
+    }
+
+    #[Test]
     public function it_throws_on_retryable_5xx_server_error_when_throwOnRetryableError_is_true()
     {
         Http::fake([

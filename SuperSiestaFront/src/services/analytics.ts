@@ -113,16 +113,40 @@ export function trackGAViewItem(product: {
 export function trackGAAddToCart(product: {
   id: string | number;
   name: string;
-  price: number;
+  price?: number | string | null;
   quantity?: number;
   category?: string;
 }): void {
-  const qty = product.quantity || 1;
+  const price =
+    typeof product.price === "number"
+      ? product.price
+      : typeof product.price === "string" && product.price.trim() !== ""
+        ? Number(product.price)
+        : Number.NaN;
+  const qty = product.quantity === undefined ? 1 : product.quantity;
+  const value = price * qty;
+
+  if (
+    !Number.isFinite(price) ||
+    price <= 0 ||
+    !Number.isSafeInteger(qty) ||
+    qty <= 0 ||
+    !Number.isFinite(value)
+  ) {
+    if (import.meta.env.DEV) {
+      console.warn("[GTM] add_to_cart skipped: invalid price or quantity.", {
+        price: product.price,
+        quantity: product.quantity,
+      });
+    }
+    return;
+  }
+
   const item: GAItem = {
     item_id: String(product.id),
     item_name: product.name,
     item_category: product.category || "Matelas",
-    price: Number(product.price) || 0,
+    price,
     quantity: qty,
   };
 
@@ -131,7 +155,7 @@ export function trackGAAddToCart(product: {
     event: "add_to_cart",
     ecommerce: {
       currency: GA_CURRENCY,
-      value: (Number(product.price) || 0) * qty,
+      value,
       items: [item],
     },
   });
