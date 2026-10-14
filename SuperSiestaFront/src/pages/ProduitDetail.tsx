@@ -627,7 +627,7 @@ export default function ProduitDetail() {
               )}
             </div>
             {product.grammage && (
-              <p className="text-lg font-black  mt-2 flex items-center gap-2">
+              <p className="mt-2 flex items-center gap-2 text-md font-black sm:text-lg">
                 {t.product.supportsUpTo} <span className="text-red-600">{product.grammage} kg</span> {t.product.kgPerPerson}
               </p>
             )}
@@ -650,22 +650,24 @@ export default function ProduitDetail() {
           </div>
 
           <div className="bg-accent rounded-2xl p-4">
-            <div className="flex items-baseline justify-between gap-3">
-              <div className="flex items-baseline gap-2">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
+              <div className="contents sm:flex sm:items-baseline sm:gap-2">
                 {displayPrice === 0 ? (
                   <span className="text-4xl font-black text-amber-600">{t.product.onOrder}</span>
                 ) : (
-                  <span className="text-4xl font-black text-primary">{formatPrice(displayPrice)}</span>
+                  <span className="order-1 text-3xl font-black text-primary sm:order-none sm:text-4xl">{formatPrice(displayPrice)}</span>
                 )}
-                {Number(selectedSize.originalPrice) > 0 && selectedSize.price !== 0 && <span className="text-lg text-muted-foreground line-through">{formatPrice(selectedSize.originalPrice)}</span>}
+                {Number(selectedSize.originalPrice) > 0 && selectedSize.price !== 0 && (
+                  <span className="order-3 text-sm text-black-foreground line-through sm:order-none sm:text-lg">{formatPrice(selectedSize.originalPrice)}</span>
+                )}
               </div>
               {discountAmount > 0 && (
-                <span className="shrink-0 text-lg font-bold text-red-600">
+                <span className="order-2 text-lg font-bold text-red-600 sm:order-none sm:shrink-0">
                   -{formatPrice(discountAmount)}
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">{t.product.priceForDimension} {selectedSize.label}</p>
+            <p className="text-s text-black-foreground font-bold mt-1">{t.product.priceForDimension} {selectedSize.label}</p>
             {isB2B && selectedSize.resellerPrice && <p className="text-xs text-primary font-bold mt-1">💼 Prix revendeur appliqué</p>}
           </div>
           {isSelectedNonStandard && settings[`product_special_dimension_notice_${lang}`]?.trim() && (
