@@ -8,10 +8,14 @@ use App\Models\Compteur;
 use App\Models\Quote;
 use App\Models\Product;
 use App\Models\Dimension;
+use App\Jobs\SendMetaCapiEventJob;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use App\Services\NotificationService;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -203,6 +207,29 @@ class OrderController extends BaseController
             'ads_click_captured_at' => 'nullable|date',
         ]);
 
+        $metaAttribution = $request->session()->get('meta_attribution');
+        $hasMetaClick = is_array($metaAttribution) && !empty($metaAttribution['fbclid']);
+        $submittedMetaEventId = $request->input('meta_event_id');
+        $metaEventId = null;
+        $metaEventSourceUrl = null;
+        if ($hasMetaClick) {
+            $metaEventId = is_string($submittedMetaEventId)
+                && strlen($submittedMetaEventId) <= 100
+                && preg_match('/^[A-Za-z0-9._:-]+$/', $submittedMetaEventId)
+                    ? $submittedMetaEventId
+                    : (string) Str::uuid();
+
+            $candidateSourceUrl = $request->input('event_source_url') ?: $request->headers->get('referer');
+            if (
+                !is_string($candidateSourceUrl)
+                || strlen($candidateSourceUrl) > 1000
+                || !filter_var($candidateSourceUrl, FILTER_VALIDATE_URL)
+            ) {
+                $candidateSourceUrl = config('app.url', 'http://localhost');
+            }
+            $metaEventSourceUrl = $candidateSourceUrl;
+        }
+
         $user = Auth::guard('sanctum')->user();
         $token = null;
         $clientId = null;
@@ -304,6 +331,19 @@ class OrderController extends BaseController
             'gbraid' => $validated['gbraid'] ?? null,
             'wbraid' => $validated['wbraid'] ?? null,
             'ads_click_captured_at' => !empty($validated['ads_click_captured_at']) ? \Carbon\Carbon::parse($validated['ads_click_captured_at']) : null,
+            'meta_fbclid' => $hasMetaClick ? $metaAttribution['fbclid'] : null,
+            'meta_fbc' => $hasMetaClick ? ($metaAttribution['fbc'] ?? null) : null,
+            'meta_fbp' => $hasMetaClick ? ($metaAttribution['fbp'] ?? null) : null,
+            'meta_click_captured_at' => $hasMetaClick && !empty($metaAttribution['captured_at'])
+                ? \Carbon\Carbon::parse($metaAttribution['captured_at'])
+                : null,
+            'meta_attribution_session' => $hasMetaClick
+                ? hash('sha256', $request->session()->getId())
+                : null,
+            'meta_event_id' => $metaEventId,
+            'meta_client_ip' => $hasMetaClick ? $request->ip() : null,
+            'meta_client_user_agent' => $hasMetaClick ? $request->userAgent() : null,
+            'meta_event_source_url' => $metaEventSourceUrl,
             'status' => 'en_attente',
         ]);
 
@@ -368,51 +408,9 @@ class OrderController extends BaseController
             // Ne pas empêcher la création de la commande si la notification échoue
         }
 
-        // Dispatch Meta Conversions API Purchase event (async queue job)
-        try {
-            $metaEventId = $request->input('meta_event_id');
-            if ($metaEventId) {
-                // Capture HTTP request context variables during the request lifecycle
-                $clientIp = $request->header('CF-Connecting-IP')
-                    ?: ($request->header('X-Forwarded-For') ? trim(explode(',', $request->header('X-Forwarded-For'))[0]) : null)
-                    ?: $request->ip();
-
-                $clientUserAgent = $request->userAgent();
-                $eventSourceUrl = $request->input('event_source_url')
-                    ?: $request->headers->get('referer')
-                    ?: config('app.url', 'http://localhost');
-
-                \App\Jobs\SendMetaCapiEventJob::dispatch(
-                    'Purchase',
-                    [
-                        'email'             => $validated['email'] ?? null,
-                        'phone'             => $validated['phone'],
-                        'full_name'         => $validated['full_name'],
-                        'city'              => $validated['city'] ?? null,
-                        'fbp'               => $request->input('fbp'),
-                        'fbc'               => $request->input('fbc'),
-                        'client_ip_address' => $clientIp,
-                        'client_user_agent' => $clientUserAgent,
-                    ],
-                    [
-                        'value'        => (float) $subtotal,
-                        'currency'     => 'TND',
-                        'content_type' => 'product',
-                        'content_ids'  => collect($validated['items'])->pluck('product_id')->map(fn($id) => (string) $id)->toArray(),
-                        'num_items'    => collect($validated['items'])->sum('quantity'),
-                        'order_id'     => (string) $order->order_number,
-                    ],
-                    $metaEventId,
-                    $eventSourceUrl,
-                );
-            }
-        } catch (\Throwable $e) {
-            // Never block the order flow if Meta CAPI dispatch fails
-            \Illuminate\Support\Facades\Log::warning('Meta CAPI dispatch failed silently', ['error' => $e->getMessage()]);
-        }
-
         $responseData = [
             'order' => $order->load('items'),
+            'meta_attributed' => $hasMetaClick,
         ];
 
         if ($token) {
@@ -428,6 +426,43 @@ class OrderController extends BaseController
         }
 
         return $this->sendResponse($responseData, 'Order created successfully', 201);
+    }
+
+    public function metaPurchaseStatus(Request $request, Order $order): JsonResponse
+    {
+        $sessionHash = hash('sha256', $request->session()->getId());
+        if (
+            !$order->meta_attribution_session
+            || !hash_equals($order->meta_attribution_session, $sessionHash)
+        ) {
+            return $this->sendError('Order not found', [], 404);
+        }
+
+        $ready = $order->status === 'accepté'
+            && $order->meta_fbclid !== null
+            && $order->meta_event_id !== null
+            && $order->meta_purchase_queued_at !== null
+            && (float) $order->total > 0;
+
+        if (!$ready) {
+            return $this->sendResponse(['ready' => false], 'Meta Purchase is not ready.');
+        }
+
+        return $this->sendResponse([
+            'ready' => true,
+            'event_id' => $order->meta_event_id,
+            'order_id' => (string) $order->order_number,
+            'value' => (float) $order->total,
+            'currency' => 'TND',
+            'items' => $order->items()->get(['product_id', 'product_name', 'unit_price', 'quantity'])
+                ->map(fn ($item) => [
+                    'id' => (string) $item->product_id,
+                    'name' => $item->product_name,
+                    'price' => (float) $item->unit_price,
+                    'quantity' => (int) $item->quantity,
+                ])
+                ->values(),
+        ], 'Meta Purchase is ready.');
     }
 
     public function latestId(Request $request): JsonResponse
@@ -497,13 +532,17 @@ class OrderController extends BaseController
             'notes' => 'nullable|string',
         ]);
 
+        if (($validated['status'] ?? null) === 'accepté') {
+            $this->authorize('approve', $order);
+        }
+
         $oldStatus = $order->status;
         $order->update($validated);
 
         // Lors du changement vers 'accepté', générer un BL si nécessaire (logique plus bas)
 
         // Si le statut change à 'accepté', générer un bon de livraison (une seule fois)
-        if ($oldStatus !== 'accepté' && ($validated['status'] === 'accepté')) {
+        if ($oldStatus !== 'accepté' && (($validated['status'] ?? null) === 'accepté')) {
             if (!$order->deliveryNotes()->exists()) {
                 // Créer le bon de livraison à partir de la commande
                 $clientId = null;
@@ -538,7 +577,84 @@ class OrderController extends BaseController
             // nothing else to do for status here; order remains 'accepté'
         }
 
+        if (($validated['status'] ?? null) === 'accepté') {
+            $this->queueMetaPurchase($order);
+        }
+
         return $this->sendResponse($order->load('invoice'), 'Order updated successfully');
+    }
+
+    private function queueMetaPurchase(Order $order): void
+    {
+        if (
+            !$order->meta_fbclid
+            || !$order->meta_event_id
+            || (float) $order->total <= 0
+            || $order->meta_purchase_queued_at
+        ) {
+            return;
+        }
+
+        if (empty(config('services.meta.access_token'))) {
+            Log::error('Meta Purchase could not be queued because META_CAPI_ACCESS_TOKEN is not configured.', [
+                'order_id' => $order->id,
+                'event_id' => $order->meta_event_id,
+            ]);
+            return;
+        }
+
+        DB::transaction(function () use ($order): void {
+            $lockedOrder = Order::with('items')->lockForUpdate()->findOrFail($order->id);
+            if (
+                $lockedOrder->status !== 'accepté'
+                || !$lockedOrder->meta_fbclid
+                || !$lockedOrder->meta_event_id
+                || (float) $lockedOrder->total <= 0
+                || $lockedOrder->meta_purchase_queued_at
+            ) {
+                return;
+            }
+
+            try {
+                SendMetaCapiEventJob::dispatch(
+                    'Purchase',
+                    [
+                        'email' => $lockedOrder->email,
+                        'phone' => $lockedOrder->phone,
+                        'full_name' => $lockedOrder->full_name,
+                        'city' => $lockedOrder->city,
+                        'fbp' => $lockedOrder->meta_fbp,
+                        'fbc' => $lockedOrder->meta_fbc,
+                        'client_ip_address' => $lockedOrder->meta_client_ip,
+                        'client_user_agent' => $lockedOrder->meta_client_user_agent,
+                    ],
+                    [
+                        'value' => (float) $lockedOrder->total,
+                        'currency' => 'TND',
+                        'content_type' => 'product',
+                        'content_ids' => $lockedOrder->items
+                            ->pluck('product_id')
+                            ->map(fn ($id) => (string) $id)
+                            ->values()
+                            ->all(),
+                        'num_items' => (int) $lockedOrder->items->sum('quantity'),
+                        'order_id' => (string) $lockedOrder->order_number,
+                    ],
+                    $lockedOrder->meta_event_id,
+                    $lockedOrder->meta_event_source_url,
+                )->afterCommit();
+
+                $lockedOrder->meta_purchase_queued_at = now();
+                $lockedOrder->save();
+            } catch (\Throwable $exception) {
+                Log::error('Meta Purchase dispatch failed; it can be retried by approving the order again.', [
+                    'order_id' => $lockedOrder->id,
+                    'event_id' => $lockedOrder->meta_event_id,
+                    'exception' => $exception->getMessage(),
+                ]);
+                throw $exception;
+            }
+        });
     }
 
     public function showPaymentProof(Order $order): BinaryFileResponse

@@ -8,12 +8,19 @@
 
 const STORAGE_KEY = "supersiesta_ads_attribution";
 const ATTRIBUTION_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+const META_STORAGE_KEY = "supersiesta_meta_attribution";
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
 
 export interface AdsAttributionData {
   gclid?: string | null;
   gbraid?: string | null;
   wbraid?: string | null;
   captured_at: number; // timestamp in ms
+}
+
+interface MetaAttributionData {
+  fbclid: string;
+  captured_at: number;
 }
 
 /**
@@ -25,26 +32,87 @@ export function initAdsAttribution(): void {
 
   try {
     const urlParams = new URLSearchParams(window.location.search);
+    const fbclid = urlParams.get("fbclid");
     const gclid = urlParams.get("gclid");
     const gbraid = urlParams.get("gbraid");
     const wbraid = urlParams.get("wbraid");
 
-    if (!gclid && !gbraid && !wbraid) {
-      return; // Nothing to capture, do not overwrite existing stored attribution
+    if (fbclid) {
+      const existingMeta = getStoredMetaAttribution();
+      if (existingMeta?.fbclid !== fbclid) {
+        localStorage.setItem(META_STORAGE_KEY, JSON.stringify({
+          fbclid,
+          captured_at: Date.now(),
+        }));
+      }
     }
 
-    const existing = getStoredAttribution();
+    if (gclid || gbraid || wbraid) {
+      const existing = getStoredAttribution();
 
-    const updated: AdsAttributionData = {
-      gclid: gclid || existing?.gclid || null,
-      gbraid: gbraid || existing?.gbraid || null,
-      wbraid: wbraid || existing?.wbraid || null,
-      captured_at: Date.now(),
-    };
+      const updated: AdsAttributionData = {
+        gclid: gclid || existing?.gclid || null,
+        gbraid: gbraid || existing?.gbraid || null,
+        wbraid: wbraid || existing?.wbraid || null,
+        captured_at: Date.now(),
+      };
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    }
+
+    void syncMetaAttribution();
   } catch (err) {
     // Storage access may fail in private browsing mode; fail gracefully
+  }
+}
+
+function getStoredMetaAttribution(): MetaAttributionData | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = localStorage.getItem(META_STORAGE_KEY);
+    if (!raw) return null;
+
+    const data = JSON.parse(raw) as MetaAttributionData;
+    if (!data.fbclid || !data.captured_at || Date.now() - data.captured_at > ATTRIBUTION_TTL_MS) {
+      localStorage.removeItem(META_STORAGE_KEY);
+      return null;
+    }
+
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Persists a captured Meta click in the Laravel session before checkout.
+ */
+export async function syncMetaAttribution(): Promise<boolean> {
+  const attribution = getStoredMetaAttribution();
+  if (!attribution || typeof window === "undefined") return false;
+
+  try {
+    const fbp = document.cookie.match(/(?:^|; )\s*_fbp\s*=\s*([^;]*)/)?.[1];
+    const response = await fetch(`${API_BASE_URL}/meta/attribution`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        fbclid: attribution.fbclid,
+        fbp: fbp ? decodeURIComponent(fbp) : null,
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn("Meta click attribution could not be saved to the Laravel session.", response.status);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.warn("Meta click attribution could not be saved to the Laravel session.", error);
+    return false;
   }
 }
 

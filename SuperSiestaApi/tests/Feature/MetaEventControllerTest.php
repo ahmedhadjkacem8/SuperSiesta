@@ -42,4 +42,39 @@ class MetaEventControllerTest extends TestCase
 
         Queue::assertPushed(SendMetaCapiEventJob::class);
     }
+
+    public function test_meta_fbclid_is_persisted_in_the_laravel_session(): void
+    {
+        $this->postJson('/api/meta/attribution', [
+            'fbclid' => 'meta-click-123',
+            'fbp' => 'fb.1.1700000000000.browser-id',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.captured', true);
+
+        $this->assertSame('meta-click-123', session('meta_attribution.fbclid'));
+        $this->assertSame('fb.1.1700000000000.browser-id', session('meta_attribution.fbp'));
+        $this->assertMatchesRegularExpression(
+            '/^fb\.1\.\d+\.meta-click-123$/',
+            session('meta_attribution.fbc')
+        );
+    }
+
+    public function test_meta_attribution_requires_a_click_id(): void
+    {
+        $this->postJson('/api/meta/attribution', ['fbp' => 'fb.1.1700000000000.browser-id'])
+            ->assertStatus(422);
+    }
+
+    public function test_purchase_cannot_be_relayed_from_the_browser(): void
+    {
+        Queue::fake();
+
+        $this->postJson('/api/meta/event', [
+            'event_name' => 'Purchase',
+            'event_id' => 'purchase-event-id',
+        ])->assertStatus(422);
+
+        Queue::assertNothingPushed();
+    }
 }

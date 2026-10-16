@@ -106,8 +106,14 @@ Route::middleware('api')->group(function () {
     Route::get('/social-networks', [SocialNetworkController::class, 'index']);
     Route::get('/icons', [IconController::class, 'index']);
 
+    // These public endpoints use a Laravel session to preserve Meta click attribution until checkout.
+    Route::middleware(\Illuminate\Session\Middleware\StartSession::class)->group(function () {
+        Route::post('/meta/attribution', [\App\Http\Controllers\Api\MetaEventController::class, 'captureAttribution']);
+        Route::post('/orders', [OrderController::class, 'store']);
+        Route::get('/orders/{order}/meta-purchase-status', [OrderController::class, 'metaPurchaseStatus']);
+    });
+
     // Orders checkout (Public)
-    Route::post('/orders', [OrderController::class, 'store']);
     Route::put('/orders/{order}/bl-contact', [OrderController::class, 'updateBlContact']);
 
     // Reviews & Contact Messages

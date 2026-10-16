@@ -10,7 +10,7 @@ import { formatPrice } from "@/lib/utils";
 import { getImageUrl } from "@/utils/imageUtils";
 import { generateEventId, trackInitiateCheckout, trackPurchase, getFbpCookie, getFbcCookie } from "@/services/metaPixel";
 import { trackGABeginCheckout, trackGAPurchase, trackGAContactClick } from "@/services/analytics";
-import { getAdsClickIds } from "@/services/adsAttribution";
+import { getAdsClickIds, syncMetaAttribution } from "@/services/adsAttribution";
 import { useLanguage } from "@/context/LanguageContext";
 import { useSettings } from "@/hooks/useSettings";
 
@@ -114,6 +114,7 @@ export default function Commander() {
   const [locating, setLocating] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [lastOrderId, setLastOrderId] = useState<string | number | null>(null);
+  const [metaPurchaseOrderId, setMetaPurchaseOrderId] = useState<string | number | null>(null);
   const [blContact, setBlContact] = useState("");
   const [blSent, setBlSent] = useState(false);
   const [blSending, setBlSending] = useState(false);
@@ -130,6 +131,7 @@ export default function Commander() {
   const isSavingProspect = useRef(false);
   const [isProspectSaved, setIsProspectSaved] = useState(false);
   const purchaseEventIdRef = useRef<string>(generateEventId());
+  const metaPurchaseTrackedRef = useRef(false);
   const hasSpecialDimensions = items.some((item) => {
     const dimension = dimensions.find(
       (candidate) => normalizeDimensionLabel(candidate.label) === normalizeDimensionLabel(item.size.label)
@@ -269,6 +271,51 @@ export default function Commander() {
   }, [form, items, total, submitted, submitting]);
 
 
+  useEffect(() => {
+    if (!submitted || !metaPurchaseOrderId || metaPurchaseTrackedRef.current) return;
+
+    let cancelled = false;
+    let attempts = 0;
+    let timeout: number | undefined;
+
+    const checkPurchaseStatus = async () => {
+      try {
+        const purchase = await api.get<{
+          ready: boolean;
+          event_id: string;
+          order_id: string;
+          value: number;
+          items: Array<{ id: string; name: string; price: number; quantity: number }>;
+        }>(`/orders/${metaPurchaseOrderId}/meta-purchase-status?check=${Date.now()}`);
+
+        if (cancelled) return;
+        if (purchase.ready) {
+          trackPurchase({
+            orderId: purchase.order_id,
+            value: purchase.value,
+            items: purchase.items,
+          }, purchase.event_id);
+          metaPurchaseTrackedRef.current = true;
+          return;
+        }
+      } catch (error) {
+        if (!cancelled && attempts === 0) {
+          console.warn("Meta Purchase status could not be checked from the checkout page.", error);
+        }
+      }
+
+      attempts += 1;
+      if (!cancelled && attempts < 60) {
+        timeout = window.setTimeout(checkPurchaseStatus, 30_000);
+      }
+    };
+
+    timeout = window.setTimeout(checkPurchaseStatus, 15_000);
+    return () => {
+      cancelled = true;
+      if (timeout !== undefined) window.clearTimeout(timeout);
+    };
+  }, [metaPurchaseOrderId, submitted]);
 
   if (items.length === 0 && !submitted) {
     return (
@@ -417,6 +464,7 @@ export default function Commander() {
         });
       });
 
+      const metaClickCaptured = await syncMetaAttribution();
       const payload: any = {
         order_number: orderNumber,
         full_name: form.full_name,
@@ -442,7 +490,7 @@ export default function Commander() {
           total: item.size.price * item.quantity,
         })),
         free_gifts: allGifts.length > 0 ? allGifts : undefined,
-        meta_event_id: purchaseEventIdRef.current,
+        meta_event_id: metaClickCaptured ? purchaseEventIdRef.current : undefined,
         event_source_url: typeof window !== "undefined" ? window.location.href : undefined,
         fbp: getFbpCookie(),
         fbc: getFbcCookie(),
@@ -460,20 +508,9 @@ export default function Commander() {
       
       const orderId = response?.order?.id || response?.id || orderNumber;
 
-      // Track Meta Pixel Purchase client-side (deduplicated by meta_event_id)
-      trackPurchase(
-        {
-          orderId: String(orderId),
-          value: total,
-          items: items.map((i) => ({
-            id: i.product.id,
-            name: i.product.name,
-            price: i.size.price,
-            quantity: i.quantity,
-          })),
-        },
-        purchaseEventIdRef.current
-      );
+      if (response?.meta_attributed && orderId) {
+        setMetaPurchaseOrderId(orderId);
+      }
 
       // Track Google Ads / GA4 Purchase with anti-duplicate guard
       try {

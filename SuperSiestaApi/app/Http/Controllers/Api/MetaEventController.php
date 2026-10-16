@@ -20,6 +20,31 @@ use Illuminate\Http\Request;
  */
 class MetaEventController extends BaseController
 {
+    public function captureAttribution(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'fbclid' => 'required|string|max:255',
+            'fbp' => 'nullable|string|max:255',
+        ]);
+
+        $attribution = $request->session()->get('meta_attribution', []);
+        if (($attribution['fbclid'] ?? null) !== $validated['fbclid']) {
+            $attribution = [
+                'fbclid' => $validated['fbclid'],
+                'fbc' => 'fb.1.' . (int) round(microtime(true) * 1000) . '.' . $validated['fbclid'],
+                'captured_at' => now()->toIso8601String(),
+            ];
+        }
+
+        if (!empty($validated['fbp'])) {
+            $attribution['fbp'] = $validated['fbp'];
+        }
+
+        $request->session()->put('meta_attribution', $attribution);
+
+        return $this->sendResponse(['captured' => true], 'Meta click attribution stored in session.');
+    }
+
     /**
      * Relay a browser-side event to Meta CAPI (server-side mirror).
      *

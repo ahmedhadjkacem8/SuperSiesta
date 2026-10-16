@@ -38,6 +38,11 @@ class OrderPolicy
         return $order->user_id !== null && $order->user_id === $user->id;
     }
 
+    public function approve(User $user, Order $order): bool
+    {
+        return $user->roles()->where('role', 'admin')->exists();
+    }
+
     public function delete(User $user, Order $order): bool
     {
         return $user->roles()->where('role', 'admin')->exists();

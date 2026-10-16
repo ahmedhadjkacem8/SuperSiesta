@@ -41,6 +41,26 @@ Error responses:
 
 ## Endpoints
 
+### Meta Ads attribution and Purchase
+
+The public `POST /api/meta/attribution` endpoint stores `fbclid` and the optional
+`fbp` browser identifier in a Laravel session. The checkout synchronizes this
+session before creating an order; attribution is copied from the session to the
+order and is not trusted from order request fields.
+
+Meta `Purchase` is not sent when the order is created. It is queued once when an
+administrator changes an attributed order with a positive total to `accepté`.
+The CAPI event uses the event ID saved on the order. While the checkout success
+page remains open, the browser checks the same order and fires Pixel `Purchase`
+with that event ID after the server has queued CAPI, allowing Meta to deduplicate
+the two events. The status check is restricted to the Laravel session that
+created the order.
+
+Configure `META_PIXEL_ID` and `META_CAPI_ACCESS_TOKEN` in the API environment,
+and run a Laravel queue worker for asynchronous CAPI delivery. If the frontend
+and API use different origins, the browser session cookie must be enabled for
+credentialed requests and configured for the production site/domain.
+
 ### Products
 
 #### Get All Products

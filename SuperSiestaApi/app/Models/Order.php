@@ -35,13 +35,33 @@ class Order extends Model
         'wbraid',
         'ads_click_captured_at',
         'ads_exported_at',
+        'meta_fbclid',
+        'meta_fbc',
+        'meta_fbp',
+        'meta_click_captured_at',
+        'meta_attribution_session',
+        'meta_event_id',
+        'meta_client_ip',
+        'meta_client_user_agent',
+        'meta_event_source_url',
+        'meta_purchase_queued_at',
         'subtotal',
         'total',
     ];
 
     protected $appends = ['delivery_note_id'];
 
-    protected $hidden = ['payment_proof_path'];
+    protected $hidden = [
+        'payment_proof_path',
+        'meta_fbclid',
+        'meta_fbc',
+        'meta_fbp',
+        'meta_attribution_session',
+        'meta_event_id',
+        'meta_client_ip',
+        'meta_client_user_agent',
+        'meta_event_source_url',
+    ];
 
     protected $casts = [
         'requires_special_discount' => 'boolean',
@@ -49,6 +69,8 @@ class Order extends Model
         'total' => 'decimal:2',
         'ads_click_captured_at' => 'datetime',
         'ads_exported_at' => 'datetime',
+        'meta_click_captured_at' => 'datetime',
+        'meta_purchase_queued_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

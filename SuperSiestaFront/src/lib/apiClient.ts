@@ -144,6 +144,7 @@ class SecureApiService {
     try {
       const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'GET',
+        credentials: 'include',
         headers: {
           ...this.getHeaders(),
           'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -193,6 +194,7 @@ class SecureApiService {
       const isFormData = body instanceof FormData
       const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
+        credentials: 'include',
         headers: this.getHeaders({}, isFormData),
         body: isFormData ? body : JSON.stringify(body),
       })

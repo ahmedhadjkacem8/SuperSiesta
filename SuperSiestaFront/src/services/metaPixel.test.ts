@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { trackGAAddToCart } from "./analytics";
-import { getFbcCookie, trackAddToCart, trackViewContent } from "./metaPixel";
+import { getFbcCookie, trackAddToCart, trackPurchase, trackViewContent } from "./metaPixel";
 
 describe("Meta event tracking", () => {
   beforeEach(() => {
@@ -26,6 +26,22 @@ describe("Meta event tracking", () => {
     const [, request] = vi.mocked(fetch).mock.calls[0];
     const payload = JSON.parse(request?.body as string);
     expect(payload.fbc).toMatch(/^fb\.1\.\d+\.click-id-123$/);
+  });
+
+  it("uses the server event ID for the browser Purchase Pixel event", () => {
+    trackPurchase({
+      orderId: "order-1",
+      value: 120,
+      items: [{ id: "product-1", name: "Mattress", price: 120, quantity: 1 }],
+    }, "shared-purchase-event");
+
+    expect(window.fbq).toHaveBeenCalledWith(
+      "track",
+      "Purchase",
+      expect.objectContaining({ value: 120, currency: "TND", order_id: "order-1" }),
+      { eventID: "shared-purchase-event" },
+    );
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("sends AddToCart with TND to both Pixel and Conversions API", () => {
