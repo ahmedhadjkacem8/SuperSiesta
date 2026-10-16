@@ -31,7 +31,7 @@ export function KpiCard({ label, value, detail, icon: Icon, iconClass, trend, se
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-medium text-muted-foreground">{label}</p>
-              <p className="mt-1 truncate text-base font-bold tracking-tight text-slate-950 sm:text-2xl">{value}</p>
+              <p className="mt-1 break-words text-base font-bold tracking-tight text-slate-950 sm:text-2xl">{value}</p>
               <div className="mt-2 flex flex-wrap items-center gap-x-1 text-[10px] sm:text-[11px]">
                 {trend && (
                   <span className={`inline-flex items-center font-semibold ${trend.positive ? "text-emerald-600" : "text-rose-600"}`}>
